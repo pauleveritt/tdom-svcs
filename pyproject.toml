@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "TDOM integration with svcs dependency injection"
 requires-python = ">=3.14"
 dependencies = [
-    "svcs"
+    "svcs",
+    "svcs-di",
+    "tdom"
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -50,8 +52,8 @@ timeout = 60
 faulthandler_timeout = 120
 
 [tool.uv.sources]
-tdom = { workspace = true }
-svcs-di = { workspace = true }
+tdom = { path = "../tdom", editable = true }
+svcs-di = { path = "../svcs-di", editable = true }
 
 [build-system]
 requires = ["uv_build>=0.8.17,<0.9.0"]

@@ -278,6 +278,61 @@ class PostgresDatabase:
     ...
 ```
 
+### 5. Services That Depend on svcs.Container
+
+Many services need access to the svcs.Container to resolve other services dynamically. This is a common pattern for adapter/lookup services.
+
+**Pattern: Accept svcs.Container in the service**
+
+```python
+from dataclasses import dataclass
+from typing import Protocol, runtime_checkable
+import svcs
+
+@runtime_checkable
+class ComponentLookupProtocol(Protocol):
+    """Protocol for services that need container access."""
+
+    def __init__(self, container: svcs.Container) -> None:
+        """
+        Initialize with svcs.Container.
+
+        Args:
+            container: svcs.Container that holds service registrations
+        """
+        ...
+
+    def resolve(self, name: str) -> object | None:
+        """Resolve a service by name."""
+        ...
+
+@dataclass
+class ComponentLookup:
+    """Service that uses container to resolve other services."""
+
+    container: svcs.Container  # Type as svcs.Container, not Any
+
+    def resolve(self, name: str) -> object | None:
+        """Resolve a service dynamically from the container."""
+        try:
+            return self.container.get(SomeService)
+        except svcs.ServiceNotFoundError:
+            return None
+```
+
+**Key points**:
+- Type the `container` parameter as `svcs.Container`, not `Any`
+- Include this in both the protocol and implementation
+- The container gives access to all registered services
+- Use `container.get(ServiceType)` to resolve dependencies dynamically
+- This pattern is common for adapters, lookups, and orchestrators
+
+**When to use**:
+- Services that need to resolve dependencies dynamically (not at initialization)
+- Adapter services that bridge between different systems
+- Lookup/registry services that resolve by name or other criteria
+- Orchestrator services that coordinate multiple services
+
 ## Testing Services: Best Practices
 
 ### Principle: Use Fakes, Not Mocks

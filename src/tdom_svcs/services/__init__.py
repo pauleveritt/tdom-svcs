@@ -8,6 +8,19 @@ from .component_lookup import (
     RegistryNotSetupError,
 )
 from .component_registry import ComponentNameRegistry, ComponentNameRegistryProtocol
+from .middleware import (
+    Context,
+    ContextNotSetupError,
+    Middleware,
+    MiddlewareConfigurationError,
+    MiddlewareError,
+    MiddlewareExecutionError,
+    MiddlewareManager,
+    component,
+    get_component_middleware,
+    register_component,
+    setup_container,
+)
 
 __all__ = [
     "ComponentLookup",
@@ -17,4 +30,16 @@ __all__ = [
     "ComponentNotFoundError",
     "InjectorNotFoundError",
     "RegistryNotSetupError",
+    # Middleware
+    "Context",
+    "ContextNotSetupError",
+    "Middleware",
+    "MiddlewareConfigurationError",
+    "MiddlewareError",
+    "MiddlewareExecutionError",
+    "MiddlewareManager",
+    "component",
+    "get_component_middleware",
+    "register_component",
+    "setup_container",
 ]

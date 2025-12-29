@@ -448,9 +448,7 @@ def scan_components(
         elif isinstance(pkg, ModuleType):
             modules_to_scan.append(pkg)
         else:
-            log.warning(
-                f"Invalid package type: {type(pkg)}. Must be str or ModuleType"
-            )
+            log.warning(f"Invalid package type: {type(pkg)}. Must be str or ModuleType")
 
     # Step 1: Use svcs-di's scan() to register components to svcs.Registry
     # This handles module discovery and type-based registration

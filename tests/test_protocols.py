@@ -9,7 +9,6 @@ import typing
 from collections.abc import Mapping
 from dataclasses import dataclass
 
-import pytest
 
 from tdom_svcs import ComponentLookup, Config
 
@@ -18,12 +17,14 @@ from tdom_svcs import ComponentLookup, Config
 @typing.runtime_checkable
 class RuntimeComponentLookup(ComponentLookup, typing.Protocol):
     """Runtime checkable version of ComponentLookup for testing."""
+
     pass
 
 
 @typing.runtime_checkable
 class RuntimeConfig(Config, typing.Protocol):
     """Runtime checkable version of Config for testing."""
+
     pass
 
 
@@ -36,7 +37,9 @@ def test_component_lookup_protocol_accepts_duck_typed_class():
 
         container: object
 
-        def __call__(self, name: str, context: Mapping[str, typing.Any]) -> typing.Callable | None:
+        def __call__(
+            self, name: str, context: Mapping[str, typing.Any]
+        ) -> typing.Callable | None:
             # Simple mock: return None (component not found)
             return None
 
@@ -61,7 +64,9 @@ def test_component_lookup_protocol_can_return_callable():
 
         container: object
 
-        def __call__(self, name: str, context: Mapping[str, typing.Any]) -> typing.Callable | None:
+        def __call__(
+            self, name: str, context: Mapping[str, typing.Any]
+        ) -> typing.Callable | None:
             if name == "Button":
                 return sample_component
             return None
@@ -99,7 +104,9 @@ def test_config_protocol_with_component_lookup():
     class MockComponentLookup:
         container: object
 
-        def __call__(self, name: str, context: Mapping[str, typing.Any]) -> typing.Callable | None:
+        def __call__(
+            self, name: str, context: Mapping[str, typing.Any]
+        ) -> typing.Callable | None:
             return None
 
     @dataclass

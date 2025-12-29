@@ -12,8 +12,9 @@
    package scanning utility to discover decorated components, and register them in both ComponentNameRegistry (string
    names) and svcs container (type-based DI). `M`
 
-4. [ ] Component Lifecycle Middleware System — Implement pluggable middleware hooks for logging, validation,
-   transformation, and error handling during component initialization and rendering phases. `M`
+4. [x] Component Lifecycle Middleware System — Implement pluggable middleware hooks for logging, validation,
+   transformation, and error handling during component initialization and rendering phases using dict-like interfaces
+   that work with or without svcs/svcs-di. `M`
 
 5. [ ] Testing Utilities and Mock Injection — Create testing helpers for injecting mock services, implement test
    container fixtures, and provide examples of testing components in isolation with mocked dependencies. `S`

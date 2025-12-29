@@ -132,7 +132,9 @@ def test_concurrent_registration_and_retrieval():
     # Spawn threads for concurrent registration
     threads = []
     for i in range(4):
-        threads.append(threading.Thread(target=register_worker, args=(f"Comp{i}", Button)))
+        threads.append(
+            threading.Thread(target=register_worker, args=(f"Comp{i}", Button))
+        )
 
     for t in threads:
         t.start()
@@ -142,7 +144,9 @@ def test_concurrent_registration_and_retrieval():
     # Spawn threads for concurrent retrieval
     retrieval_threads = []
     for i in range(4):
-        retrieval_threads.append(threading.Thread(target=retrieve_worker, args=(f"Comp{i}",)))
+        retrieval_threads.append(
+            threading.Thread(target=retrieve_worker, args=(f"Comp{i}",))
+        )
 
     for t in retrieval_threads:
         t.start()

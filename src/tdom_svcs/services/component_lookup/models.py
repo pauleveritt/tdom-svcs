@@ -29,9 +29,7 @@ class ComponentLookupProtocol(Protocol):
         """
         ...
 
-    def __call__(
-        self, name: str, context: Mapping[str, Any]
-    ) -> Callable | None:
+    def __call__(self, name: str, context: Mapping[str, Any]) -> Callable | None:
         """
         Look up a component by name and construct it.
 

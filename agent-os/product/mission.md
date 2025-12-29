@@ -121,8 +121,8 @@ code.
 
 ### Component Resolution Features
 
-- **Decorator-Based Component Discovery:** @Inject decorator marks injectable components and enables automatic discovery
-  through package scanning
+- **Decorator-Based Component Discovery:** @injectable and @component decorators mark discoverable components and enable
+  automatic registration through package scanning, with @component adding per-component middleware support
 - **Keyword Override Support (KeywordInjector):** Template authors can override injected services with explicit kwargs,
   providing flexibility when needed without breaking DI patterns
 - **Multi-Implementation Resolution (HopscotchInjector):** Select component implementations based on request resources (
@@ -130,8 +130,9 @@ code.
 
 ### Advanced Features
 
-- **Pluggable Component Lifecycle Hooks:** Custom hooks for component initialization, service injection, and rendering
-  phases, enabling middleware-like functionality for logging, validation, or transformation
+- **Pluggable Component Lifecycle Middleware:** Global and per-component middleware via @component decorator for logging,
+  validation, transformation, and error handling across component initialization and rendering phases, with priority-based
+  execution and dict-like interfaces that work with or without svcs/svcs-di
 - **Container Adapter Pattern:** Clean integration between tdom's component system and svcs container through adapter
   layer, isolating DI concerns from template rendering
 - **Testing-Friendly Architecture:** Easy injection of mock services for testing, with clear boundaries between template

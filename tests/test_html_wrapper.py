@@ -9,9 +9,8 @@ import typing
 from collections.abc import Mapping
 from dataclasses import dataclass
 
-import pytest
 
-from tdom_svcs import ComponentLookup, Config, html
+from tdom_svcs import ComponentLookup, html
 
 
 def test_html_without_parameters():

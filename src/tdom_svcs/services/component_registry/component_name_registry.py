@@ -32,7 +32,9 @@ class ComponentNameRegistry:
     """
 
     _registry: dict[str, type] = field(default_factory=dict, init=False, repr=False)
-    _lock: threading.Lock = field(default_factory=threading.Lock, init=False, repr=False)
+    _lock: threading.Lock = field(
+        default_factory=threading.Lock, init=False, repr=False
+    )
 
     def register(self, name: str, component_type: type) -> None:
         """

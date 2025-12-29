@@ -8,12 +8,9 @@ decorated classes in packages and registers them in both ComponentNameRegistry
 
 from dataclasses import dataclass
 from pathlib import PurePath
-from types import ModuleType
-from unittest.mock import Mock
 
 import pytest
 import svcs
-from svcs_di import Inject
 from svcs_di.injectors.decorators import injectable
 
 from tdom_svcs import ComponentNameRegistry, scan_components

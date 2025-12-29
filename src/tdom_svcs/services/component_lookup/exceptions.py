@@ -2,32 +2,17 @@
 
 
 class ComponentNotFoundError(Exception):
-    """
-    Raised when a component name is not found in the registry.
+    """Raised when a component name is not found in the registry."""
 
-    This exception includes suggestions for similar component names
-    to help users identify typos or misnamed components.
-    """
-
-    def __init__(self, name: str, suggestions: list[str]) -> None:
+    def __init__(self, name: str) -> None:
         """
         Initialize ComponentNotFoundError.
 
         Args:
             name: The component name that was not found
-            suggestions: List of similar registered component names
         """
         self.name = name
-        self.suggestions = suggestions
-
-        # Build helpful error message
         msg = f"Component '{name}' not found in registry."
-        if suggestions:
-            suggestion_list = ", ".join(f"'{s}'" for s in suggestions[:5])
-            msg += f"\n\nDid you mean one of these? {suggestion_list}"
-        else:
-            msg += "\n\nNo components are registered. Did you forget to call register_component()?"
-
         super().__init__(msg)
 
 

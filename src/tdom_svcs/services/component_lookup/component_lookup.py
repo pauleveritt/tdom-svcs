@@ -1,13 +1,12 @@
 """Implementation of component lookup service."""
 
-import difflib
 import inspect
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any, Callable, Coroutine
 
 import svcs
-from svcs_di.injectors.keyword import KeywordAsyncInjector, KeywordInjector
+from svcs_di.injectors.locator import HopscotchAsyncInjector, HopscotchInjector
 
 from tdom_svcs.services.component_registry import ComponentNameRegistry
 
@@ -17,6 +16,8 @@ from .exceptions import (
     RegistryNotSetupError,
 )
 
+type T = object
+
 
 @dataclass
 class ComponentLookup:
@@ -24,12 +25,15 @@ class ComponentLookup:
     Service for looking up and constructing components by name.
 
     ComponentLookup bridges tdom's component system with svcs container by:
-    1. Looking up component types by string name using ComponentNameRegistry
+    1. Looking up component class types by string name using ComponentNameRegistry
     2. Retrieving the appropriate injector (sync or async) from the container
     3. Using the injector to construct component instances with dependencies
 
-    This implementation satisfies the ComponentLookup protocol through structural
-    typing without requiring inheritance.
+    This implementation uses HopscotchInjector (production injector) which supports
+    resource-based and location-based component resolution.
+
+    Note: ComponentLookup resolves class components by string name. Function components
+    can use Inject[] but cannot be looked up by name.
 
     Example:
         >>> registry = svcs.Registry()
@@ -43,13 +47,13 @@ class ComponentLookup:
 
     def __call__(
         self, name: str, context: Mapping[str, Any]
-    ) -> Callable | None:
+    ) -> Any:
         """
         Look up a component by name and construct it with dependency injection.
 
         This method implements the component resolution workflow:
         1. Retrieve ComponentNameRegistry from container
-        2. Look up component type by name
+        2. Look up component class type by name
         3. Detect if component is async
         4. Retrieve appropriate injector (sync or async)
         5. Construct component using injector
@@ -59,7 +63,7 @@ class ComponentLookup:
             context: Context mapping for service resolution (available for future use)
 
         Returns:
-            A constructed component callable, or None if component not found
+            A constructed component callable
 
         Raises:
             RegistryNotSetupError: If ComponentNameRegistry not in container
@@ -75,13 +79,18 @@ class ComponentLookup:
         # Step 2: Look up component type by name
         component_type = registry.get_type(name)
         if component_type is None:
-            # Generate suggestions using fuzzy matching
-            all_names = registry.get_all_names()
-            suggestions = difflib.get_close_matches(name, all_names, n=5, cutoff=0.6)
-            raise ComponentNotFoundError(name, suggestions)
+            raise ComponentNotFoundError(name)
+
+        # component_type is guaranteed to be `type` (not None, not Callable)
+        # ComponentNameRegistry now only accepts and returns class types
+        assert isinstance(component_type, type), f"Expected class, got {type(component_type)}"
 
         # Step 3: Detect if component is async
-        is_async = inspect.iscoroutinefunction(component_type)
+        # For class components, check if __call__ method is async
+        is_async = (
+            hasattr(component_type, "__call__")
+            and inspect.iscoroutinefunction(component_type.__call__)
+        )
 
         # Step 4 & 5: Retrieve injector and construct component
         if is_async:
@@ -89,44 +98,52 @@ class ComponentLookup:
         else:
             return self._construct_sync_component(component_type)
 
-    def _construct_sync_component(self, component_type: type | Callable) -> Callable:
+    def _construct_sync_component(self, component_type: type[T]) -> T:
         """
-        Construct a synchronous component using KeywordInjector.
+        Construct a synchronous component using HopscotchInjector.
+
+        HopscotchInjector is the production injector that supports resource-based
+        and location-based component resolution.
 
         Args:
-            component_type: The component type to construct
+            component_type: The component class type to construct
 
         Returns:
             The constructed component instance
 
         Raises:
-            InjectorNotFoundError: If KeywordInjector not in container
+            InjectorNotFoundError: If HopscotchInjector not in container
         """
         try:
-            injector = self.container.get(KeywordInjector)
+            injector = self.container.get(HopscotchInjector)
         except svcs.exceptions.ServiceNotFoundError:
-            raise InjectorNotFoundError("KeywordInjector", is_async=False)
+            raise InjectorNotFoundError("HopscotchInjector", is_async=False)
 
-        result: Callable = injector(component_type)  # type: ignore[arg-type]
-        return result
+        # injector(component_type) correctly receives type[T] and returns T
+        return injector(component_type)
 
-    def _construct_async_component(self, component_type: type | Callable) -> Callable:
+    def _construct_async_component(
+        self, component_type: type[T]
+    ) -> Coroutine[Any, Any, T]:
         """
-        Construct an asynchronous component using KeywordAsyncInjector.
+        Construct an asynchronous component using HopscotchAsyncInjector.
+
+        HopscotchAsyncInjector is the production async injector that supports
+        resource-based and location-based component resolution.
 
         Args:
-            component_type: The async component type to construct
+            component_type: The async component class type to construct
 
         Returns:
-            The constructed async component instance
+            Coroutine that resolves to the constructed component instance
 
         Raises:
-            InjectorNotFoundError: If KeywordAsyncInjector not in container
+            InjectorNotFoundError: If HopscotchAsyncInjector not in container
         """
         try:
-            injector = self.container.get(KeywordAsyncInjector)
+            injector = self.container.get(HopscotchAsyncInjector)
         except svcs.exceptions.ServiceNotFoundError:
-            raise InjectorNotFoundError("KeywordAsyncInjector", is_async=True)
+            raise InjectorNotFoundError("HopscotchAsyncInjector", is_async=True)
 
-        result: Callable = injector(component_type)  # type: ignore[arg-type, assignment]
-        return result
+        # injector(component_type) returns Coroutine[Any, Any, T]
+        return injector(component_type)

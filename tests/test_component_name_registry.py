@@ -13,15 +13,28 @@ import pytest
 from tdom_svcs.services import ComponentNameRegistry
 
 
-# Test fixtures - simple component types
-def Button(*, label: str = "Click") -> str:
+# Test fixtures - class component types (only classes can be registered by name)
+from dataclasses import dataclass
+
+
+@dataclass
+class Button:
     """Simple button component."""
-    return f"<button>{label}</button>"
+
+    label: str = "Click"
+
+    def __call__(self) -> str:
+        return f"<button>{self.label}</button>"
 
 
-def Card(*, title: str = "Card") -> str:
+@dataclass
+class Card:
     """Simple card component."""
-    return f"<div>{title}</div>"
+
+    title: str = "Card"
+
+    def __call__(self) -> str:
+        return f"<div>{self.title}</div>"
 
 
 class AlertComponent:

@@ -18,7 +18,7 @@ from dataclasses import dataclass
 import svcs
 from svcs_di import Inject
 from svcs_di.injectors.decorators import injectable
-from svcs_di.injectors.keyword import KeywordInjector
+from svcs_di.injectors.locator import HopscotchInjector
 
 from tdom_svcs import ComponentNameRegistry, scan_components
 from tdom_svcs.services.component_lookup import ComponentLookup
@@ -70,8 +70,8 @@ class UserProfile:
     like 'user_id' have default values but can be overridden from templates.
     """
 
+    db: Inject[DatabaseService]  # Injected from container
     user_id: int = 1  # Default value, can be overridden from template
-    db: Inject[DatabaseService] = None  # Injected from container
 
     def __call__(self) -> str:
         """Render the user profile with data from database."""
@@ -95,9 +95,9 @@ class AdminPanel:
     and regular parameters can be mixed with injected ones.
     """
 
+    auth: Inject[AuthService]
+    db: Inject[DatabaseService]
     title: str = "Admin Dashboard"
-    auth: Inject[AuthService] = None
-    db: Inject[DatabaseService] = None
 
     def __call__(self) -> str:
         """Render the admin panel if authenticated."""
@@ -144,8 +144,7 @@ def setup_application():
 
     # Setup ComponentNameRegistry and injector in container
     registry.register_value(ComponentNameRegistry, component_registry)
-    injector = KeywordInjector(container=container)
-    registry.register_value(KeywordInjector, injector)
+    registry.register_factory(HopscotchInjector, HopscotchInjector)
 
     # Create ComponentLookup for resolving components
     lookup = ComponentLookup(container=container)

@@ -13,7 +13,7 @@ import pytest
 import svcs
 from svcs_di import Inject
 
-from svcs_di.injectors.keyword import KeywordAsyncInjector, KeywordInjector
+from svcs_di.injectors.locator import HopscotchAsyncInjector, HopscotchInjector
 from tdom_svcs.services.component_lookup import (
     ComponentLookup,
     ComponentLookupProtocol,
@@ -38,14 +38,26 @@ class ButtonComponent:
         return f"<button{disabled_attr}>{self.label}</button>"
 
 
-def CardComponent(*, title: str = "Card", content: str = "Content") -> str:
-    """Function-based card component."""
-    return f"<div><h2>{title}</h2><p>{content}</p></div>"
+@dataclass
+class CardComponent:
+    """Class-based card component."""
+
+    title: str = "Card"
+    content: str = "Content"
+
+    def __call__(self) -> str:
+        return f"<div><h2>{self.title}</h2><p>{self.content}</p></div>"
 
 
-async def AsyncAlertComponent(*, message: str = "Alert", level: str = "info") -> str:
-    """Async function-based alert component."""
-    return f"<div class='alert-{level}'>{message}</div>"
+@dataclass
+class AsyncAlertComponent:
+    """Async class-based alert component."""
+
+    message: str = "Alert"
+    level: str = "info"
+
+    async def __call__(self) -> str:
+        return f"<div class='alert-{self.level}'>{self.message}</div>"
 
 
 @dataclass
@@ -82,9 +94,8 @@ def test_resolve_sync_component_by_name():
     name_registry.register("Button", ButtonComponent)
     registry.register_value(ComponentNameRegistry, name_registry)
 
-    # Register KeywordInjector
-    injector = KeywordInjector(container=container)
-    registry.register_value(KeywordInjector, injector)
+    # Register HopscotchInjector factory
+    registry.register_factory(HopscotchInjector, HopscotchInjector)
 
     # Create ComponentLookup
     lookup = ComponentLookup(container=container)
@@ -111,9 +122,8 @@ def test_resolve_async_component_by_name():
     name_registry.register("Alert", AsyncAlertComponent)
     registry.register_value(ComponentNameRegistry, name_registry)
 
-    # Register KeywordAsyncInjector
-    async_injector = KeywordAsyncInjector(container=container)
-    registry.register_value(KeywordAsyncInjector, async_injector)
+    # Register HopscotchAsyncInjector factory
+    registry.register_factory(HopscotchAsyncInjector, HopscotchAsyncInjector)
 
     # Create ComponentLookup
     lookup = ComponentLookup(container=container)
@@ -136,8 +146,7 @@ def test_raise_error_when_registry_not_found():
     container = svcs.Container(registry)
 
     # Register injector (but not registry)
-    injector = KeywordInjector(container=container)
-    registry.register_value(KeywordInjector, injector)
+    registry.register_factory(HopscotchInjector, HopscotchInjector)
 
     # Create ComponentLookup
     lookup = ComponentLookup(container=container)
@@ -176,39 +185,37 @@ def test_raise_error_when_injector_not_found():
 
     # Verify error message includes helpful guidance
     error_msg = str(exc_info.value)
-    assert "KeywordInjector" in error_msg or "injector" in error_msg.lower()
+    assert "HopscotchInjector" in error_msg or "injector" in error_msg.lower()
     assert "setup_container()" in error_msg or "register" in error_msg.lower()
 
 
-def test_raise_error_with_suggestions_when_component_not_found():
-    """Test that ComponentNotFoundError includes similar name suggestions."""
+def test_raise_error_when_component_not_found():
+    """Test that ComponentNotFoundError is raised for unknown component."""
     # Setup container with registry and injector
     registry = svcs.Registry()
     container = svcs.Container(registry)
 
-    # Register ComponentNameRegistry with similar names
+    # Register ComponentNameRegistry with some components
     name_registry = ComponentNameRegistry()
     name_registry.register("Button", ButtonComponent)
     name_registry.register("Card", CardComponent)
     name_registry.register("Alert", AsyncAlertComponent)
     registry.register_value(ComponentNameRegistry, name_registry)
 
-    # Register KeywordInjector
-    injector = KeywordInjector(container=container)
-    registry.register_value(KeywordInjector, injector)
+    # Register HopscotchInjector factory
+    registry.register_factory(HopscotchInjector, HopscotchInjector)
 
     # Create ComponentLookup
     lookup = ComponentLookup(container=container)
 
-    # Try to resolve component with typo - should raise ComponentNotFoundError
+    # Try to resolve non-existent component - should raise ComponentNotFoundError
     context: Mapping[str, Any] = {}
     with pytest.raises(ComponentNotFoundError) as exc_info:
-        lookup("Buton", context)  # Typo: missing 't'
+        lookup("UnknownComponent", context)
 
-    # Verify error message includes suggestions
+    # Verify error message includes component name
     error_msg = str(exc_info.value)
-    assert "Buton" in error_msg
-    assert "Button" in error_msg  # Should suggest similar name
+    assert "UnknownComponent" in error_msg
 
 
 def test_resolve_component_with_container_dependencies():
@@ -233,9 +240,8 @@ def test_resolve_component_with_container_dependencies():
     name_registry.register("Dependent", DependentComponent)
     registry.register_value(ComponentNameRegistry, name_registry)
 
-    # Register KeywordInjector
-    injector = KeywordInjector(container=container)
-    registry.register_value(KeywordInjector, injector)
+    # Register HopscotchInjector factory
+    registry.register_factory(HopscotchInjector, HopscotchInjector)
 
     # Create ComponentLookup
     lookup = ComponentLookup(container=container)
@@ -262,9 +268,8 @@ def test_async_component_without_async_injector():
     name_registry.register("Alert", AsyncAlertComponent)
     registry.register_value(ComponentNameRegistry, name_registry)
 
-    # Register ONLY KeywordInjector (not async)
-    injector = KeywordInjector(container=container)
-    registry.register_value(KeywordInjector, injector)
+    # Register ONLY HopscotchInjector (not async)
+    registry.register_factory(HopscotchInjector, HopscotchInjector)
 
     # Create ComponentLookup
     lookup = ComponentLookup(container=container)

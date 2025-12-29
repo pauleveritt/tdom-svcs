@@ -277,7 +277,7 @@ No visual assets provided.
 - Located at /Users/pauleveritt/projects/t-strings/tdom-svcs/src/tdom_svcs/services/component_lookup/component_lookup.py
 - Uses ComponentNameRegistry.get_type() for string->type resolution
 - Uses KeywordInjector or KeywordAsyncInjector for instance construction
-- Provides helpful error messages with suggestions via difflib
+- Provides error messages when component not found
 - Already integrated with tdom processor
 
 **tdom-svcs module structure**

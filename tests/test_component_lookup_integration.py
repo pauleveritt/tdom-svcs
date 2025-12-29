@@ -15,7 +15,7 @@ import pytest
 import svcs
 from svcs_di import Inject
 from svcs_di.injectors.decorators import injectable
-from svcs_di.injectors.keyword import KeywordAsyncInjector, KeywordInjector
+from svcs_di.injectors.locator import HopscotchAsyncInjector, HopscotchInjector
 
 from tdom_svcs import ComponentNameRegistry, scan_components
 from tdom_svcs.services.component_lookup import (
@@ -51,8 +51,8 @@ class ScannedButton:
 class ComponentWithInjection:
     """Component with Inject[] dependencies from container."""
 
+    db: Inject[DatabaseService]  # Injected from container
     title: str = "Default Title"  # Default value so it's optional
-    db: Inject[DatabaseService] = None  # Injected from container
 
     def __call__(self) -> str:
         data = self.db.get_data()
@@ -104,8 +104,7 @@ def test_component_lookup_resolves_scanned_component_by_name():
 
     # Setup ComponentNameRegistry and injector in container
     registry.register_value(ComponentNameRegistry, component_registry)
-    injector = KeywordInjector(container=container)
-    registry.register_value(KeywordInjector, injector)
+    registry.register_factory(HopscotchInjector, HopscotchInjector)
 
     # Create ComponentLookup
     lookup = ComponentLookup(container=container)
@@ -133,8 +132,7 @@ def test_two_stage_resolution_name_to_type_to_instance():
 
     # Setup container dependencies
     registry.register_value(ComponentNameRegistry, component_registry)
-    injector = KeywordInjector(container=container)
-    registry.register_value(KeywordInjector, injector)
+    registry.register_factory(HopscotchInjector, HopscotchInjector)
 
     # Create ComponentLookup
     lookup = ComponentLookup(container=container)
@@ -169,8 +167,7 @@ def test_component_with_inject_dependencies_gets_injected():
 
     # Setup container dependencies
     registry.register_value(ComponentNameRegistry, component_registry)
-    injector = KeywordInjector(container=container)
-    registry.register_value(KeywordInjector, injector)
+    registry.register_factory(HopscotchInjector, HopscotchInjector)
 
     # Create ComponentLookup
     lookup = ComponentLookup(container=container)
@@ -202,8 +199,7 @@ def test_component_with_resource_metadata_resolved():
 
     # Setup container dependencies
     registry.register_value(ComponentNameRegistry, component_registry)
-    injector = KeywordInjector(container=container)
-    registry.register_value(KeywordInjector, injector)
+    registry.register_factory(HopscotchInjector, HopscotchInjector)
 
     # Verify component is registered by string name (regardless of resource metadata)
     assert component_registry.get_type("ResourceBasedComponent") is ResourceBasedComponent
@@ -234,8 +230,7 @@ def test_component_with_location_metadata_resolved():
 
     # Setup container dependencies
     registry.register_value(ComponentNameRegistry, component_registry)
-    injector = KeywordInjector(container=container)
-    registry.register_value(KeywordInjector, injector)
+    registry.register_factory(HopscotchInjector, HopscotchInjector)
 
     # Verify component is registered by string name (regardless of location metadata)
     assert component_registry.get_type("LocationBasedComponent") is LocationBasedComponent
@@ -267,8 +262,7 @@ def test_error_handling_when_component_name_not_found():
 
     # Setup container dependencies
     registry.register_value(ComponentNameRegistry, component_registry)
-    injector = KeywordInjector(container=container)
-    registry.register_value(KeywordInjector, injector)
+    registry.register_factory(HopscotchInjector, HopscotchInjector)
 
     # Create ComponentLookup
     lookup = ComponentLookup(container=container)
@@ -283,8 +277,8 @@ def test_error_handling_when_component_name_not_found():
     assert "NonExistentComponent" in error_msg
 
 
-def test_suggestions_mechanism_works_with_scanned_components():
-    """Test suggestions mechanism works with scanned components."""
+def test_error_raised_for_unknown_scanned_component():
+    """Test ComponentNotFoundError raised for unknown component."""
     # Setup registries and container
     registry = svcs.Registry()
     component_registry = ComponentNameRegistry()
@@ -295,33 +289,28 @@ def test_suggestions_mechanism_works_with_scanned_components():
 
     # Setup container dependencies
     registry.register_value(ComponentNameRegistry, component_registry)
-    injector = KeywordInjector(container=container)
-    registry.register_value(KeywordInjector, injector)
+    registry.register_factory(HopscotchInjector, HopscotchInjector)
 
     # Create ComponentLookup
     lookup = ComponentLookup(container=container)
 
-    # Try to resolve component with typo
+    # Try to resolve non-existent component
     context = {}
     with pytest.raises(ComponentNotFoundError) as exc_info:
-        lookup("ScannedButon", context)  # Typo: missing 't'
+        lookup("NonExistentComponent", context)
 
-    # Verify error message includes suggestions
+    # Verify error message includes component name
     error_msg = str(exc_info.value)
-    assert "ScannedButon" in error_msg
-    # Should suggest the correct component name
-    assert "ScannedButton" in error_msg
+    assert "NonExistentComponent" in error_msg
 
 
 def test_async_component_with_async_call_method():
     """
     Test async component where __call__ is async.
 
-    Note: ComponentLookup checks if the component_type itself is a coroutine function,
-    not if its __call__ method is async. For dataclasses with async __call__,
-    the type itself is not async, so it uses the sync injector.
-    This test verifies that async components with async __call__ still work,
-    they just use the sync injector path.
+    ComponentLookup now properly detects async __call__ methods and uses
+    HopscotchAsyncInjector for async components. The result is a coroutine
+    that needs to be awaited to get the component instance.
     """
     # Setup registries and container
     registry = svcs.Registry()
@@ -331,26 +320,19 @@ def test_async_component_with_async_call_method():
     # Scan this test module
     scan_components(registry, component_registry, __name__)
 
-    # Setup container dependencies with SYNC injector (not async)
-    # because ComponentLookup checks if component_type is async, not __call__
+    # Setup container dependencies with BOTH sync and async injectors
     registry.register_value(ComponentNameRegistry, component_registry)
-    injector = KeywordInjector(container=container)
-    registry.register_value(KeywordInjector, injector)
+    registry.register_factory(HopscotchInjector, HopscotchInjector)
+    registry.register_factory(HopscotchAsyncInjector, HopscotchAsyncInjector)
 
     # Create ComponentLookup
     lookup = ComponentLookup(container=container)
 
-    # Resolve component - will use sync path because class itself is not async
+    # Resolve component - will use async path because __call__ is async
     context = {}
     result = lookup("AsyncScannedComponent", context)
 
-    # Result is the component instance (not a coroutine)
-    # The component has an async __call__ method, but that's checked later
-    assert result is not None
-    assert isinstance(result, AsyncScannedComponent)
-
-    # The component's __call__ method is async, so calling it returns a coroutine
+    # Result is a coroutine (because ComponentLookup detected async __call__)
     import inspect
-    coro = result()
-    assert inspect.iscoroutine(coro)
-    coro.close()
+    assert inspect.iscoroutine(result)
+    result.close()

@@ -13,7 +13,7 @@ from dataclasses import dataclass
 import svcs
 from svcs_di import Inject
 from svcs_di.injectors.decorators import injectable
-from svcs_di.injectors.keyword import KeywordInjector
+from svcs_di.injectors.locator import HopscotchInjector
 
 from tdom_svcs import ComponentNameRegistry, scan_components
 from tdom_svcs.services.component_lookup import ComponentLookup
@@ -58,8 +58,8 @@ class CustomerDashboard:
     meaning it can be resolved differently based on the context.
     """
 
-    user: Inject[UserService] = None
-    analytics: Inject[AnalyticsService] = None
+    user: Inject[UserService]
+    analytics: Inject[AnalyticsService]
 
     def __call__(self) -> str:
         """Render customer dashboard."""
@@ -83,7 +83,7 @@ class AdminDashboard:
     providing different functionality for admins.
     """
 
-    analytics: Inject[AnalyticsService] = None
+    analytics: Inject[AnalyticsService]
 
     def __call__(self) -> str:
         """Render admin dashboard."""
@@ -116,8 +116,7 @@ def setup_application():
     # Setup container
     container = svcs.Container(registry)
     registry.register_value(ComponentNameRegistry, component_registry)
-    injector = KeywordInjector(container=container)
-    registry.register_value(KeywordInjector, injector)
+    registry.register_factory(HopscotchInjector, HopscotchInjector)
 
     # Create ComponentLookup
     lookup = ComponentLookup(container=container)

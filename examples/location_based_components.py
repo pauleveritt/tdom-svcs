@@ -14,7 +14,7 @@ from pathlib import PurePath
 import svcs
 from svcs_di import Inject
 from svcs_di.injectors.decorators import injectable
-from svcs_di.injectors.keyword import KeywordInjector
+from svcs_di.injectors.locator import HopscotchInjector
 
 from tdom_svcs import ComponentNameRegistry, scan_components
 from tdom_svcs.services.component_lookup import ComponentLookup
@@ -49,7 +49,7 @@ class AdminPanel:
     meaning it's intended for admin routes only.
     """
 
-    auth: Inject[AuthService] = None
+    auth: Inject[AuthService]
 
     def __call__(self) -> str:
         """Render admin panel."""
@@ -80,7 +80,7 @@ class UserManagement:
     nested route handling.
     """
 
-    auth: Inject[AuthService] = None
+    auth: Inject[AuthService]
 
     def __call__(self) -> str:
         """Render user management."""
@@ -105,7 +105,7 @@ class HomePage:
     This demonstrates location-based registration for the root path.
     """
 
-    content: Inject[ContentService] = None
+    content: Inject[ContentService]
 
     def __call__(self) -> str:
         """Render home page."""
@@ -136,8 +136,7 @@ def setup_application():
     # Setup container
     container = svcs.Container(registry)
     registry.register_value(ComponentNameRegistry, component_registry)
-    injector = KeywordInjector(container=container)
-    registry.register_value(KeywordInjector, injector)
+    registry.register_factory(HopscotchInjector, HopscotchInjector)
 
     # Create ComponentLookup
     lookup = ComponentLookup(container=container)

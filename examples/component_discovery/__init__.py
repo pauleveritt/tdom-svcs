@@ -1,0 +1,1 @@
+"""Component discovery example package."""

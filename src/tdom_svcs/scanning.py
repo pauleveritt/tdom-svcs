@@ -101,11 +101,11 @@ The decorator supports several usage patterns:
         title: str
         content: str
 
-    # Apply decorator programmatically
-    Card = injectable(Card)
+    # Apply decorator programmatically (no reassignment needed)
+    injectable(Card)
 
-    # Or with parameters
-    CustomerCard = injectable(Card, resource=CustomerContext)
+    # Or with parameters (using decorator pattern)
+    Card = injectable(resource=CustomerContext)(Card)
 
 Inject[] Parameter Usage
 ------------------------
@@ -292,7 +292,7 @@ Complete Example
     import svcs
     from svcs_di import Inject
     from svcs_di.injectors.decorators import injectable
-    from svcs_di.injectors.keyword import KeywordInjector
+    from svcs_di.injectors.locator import HopscotchInjector
     from tdom_svcs import ComponentNameRegistry, scan_components
     from tdom_svcs.services.component_lookup import ComponentLookup
 
@@ -327,8 +327,7 @@ Complete Example
         # Setup container
         container = svcs.Container(registry)
         registry.register_value(ComponentNameRegistry, component_registry)
-        injector = KeywordInjector(container=container)
-        registry.register_value(KeywordInjector, injector)
+        registry.register_factory(HopscotchInjector, HopscotchInjector)
 
         # Create lookup
         lookup = ComponentLookup(container=container)
@@ -470,9 +469,22 @@ def scan_components(
 
     # Step 4: Register each discovered class to ComponentNameRegistry by string name
     for cls, metadata in decorated_items:
+        # Validate it's a class (should always be true due to @injectable validation)
+        if not isinstance(cls, type):
+            log.warning(
+                f"Skipping non-class decorated item: {cls}. "
+                f"Only classes can be registered by name."
+            )
+            continue
+
         # Use class.__name__ as the string name (no override mechanism)
         name = cls.__name__
-        component_name_registry.register(name, cls)
-        log.debug(
-            f"Registered component '{name}' -> {cls.__module__}.{cls.__qualname__}"
-        )
+        try:
+            component_name_registry.register(name, cls)
+            log.debug(
+                f"Registered component '{name}' -> {cls.__module__}.{cls.__qualname__}"
+            )
+        except TypeError as e:
+            # ComponentNameRegistry validation failed
+            log.warning(f"Failed to register '{name}': {e}")
+            continue

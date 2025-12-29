@@ -114,7 +114,7 @@ Total Tasks: 4 Task Groups
     - Test component with resource metadata resolved in correct context
     - Test component with location metadata resolved at correct location
     - Test error handling when component name not found
-    - Test suggestions mechanism works with scanned components
+    - Test error raised for unknown scanned component
     - Location: `/Users/pauleveritt/projects/t-strings/tdom-svcs/tests/test_component_lookup_integration.py`
   - [x] 3.2 Verify ComponentLookup workflow
     - No code changes needed (ComponentLookup already uses ComponentNameRegistry.get_type())
@@ -142,7 +142,7 @@ Total Tasks: 4 Task Groups
 - Two-stage resolution works: name->type->instance
 - Components with Inject[] dependencies get injected correctly
 - Resource and location-based components resolved in correct contexts
-- Error messages include suggestions from ComponentNameRegistry
+- Error raised appropriately when component not found
 
 ### Testing and Documentation
 
@@ -232,7 +232,7 @@ Recommended implementation sequence:
 **Error Handling Philosophy:**
 - Fail fast: Package not found, decorator on function
 - Warn and continue: Individual module import errors during scanning
-- Helpful suggestions: ComponentLookup already provides fuzzy matching
+- Clear error messages: ComponentLookup provides clear errors when component not found
 
 **Thread Safety:**
 - ComponentNameRegistry uses threading.Lock (already implemented)

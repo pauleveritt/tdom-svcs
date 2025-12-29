@@ -15,7 +15,7 @@ import pytest
 import svcs
 from svcs_di import Inject
 from svcs_di.injectors.decorators import injectable
-from svcs_di.injectors.keyword import KeywordInjector
+from svcs_di.injectors.locator import HopscotchInjector
 
 from tdom_svcs import ComponentNameRegistry, scan_components
 from tdom_svcs.services.component_lookup import ComponentLookup
@@ -35,9 +35,9 @@ class ThreadTestComponent:
 class MultiInjectionComponent:
     """Component with multiple injected dependencies."""
 
-    service_a: Inject[str] = None
-    service_b: Inject[int] = None
-    service_c: Inject[float] = None
+    service_a: Inject[str]
+    service_b: Inject[int]
+    service_c: Inject[float]
     regular_param: str = "default"
 
 
@@ -150,8 +150,7 @@ def test_component_with_multiple_inject_dependencies():
 
     # Setup ComponentLookup
     registry.register_value(ComponentNameRegistry, component_registry)
-    injector = KeywordInjector(container=container)
-    registry.register_value(KeywordInjector, injector)
+    registry.register_factory(HopscotchInjector, HopscotchInjector)
     lookup = ComponentLookup(container=container)
 
     # Resolve component with multiple injected dependencies

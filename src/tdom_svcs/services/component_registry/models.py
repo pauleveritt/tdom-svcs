@@ -5,36 +5,45 @@ from typing import Protocol
 
 class ComponentNameRegistryProtocol(Protocol):
     """
-    Protocol for mapping component string names to type objects.
+    Protocol for mapping component string names to class types.
 
-    This service maintains a mapping that allows components to be resolved by
+    This service maintains a mapping that allows class components to be resolved by
     their string names. The registry is used by ComponentLookup to resolve
-    component names from tdom templates to actual component types that can be
+    component names from tdom templates to actual component class types that can be
     instantiated via dependency injection.
+
+    IMPORTANT: Only class components can be registered by string name. Function
+    components cannot be registered (they can still use Inject[] when called directly).
     """
 
     def register(self, name: str, component_type: type) -> None:
         """
-        Register a component type under a string name.
+        Register a component class type under a string name.
+
+        Only class types can be registered by string name. Function components
+        cannot be registered (but can still use Inject[] when called directly).
 
         If a component with the same name is already registered, it will be
         overwritten with the new type.
 
         Args:
             name: The string name to register the component under
-            component_type: The component type (class or callable) to register
+            component_type: The component class type (must be a class)
+
+        Raises:
+            TypeError: If component_type is not a class
         """
         ...
 
     def get_type(self, name: str) -> type | None:
         """
-        Retrieve a component type by its registered name.
+        Retrieve a component class type by its registered name.
 
         Args:
             name: The string name of the component to look up
 
         Returns:
-            The component type if found, None otherwise
+            The component class type if found, None otherwise
         """
         ...
 

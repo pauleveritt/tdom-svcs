@@ -142,7 +142,7 @@ The 25 tests specific to this feature all pass:
 - test_component_with_resource_metadata_resolved ✅
 - test_component_with_location_metadata_resolved ✅
 - test_error_handling_when_component_name_not_found ✅
-- test_suggestions_mechanism_works_with_scanned_components ✅
+- test_error_raised_for_unknown_scanned_component ✅
 - test_async_component_with_async_call_method ✅
 
 **test_component_discovery_edge_cases.py (9 tests):**
@@ -226,7 +226,7 @@ All acceptance criteria from the spec have been met:
 ✅ Two-stage resolution works: name->type->instance
 ✅ Components with Inject[] dependencies get injected correctly
 ✅ Resource and location-based components resolved in correct contexts
-✅ Error messages include suggestions from ComponentNameRegistry
+✅ Error raised appropriately when component not found
 
 ### From Task Group 4 (Testing and Documentation)
 ✅ All feature-specific tests pass (25 tests total)

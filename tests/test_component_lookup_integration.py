@@ -1,0 +1,356 @@
+"""
+Integration tests for ComponentLookup with scan_components().
+
+This module tests the end-to-end workflow where @injectable decorated
+components are discovered via scan_components() and then resolved via
+ComponentLookup service. This tests the complete two-stage resolution:
+1. String name -> component type (via ComponentNameRegistry)
+2. Component type -> component instance (via svcs container and injector)
+"""
+
+from dataclasses import dataclass
+from pathlib import PurePath
+
+import pytest
+import svcs
+from svcs_di import Inject
+from svcs_di.injectors.decorators import injectable
+from svcs_di.injectors.keyword import KeywordAsyncInjector, KeywordInjector
+
+from tdom_svcs import ComponentNameRegistry, scan_components
+from tdom_svcs.services.component_lookup import (
+    ComponentLookup,
+    ComponentNotFoundError,
+)
+
+
+# Service fixture - used for dependency injection tests
+class DatabaseService:
+    """Mock database service for testing dependency injection."""
+
+    def get_data(self) -> str:
+        return "Data from DB"
+
+
+# Test fixtures - injectable components for scanning
+@injectable
+@dataclass
+class ScannedButton:
+    """Simple component discovered by scanning."""
+
+    label: str = "Click"
+    disabled: bool = False
+
+    def __call__(self) -> str:
+        disabled_attr = " disabled" if self.disabled else ""
+        return f"<button{disabled_attr}>{self.label}</button>"
+
+
+@injectable
+@dataclass
+class ComponentWithInjection:
+    """Component with Inject[] dependencies from container."""
+
+    title: str = "Default Title"  # Default value so it's optional
+    db: Inject[DatabaseService] = None  # Injected from container
+
+    def __call__(self) -> str:
+        data = self.db.get_data()
+        return f"<div><h1>{self.title}</h1><p>{data}</p></div>"
+
+
+@injectable(resource=str)
+@dataclass
+class ResourceBasedComponent:
+    """Component registered with resource metadata."""
+
+    message: str = "Resource component"
+
+    def __call__(self) -> str:
+        return f"<p>{self.message}</p>"
+
+
+@injectable(location=PurePath("/admin"))
+@dataclass
+class LocationBasedComponent:
+    """Component registered with location metadata."""
+
+    path: str = "/admin"
+
+    def __call__(self) -> str:
+        return f"<div>Admin at {self.path}</div>"
+
+
+@injectable
+@dataclass
+class AsyncScannedComponent:
+    """Async component discovered by scanning."""
+
+    message: str = "Async"
+
+    async def __call__(self) -> str:
+        return f"<div>{self.message}</div>"
+
+
+def test_component_lookup_resolves_scanned_component_by_name():
+    """Test ComponentLookup resolves scanned components by string name."""
+    # Setup registries and container
+    registry = svcs.Registry()
+    component_registry = ComponentNameRegistry()
+    container = svcs.Container(registry)
+
+    # Scan this test module for @injectable components
+    scan_components(registry, component_registry, __name__)
+
+    # Setup ComponentNameRegistry and injector in container
+    registry.register_value(ComponentNameRegistry, component_registry)
+    injector = KeywordInjector(container=container)
+    registry.register_value(KeywordInjector, injector)
+
+    # Create ComponentLookup
+    lookup = ComponentLookup(container=container)
+
+    # Resolve scanned component by string name
+    context = {}
+    component = lookup("ScannedButton", context)
+
+    # Verify successful resolution
+    assert component is not None
+    assert isinstance(component, ScannedButton)
+    assert component.label == "Click"
+    assert component.disabled is False
+
+
+def test_two_stage_resolution_name_to_type_to_instance():
+    """Test two-stage resolution: name->type (ComponentNameRegistry), type->instance (svcs)."""
+    # Setup registries and container
+    registry = svcs.Registry()
+    component_registry = ComponentNameRegistry()
+    container = svcs.Container(registry)
+
+    # Scan this test module
+    scan_components(registry, component_registry, __name__)
+
+    # Setup container dependencies
+    registry.register_value(ComponentNameRegistry, component_registry)
+    injector = KeywordInjector(container=container)
+    registry.register_value(KeywordInjector, injector)
+
+    # Create ComponentLookup
+    lookup = ComponentLookup(container=container)
+
+    # Stage 1: ComponentLookup uses ComponentNameRegistry to resolve name->type
+    component_type = component_registry.get_type("ScannedButton")
+    assert component_type is ScannedButton
+
+    # Stage 2: ComponentLookup uses injector to construct type->instance
+    context = {}
+    component = lookup("ScannedButton", context)
+    assert isinstance(component, ScannedButton)
+
+    # Verify this is a complete end-to-end resolution
+    assert component is not None
+    assert component.label == "Click"
+
+
+def test_component_with_inject_dependencies_gets_injected():
+    """Test component with Inject[] dependencies gets injected correctly."""
+    # Setup registries and container
+    registry = svcs.Registry()
+    component_registry = ComponentNameRegistry()
+    container = svcs.Container(registry)
+
+    # Register DatabaseService in container for injection
+    db_service = DatabaseService()
+    registry.register_value(DatabaseService, db_service)
+
+    # Scan this test module
+    scan_components(registry, component_registry, __name__)
+
+    # Setup container dependencies
+    registry.register_value(ComponentNameRegistry, component_registry)
+    injector = KeywordInjector(container=container)
+    registry.register_value(KeywordInjector, injector)
+
+    # Create ComponentLookup
+    lookup = ComponentLookup(container=container)
+
+    # Resolve component - db should be injected from container
+    context = {}
+    component = lookup("ComponentWithInjection", context)
+
+    # Verify injection worked
+    assert component is not None
+    assert isinstance(component, ComponentWithInjection)
+    assert component.db is db_service
+    assert component.db.get_data() == "Data from DB"
+    # Verify the component works end-to-end
+    result = component()
+    assert "Default Title" in result
+    assert "Data from DB" in result
+
+
+def test_component_with_resource_metadata_resolved():
+    """Test component with resource metadata resolved in correct context."""
+    # Setup registries and container
+    registry = svcs.Registry()
+    component_registry = ComponentNameRegistry()
+    container = svcs.Container(registry)
+
+    # Scan this test module
+    scan_components(registry, component_registry, __name__)
+
+    # Setup container dependencies
+    registry.register_value(ComponentNameRegistry, component_registry)
+    injector = KeywordInjector(container=container)
+    registry.register_value(KeywordInjector, injector)
+
+    # Verify component is registered by string name (regardless of resource metadata)
+    assert component_registry.get_type("ResourceBasedComponent") is ResourceBasedComponent
+
+    # Create ComponentLookup
+    lookup = ComponentLookup(container=container)
+
+    # Resolve component by name
+    context = {}
+    component = lookup("ResourceBasedComponent", context)
+
+    # Verify component was resolved
+    # Note: Resource-based resolution is handled by svcs container
+    # ComponentLookup just ensures the component is discoverable by name
+    assert component is not None
+    assert isinstance(component, ResourceBasedComponent)
+
+
+def test_component_with_location_metadata_resolved():
+    """Test component with location metadata resolved at correct location."""
+    # Setup registries and container
+    registry = svcs.Registry()
+    component_registry = ComponentNameRegistry()
+    container = svcs.Container(registry)
+
+    # Scan this test module
+    scan_components(registry, component_registry, __name__)
+
+    # Setup container dependencies
+    registry.register_value(ComponentNameRegistry, component_registry)
+    injector = KeywordInjector(container=container)
+    registry.register_value(KeywordInjector, injector)
+
+    # Verify component is registered by string name (regardless of location metadata)
+    assert component_registry.get_type("LocationBasedComponent") is LocationBasedComponent
+
+    # Create ComponentLookup
+    lookup = ComponentLookup(container=container)
+
+    # Resolve component by name
+    context = {}
+    component = lookup("LocationBasedComponent", context)
+
+    # Verify component was resolved
+    # Note: Location-based resolution is handled by svcs container
+    # ComponentLookup just ensures the component is discoverable by name
+    assert component is not None
+    assert isinstance(component, LocationBasedComponent)
+    assert component.path == "/admin"
+
+
+def test_error_handling_when_component_name_not_found():
+    """Test error handling when component name not found."""
+    # Setup registries and container
+    registry = svcs.Registry()
+    component_registry = ComponentNameRegistry()
+    container = svcs.Container(registry)
+
+    # Scan this test module
+    scan_components(registry, component_registry, __name__)
+
+    # Setup container dependencies
+    registry.register_value(ComponentNameRegistry, component_registry)
+    injector = KeywordInjector(container=container)
+    registry.register_value(KeywordInjector, injector)
+
+    # Create ComponentLookup
+    lookup = ComponentLookup(container=container)
+
+    # Try to resolve non-existent component
+    context = {}
+    with pytest.raises(ComponentNotFoundError) as exc_info:
+        lookup("NonExistentComponent", context)
+
+    # Verify error message
+    error_msg = str(exc_info.value)
+    assert "NonExistentComponent" in error_msg
+
+
+def test_suggestions_mechanism_works_with_scanned_components():
+    """Test suggestions mechanism works with scanned components."""
+    # Setup registries and container
+    registry = svcs.Registry()
+    component_registry = ComponentNameRegistry()
+    container = svcs.Container(registry)
+
+    # Scan this test module - registers ScannedButton, ComponentWithInjection, etc.
+    scan_components(registry, component_registry, __name__)
+
+    # Setup container dependencies
+    registry.register_value(ComponentNameRegistry, component_registry)
+    injector = KeywordInjector(container=container)
+    registry.register_value(KeywordInjector, injector)
+
+    # Create ComponentLookup
+    lookup = ComponentLookup(container=container)
+
+    # Try to resolve component with typo
+    context = {}
+    with pytest.raises(ComponentNotFoundError) as exc_info:
+        lookup("ScannedButon", context)  # Typo: missing 't'
+
+    # Verify error message includes suggestions
+    error_msg = str(exc_info.value)
+    assert "ScannedButon" in error_msg
+    # Should suggest the correct component name
+    assert "ScannedButton" in error_msg
+
+
+def test_async_component_with_async_call_method():
+    """
+    Test async component where __call__ is async.
+
+    Note: ComponentLookup checks if the component_type itself is a coroutine function,
+    not if its __call__ method is async. For dataclasses with async __call__,
+    the type itself is not async, so it uses the sync injector.
+    This test verifies that async components with async __call__ still work,
+    they just use the sync injector path.
+    """
+    # Setup registries and container
+    registry = svcs.Registry()
+    component_registry = ComponentNameRegistry()
+    container = svcs.Container(registry)
+
+    # Scan this test module
+    scan_components(registry, component_registry, __name__)
+
+    # Setup container dependencies with SYNC injector (not async)
+    # because ComponentLookup checks if component_type is async, not __call__
+    registry.register_value(ComponentNameRegistry, component_registry)
+    injector = KeywordInjector(container=container)
+    registry.register_value(KeywordInjector, injector)
+
+    # Create ComponentLookup
+    lookup = ComponentLookup(container=container)
+
+    # Resolve component - will use sync path because class itself is not async
+    context = {}
+    result = lookup("AsyncScannedComponent", context)
+
+    # Result is the component instance (not a coroutine)
+    # The component has an async __call__ method, but that's checked later
+    assert result is not None
+    assert isinstance(result, AsyncScannedComponent)
+
+    # The component's __call__ method is async, so calling it returns a coroutine
+    import inspect
+    coro = result()
+    assert inspect.iscoroutine(coro)
+    coro.close()

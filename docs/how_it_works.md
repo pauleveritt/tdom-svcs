@@ -223,16 +223,19 @@ unknown = registry.get_type("Unknown")  # Returns: None
 all_names = registry.get_all_names()  # Returns: ["Button", "Card"]
 ```
 
+For more details, see {doc}`services/component_registry`.
+
 ### ComponentLookup
 
 **Purpose:** Bridge between string names and component instances with full dependency injection.
 
 **Workflow:**
 1. Look up component class type by name (ComponentNameRegistry)
-2. Detect if component is async (check `__call__` method)
-3. Get appropriate injector from container (sync or async)
-4. Construct component instance with dependencies injected
-5. Return the constructed component
+2. Execute pre-resolution middleware (if registered)
+3. Detect if component is async (check `__call__` method)
+4. Get appropriate injector from container (sync or async)
+5. Construct component instance with dependencies injected
+6. Return the constructed component
 
 **Usage:**
 ```python
@@ -263,6 +266,8 @@ except RegistryNotSetupError:
     # ComponentNameRegistry not registered
     pass
 ```
+
+For more details, see {doc}`services/component_lookup`.
 
 ### scan_components()
 
@@ -404,6 +409,8 @@ class AdminDashboard:
 # HopscotchInjector selects correct implementation
 ```
 
+See [examples/override_resource.py](../examples/override_resource.py) for a complete working example.
+
 ### Location-Based Resolution
 
 Register components for specific URL paths:
@@ -434,6 +441,8 @@ class AdminPanel:
 # HopscotchInjector resolves based on current location
 ```
 
+See [examples/override_location.py](../examples/override_location.py) for a complete working example.
+
 ### Async Components
 
 Components with async `__call__` methods are automatically detected:
@@ -454,6 +463,348 @@ result = lookup("AsyncAlert", context={"message": "Warning"})
 component = await result
 output = await component()  # If component() is also async
 ```
+
+## Middleware System
+
+The **MiddlewareManager** service enables lifecycle hooks for components. Middleware can modify props, validate data, add context, log usage, or halt execution.
+
+### What is Middleware?
+
+Middleware are stateless callables that execute during component resolution. They provide a clean way to handle cross-cutting concerns without cluttering component logic.
+
+**Common use cases:**
+- Logging component usage
+- Validating props before component construction
+- Adding authentication/authorization checks
+- Enriching props with contextual data
+- Error handling and recovery
+
+### Basic Middleware Pattern
+
+```text
+from dataclasses import dataclass
+from tdom_svcs.services.middleware import MiddlewareManager
+
+@dataclass
+class LoggingMiddleware:
+    priority: int = -10  # Lower numbers execute first
+
+    def __call__(self, component, props, context):
+        # Log component processing
+        print(f"Processing {component.__name__}")
+        return props  # Continue to next middleware
+
+# Register middleware
+manager = MiddlewareManager()
+manager.register_middleware(LoggingMiddleware())
+
+# Execute middleware chain
+result = manager.execute(Button, {"label": "Click"}, {})
+```
+
+### Middleware Execution Order
+
+Middleware execute in priority order:
+- **-10:** Logging, metrics (observe but don't modify)
+- **-5:** Authentication, authorization
+- **0:** Validation (check requirements)
+- **5:** Data enrichment (add context)
+- **10:** Transformation (final modifications)
+
+### Halting Execution
+
+Middleware can halt the chain by returning `None`:
+
+```text
+@dataclass
+class ValidationMiddleware:
+    priority: int = 0
+
+    def __call__(self, component, props, context):
+        if "required_field" not in props:
+            print("Validation failed")
+            return None  # Halt - no more middleware runs
+        return props  # Continue
+```
+
+### Async Middleware Support
+
+Middleware with async `__call__` are automatically detected:
+
+```text
+@dataclass
+class AsyncAuthMiddleware:
+    priority: int = -5
+
+    async def __call__(self, component, props, context):
+        # Async permission check
+        await check_user_permissions()
+        return props
+
+# Use execute_async() for async middleware
+result = await manager.execute_async(Button, props, context)
+```
+
+For complete documentation and working examples, see {doc}`services/middleware`.
+
+## Component Override Patterns
+
+tdom-svcs supports three patterns for overriding component implementations: global overrides, resource-based overrides, and location-based overrides.
+
+### Global Override Pattern
+
+Override a component everywhere in your application by registering it last:
+
+```text
+# Base component
+@injectable
+@dataclass
+class Button:
+    label: str = "Click"
+
+    def __call__(self) -> str:
+        return f"<button>{self.label}</button>"
+
+# Site-specific override
+@injectable
+@dataclass
+class CustomButton:
+    label: str = "Click"
+    theme: Inject[ThemeService]
+
+    def __call__(self) -> str:
+        color = self.theme.get_brand_color()
+        return f"<button style='color: {color}'>{self.label}</button>"
+
+# Register both - last one wins for global override
+component_registry.register("Button", Button)
+component_registry.register("Button", CustomButton)  # This one is used
+```
+
+See [examples/override_global.py](../examples/override_global.py) for a complete working example showing how to override components at the site level.
+
+### Resource-Based Override Pattern
+
+Use different implementations based on the current resource context (e.g., customer type, tenant):
+
+```text
+# Base implementation
+@injectable
+@dataclass
+class Dashboard:
+    analytics: Inject[AnalyticsService]
+
+    def __call__(self) -> str:
+        return "<div>Generic Dashboard</div>"
+
+# Customer-specific implementation
+@injectable(resource=CustomerContext)
+@dataclass
+class CustomerDashboard:
+    analytics: Inject[AnalyticsService]
+
+    def __call__(self) -> str:
+        return "<div>Customer Dashboard with Limited Features</div>"
+
+# Admin-specific implementation
+@injectable(resource=AdminContext)
+@dataclass
+class AdminDashboard:
+    analytics: Inject[AnalyticsService]
+
+    def __call__(self) -> str:
+        return "<div>Admin Dashboard with Full Access</div>"
+
+# HopscotchInjector selects implementation based on resource context
+```
+
+**Override precedence:** HopscotchInjector selects the most specific match:
+1. Exact resource match (e.g., `CustomerContext`)
+2. Base implementation with no resource
+3. Raises error if no match found
+
+See [examples/override_resource.py](../examples/override_resource.py) for a complete working example of multi-tenancy with resource-based component resolution.
+
+### Location-Based Override Pattern
+
+Use different implementations based on URL path or location:
+
+```text
+# Base page component
+@injectable
+@dataclass
+class PageLayout:
+    content: Inject[ContentService]
+
+    def __call__(self) -> str:
+        return "<div>Standard Page Layout</div>"
+
+# Admin area override
+@injectable(location=PurePath("/admin"))
+@dataclass
+class AdminPageLayout:
+    content: Inject[ContentService]
+    auth: Inject[AuthService]
+
+    def __call__(self) -> str:
+        if not self.auth.is_admin():
+            return "<div>Access Denied</div>"
+        return "<div>Admin Page Layout</div>"
+
+# HopscotchInjector selects implementation based on current location
+```
+
+**Override precedence:** HopscotchInjector matches the most specific path:
+1. Exact location match (e.g., `/admin/users`)
+2. Parent location match (e.g., `/admin`)
+3. Root location match (e.g., `/`)
+4. Base implementation with no location
+
+See [examples/override_location.py](../examples/override_location.py) for a complete working example of URL path-based component resolution.
+
+## Testing Patterns
+
+tdom-svcs follows svcs best practices for testing with fake/mock services.
+
+### Testing with Fakes
+
+Use `container.register_value()` to provide test doubles:
+
+```text
+import svcs
+from tdom_svcs import ComponentNameRegistry, scan_components
+from tdom_svcs.services.component_lookup import ComponentLookup
+
+def test_button_with_fake_database():
+    """Test component with a fake database service."""
+
+    # Create fake service
+    class FakeDatabaseService:
+        def get_button_config(self):
+            return {"color": "red", "size": "large"}
+
+    # Setup container with fake
+    registry = svcs.Registry()
+    component_registry = ComponentNameRegistry()
+
+    registry.register_value(DatabaseService, FakeDatabaseService())
+
+    # Scan and setup components
+    scan_components(registry, component_registry, __name__)
+    registry.register_value(ComponentNameRegistry, component_registry)
+    registry.register_factory(HopscotchInjector, HopscotchInjector)
+
+    def component_lookup_factory(container: svcs.Container) -> ComponentLookup:
+        return ComponentLookup(container=container)
+
+    registry.register_factory(ComponentLookup, component_lookup_factory)
+
+    # Test with fake
+    container = svcs.Container(registry)
+    lookup = container.get(ComponentLookup)
+    button = lookup("Button", context={"label": "Test"})
+    output = button()
+
+    assert "red" in output or "Test" in output
+```
+
+### Testing Middleware
+
+Test middleware in isolation by calling it directly:
+
+```text
+def test_validation_middleware():
+    """Test validation middleware in isolation."""
+
+    @dataclass
+    class ValidationMiddleware:
+        priority: int = 0
+
+        def __call__(self, component, props, context):
+            if "required_field" not in props:
+                return None  # Halt
+            return props  # Continue
+
+    middleware = ValidationMiddleware()
+
+    # Test with valid props
+    result = middleware(Button, {"required_field": "value"}, {})
+    assert result is not None
+    assert result["required_field"] == "value"
+
+    # Test with invalid props
+    result = middleware(Button, {}, {})
+    assert result is None  # Execution halted
+```
+
+### Testing Components
+
+Test components with injected dependencies using fakes:
+
+```text
+def test_user_profile_component():
+    """Test component with multiple injected dependencies."""
+
+    # Create fakes
+    class FakeDatabase:
+        def get_user(self, user_id):
+            return {"name": "Test User", "email": "test@example.com"}
+
+    class FakeCache:
+        def get(self, key):
+            return None
+
+    # Setup container with fakes
+    registry = svcs.Registry()
+    registry.register_value(DatabaseService, FakeDatabase())
+    registry.register_value(CacheService, FakeCache())
+
+    # Register and resolve component
+    component_registry = ComponentNameRegistry()
+    scan_components(registry, component_registry, __name__)
+    # ... setup and test
+```
+
+### Integration Testing
+
+Test end-to-end component resolution:
+
+```text
+def test_component_resolution_integration():
+    """Integration test for complete component resolution flow."""
+
+    # Setup real services (or fakes)
+    registry = svcs.Registry()
+    component_registry = ComponentNameRegistry()
+
+    # Register all services
+    registry.register_value(DatabaseService, DatabaseService())
+    registry.register_value(ThemeService, ThemeService())
+
+    # Scan components
+    scan_components(registry, component_registry, "myapp.components")
+
+    # Setup infrastructure
+    registry.register_value(ComponentNameRegistry, component_registry)
+    registry.register_factory(HopscotchInjector, HopscotchInjector)
+
+    def component_lookup_factory(container: svcs.Container) -> ComponentLookup:
+        return ComponentLookup(container=container)
+
+    registry.register_factory(ComponentLookup, component_lookup_factory)
+
+    # Test resolution
+    container = svcs.Container(registry)
+    lookup = container.get(ComponentLookup)
+
+    button = lookup("Button", context={"label": "Submit"})
+    output = button()
+
+    assert "Submit" in output
+    assert "<button" in output
+```
+
+For complete testing examples, see [examples/middleware/03_testing_with_fakes.py](../examples/middleware/03_testing_with_fakes.py).
 
 ## Complete Setup Example
 
@@ -693,5 +1044,8 @@ tdom-svcs provides a powerful, type-safe way to integrate dependency injection w
 - **Type-safe** with `type[T]` generics and early validation
 - **Flexible** with resource and location-based resolution
 - **Easy setup** with `scan_components()` for automatic discovery
+- **Middleware system** for lifecycle hooks and cross-cutting concerns
+- **Override patterns** for customization (global, resource, location)
+- **Testing patterns** with fakes for isolated unit tests
 
-For more examples, see the `examples/` directory in the repository.
+For more examples, see {doc}`examples` and the `examples/` directory in the repository.

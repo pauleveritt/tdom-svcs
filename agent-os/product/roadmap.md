@@ -16,18 +16,18 @@
    transformation, and error handling during component initialization and rendering phases using dict-like interfaces
    that work with or without svcs/svcs-di. `M`
 
-5. [ ] Testing Utilities and Mock Injection — Create testing helpers for injecting mock services, implement test
+5. [x] Documentation and Examples — Create comprehensive documentation covering basic DI patterns, advanced
+   multi-implementation scenarios, testing strategies, and migration guides from manual service wiring to tdom-svcs.
+   Include real-world examples for multi-tenancy and feature flags. `L`
+
+6. [ ] Testing Utilities and Mock Injection — Create testing helpers for injecting mock services, implement test
    container fixtures, and provide examples of testing components in isolation with mocked dependencies. `S`
 
-10. [ ] Performance Optimization and Caching — Add component resolution caching, optimize injector lookup performance,
-    and implement lazy loading for component dependencies to minimize overhead. `M`
+7. [ ] Performance Optimization and Caching — Add component resolution caching, optimize injector lookup performance,
+   and implement lazy loading for component dependencies to minimize overhead. `M`
 
-11. [ ] Documentation and Examples — Create comprehensive documentation covering basic DI patterns, advanced
-    multi-implementation scenarios, testing strategies, and migration guides from manual service wiring to tdom-svcs.
-    Include real-world examples for multi-tenancy and feature flags. `L`
-
-12. [ ] Developer Experience Tools — Build CLI tools for component discovery validation, dependency graph visualization,
-    and misconfiguration detection to help developers debug DI issues. `M`
+8. [ ] Developer Experience Tools — Build CLI tools for component discovery validation, dependency graph visualization,
+   and misconfiguration detection to help developers debug DI issues. `M`
 
 > Notes
 > - Order items by technical dependencies and product architecture

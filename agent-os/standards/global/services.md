@@ -177,7 +177,7 @@ service = container.get(WelcomeService)
 ```
 ## Creating Services: Directory Structure Pattern
 
-For larger projects with many services, use a structured directory layout, under a `services/` directory:
+For larger projects with many services, use a structured directory layout under a `services/` directory:
 
 ### Directory Structure
 
@@ -185,30 +185,83 @@ For larger projects with many services, use a structured directory layout, under
 services/
 ├── database/
 │   ├── __init__.py          # Export protocol and implementation
-│   ├── models.py            # Protocol definition
-│   └── implementation.py    # Concrete implementation
-├── cache/
+│   ├── types.py             # Protocol definition
+│   └── models.py            # Concrete implementation
+├── clean_body/
 │   ├── __init__.py
-│   ├── models.py
-│   └── redis_impl.py
+│   ├── types.py             # CleanBodyProtocol
+│   └── models.py            # CleanBody implementation
+├── toctree/
+│   ├── __init__.py
+│   ├── models.py            # TocTreeProtocol
+│   ├── toctree.py           # TocTree, TocNode implementations
+│   ├── html_renderer.py     # HTML rendering utilities
+│   └── page_navigation.py   # PageNavigation helpers
 └── ...
 ```
 
-### 1. Define Protocol (models.py)
+**File Naming Conventions**:
 
+1. **`types.py`** - Protocol definitions (interfaces)
+   - Contains `Protocol` classes defining service interfaces
+   - Example: `CleanBodyProtocol`, `DatabaseProtocol`
+   - Use when you want to separate interface from implementation clearly
+
+2. **`models.py`** - Core implementations or protocol definitions
+   - For simple services: Contains both protocol and implementation
+   - For complex services: Contains protocol, while implementations are in separate files
+   - Example: `CleanBody` (simple), `TocTreeProtocol` (complex with separate toctree.py)
+
+3. **Named implementation files** - Specific implementations or helpers
+   - Named descriptively for their purpose
+   - Example: `toctree.py`, `html_renderer.py`, `page_navigation.py`
+   - Use when service has multiple related implementations or helpers
+
+**Two Patterns**:
+
+**Pattern A: Simple Service (types.py + models.py)**
+```
+clean_body/
+├── __init__.py      # Export CleanBodyProtocol and CleanBody
+├── types.py         # CleanBodyProtocol definition
+└── models.py        # CleanBody implementation
+```
+
+**Pattern B: Complex Service (models.py + multiple implementation files)**
+```
+toctree/
+├── __init__.py           # Export all public types
+├── models.py             # TocTreeProtocol
+├── toctree.py            # TocTree, TocNode main implementation
+├── html_renderer.py      # HTML rendering helpers
+└── page_navigation.py    # Navigation helpers
+```
+
+### 1. Define Protocol (types.py or models.py)
+
+**Option A: In types.py (separate interface file)**
 ```python
 from typing import Protocol, runtime_checkable
 
 @runtime_checkable  # Allows isinstance() checks
-class DatabaseProtocol(Protocol):
-    """Protocol defining database service interface."""
+class CleanBodyProtocol(Protocol):
+    """Protocol for cleaning HTML body content."""
 
-    def connect(self) -> None:
-        """Establish database connection."""
+    def clean(self, body: str) -> str:
+        """Remove unwanted elements from HTML body."""
         ...
+```
 
-    def query(self, sql: str) -> list[dict]:
-        """Execute query and return results."""
+**Option B: In models.py (protocol + implementation together)**
+```python
+from typing import Protocol, runtime_checkable
+
+@runtime_checkable
+class TocTreeProtocol(Protocol):
+    """Protocol for toctree operations."""
+
+    def get_ancestors(self, docname: str) -> list[str]:
+        """Get ancestor documents."""
         ...
 ```
 
@@ -216,124 +269,114 @@ class DatabaseProtocol(Protocol):
 - Use `@runtime_checkable` decorator for runtime type checking
 - Define clear interface with type hints
 - Document expected behavior in docstrings
+- Choose types.py for clear separation, models.py when protocol is simple
 
-### 2. Implement Service (implementation.py)
+### 2. Implement Service (models.py or named file)
 
+**Option A: Simple implementation in models.py**
 ```python
 from dataclasses import dataclass
-from .models import DatabaseProtocol
+from .types import CleanBodyProtocol
 
 @dataclass(frozen=True)
-class PostgresDatabase:
-    """PostgreSQL implementation of DatabaseProtocol."""
+class CleanBody:
+    """Implementation of CleanBodyProtocol."""
 
-    host: str
-    port: int
-    database: str
-
-    def connect(self) -> None:
-        """Establish PostgreSQL connection."""
+    def clean(self, body: str) -> str:
+        """Remove unwanted elements from HTML body."""
         # Implementation here
-        pass
+        return body
+```
 
-    def query(self, sql: str) -> list[dict]:
-        """Execute PostgreSQL query."""
-        # Implementation here
-        return []
+**Option B: Complex implementation in named file (toctree.py)**
+```python
+from dataclasses import dataclass
+from .models import TocTreeProtocol
+
+@dataclass(frozen=True)
+class TocTree:
+    """Main toctree implementation."""
+    # Complex implementation with multiple classes
+    pass
+
+@dataclass(frozen=True)
+class TocNode:
+    """Individual node in toctree."""
+    pass
 ```
 
 **Key points**:
 - Use `@dataclass(frozen=True)` for immutability
 - Implement all protocol methods
 - Keep implementation focused on infrastructure, not business logic
+- For complex services, split into multiple focused files
 
 ### 3. Export from __init__.py
 
+**Simple service:**
 ```python
-from .models import DatabaseProtocol
-from .implementation import PostgresDatabase
+from .types import CleanBodyProtocol
+from .models import CleanBody
 
-__all__ = ["DatabaseProtocol", "PostgresDatabase"]
+__all__ = ["CleanBodyProtocol", "CleanBody"]
+```
+
+**Complex service:**
+```python
+from .models import TocTreeProtocol
+from .toctree import TocTree, TocNode
+from .page_navigation import PageNavigation
+
+__all__ = ["TocTreeProtocol", "TocTree", "TocNode", "PageNavigation"]
 ```
 
 ### 4. Register Service
 
 ```python
 import svcs
-from services.database import DatabaseProtocol, PostgresDatabase
+from services.clean_body import CleanBodyProtocol, CleanBody
 
 # Manual registration
 registry = svcs.Registry()
-registry.register_factory(
-    DatabaseProtocol,
-    lambda: PostgresDatabase(host="prod", port=5432, database="mydb")
-)
+registry.register_factory(CleanBodyProtocol, CleanBody)
 
 # Or with @injectable for auto-discovery
 from svcs_di.injectors.decorators import injectable
 
-@injectable(for_=DatabaseProtocol)
+@injectable(for_=CleanBodyProtocol)
 @dataclass(frozen=True)
-class PostgresDatabase:
+class CleanBody:
     ...
 ```
 
-### 5. Services That Depend on svcs.Container
+## Testing Services: Best Practices
 
-Many services need access to the svcs.Container to resolve other services dynamically. This is a common pattern for adapter/lookup services.
+### Test File Location Convention
 
-**Pattern: Accept svcs.Container in the service**
+Service tests should mirror the service structure under `tests/services/`:
 
-```python
-from dataclasses import dataclass
-from typing import Protocol, runtime_checkable
-import svcs
-
-@runtime_checkable
-class ComponentLookupProtocol(Protocol):
-    """Protocol for services that need container access."""
-
-    def __init__(self, container: svcs.Container) -> None:
-        """
-        Initialize with svcs.Container.
-
-        Args:
-            container: svcs.Container that holds service registrations
-        """
-        ...
-
-    def resolve(self, name: str) -> object | None:
-        """Resolve a service by name."""
-        ...
-
-@dataclass
-class ComponentLookup:
-    """Service that uses container to resolve other services."""
-
-    container: svcs.Container  # Type as svcs.Container, not Any
-
-    def resolve(self, name: str) -> object | None:
-        """Resolve a service dynamically from the container."""
-        try:
-            return self.container.get(SomeService)
-        except svcs.ServiceNotFoundError:
-            return None
+**Pattern A: Simple service with single test file**
+```
+tests/services/
+├── clean_body/
+│   └── test_clean_body.py      # Tests for CleanBody service
+└── database/
+    └── test_database.py        # Tests for database service
 ```
 
-**Key points**:
-- Type the `container` parameter as `svcs.Container`, not `Any`
-- Include this in both the protocol and implementation
-- The container gives access to all registered services
-- Use `container.get(ServiceType)` to resolve dependencies dynamically
-- This pattern is common for adapters, lookups, and orchestrators
+**Pattern B: Complex service with multiple test files**
+```
+tests/services/
+└── toctree/
+    ├── test_toctree.py         # Tests for TocTree/TocNode
+    ├── test_html_renderer.py   # Tests for HTML rendering
+    └── test_page_navigation.py # Tests for PageNavigation
+```
 
-**When to use**:
-- Services that need to resolve dependencies dynamically (not at initialization)
-- Adapter services that bridge between different systems
-- Lookup/registry services that resolve by name or other criteria
-- Orchestrator services that coordinate multiple services
-
-## Testing Services: Best Practices
+**Naming Conventions**:
+- Test directory mirrors service directory name: `tests/services/toctree/` for `src/services/toctree/`
+- Test files mirror implementation files: `test_toctree.py` for `toctree.py`
+- For `models.py` implementations: name test after the service (e.g., `test_clean_body.py` for clean_body service)
 
 ### Principle: Use Fakes, Not Mocks
 

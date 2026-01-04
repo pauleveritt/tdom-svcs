@@ -15,7 +15,6 @@ import pytest
 
 from tdom_svcs.services.middleware import (
     Context,
-    Middleware,
     MiddlewareManager,
     component,
     get_component_middleware,
@@ -51,7 +50,9 @@ class LoggingMiddleware:
         context: Context,
     ) -> dict[str, Any] | None:
         """Log component execution."""
-        comp_name = component.__name__ if hasattr(component, "__name__") else str(component)
+        comp_name = (
+            component.__name__ if hasattr(component, "__name__") else str(component)
+        )
         self.tracker.record(f"global_logging({comp_name})")
         props["logged"] = True
         return props
@@ -71,7 +72,9 @@ class ValidationMiddleware:
         context: Context,
     ) -> dict[str, Any] | None:
         """Validate props."""
-        comp_name = component.__name__ if hasattr(component, "__name__") else str(component)
+        comp_name = (
+            component.__name__ if hasattr(component, "__name__") else str(component)
+        )
         self.tracker.record(f"global_validation({comp_name})")
         # Halt if invalid prop
         if props.get("invalid"):
@@ -95,7 +98,9 @@ class TransformationMiddleware:
         context: Context,
     ) -> dict[str, Any] | None:
         """Transform props."""
-        comp_name = component.__name__ if hasattr(component, "__name__") else str(component)
+        comp_name = (
+            component.__name__ if hasattr(component, "__name__") else str(component)
+        )
         self.tracker.record(f"component_transform({comp_name})")
         props[self.transform_key] = f"transformed_{props.get(self.transform_key, '')}"
         return props
@@ -115,7 +120,9 @@ class AsyncMiddleware:
         context: Context,
     ) -> dict[str, Any] | None:
         """Async middleware execution."""
-        comp_name = component.__name__ if hasattr(component, "__name__") else str(component)
+        comp_name = (
+            component.__name__ if hasattr(component, "__name__") else str(component)
+        )
         # Simulate async work
         await asyncio.sleep(0.001)
         self.tracker.record(f"async_middleware({comp_name})")
@@ -148,7 +155,9 @@ class AssetCollectionMiddleware:
         context: Context,
     ) -> dict[str, Any] | None:
         """Collect assets from context."""
-        comp_name = component.__name__ if hasattr(component, "__name__") else str(component)
+        comp_name = (
+            component.__name__ if hasattr(component, "__name__") else str(component)
+        )
         self.tracker.record(f"asset_collection({comp_name})")
         # Get stateful collector from context
         collector = context.get("asset_collector")
@@ -176,9 +185,7 @@ def test_end_to_end_workflow_with_setup_and_execution() -> None:
     manager = MiddlewareManager()
     manager.register_middleware(LoggingMiddleware(priority=-10, tracker=tracker))
     manager.register_middleware(ValidationMiddleware(priority=0, tracker=tracker))
-    manager.register_middleware(
-        AssetCollectionMiddleware(priority=10, tracker=tracker)
-    )
+    manager.register_middleware(AssetCollectionMiddleware(priority=10, tracker=tracker))
 
     # Step 3: Define components with per-component middleware
     transform_mw = TransformationMiddleware(
@@ -204,8 +211,10 @@ def test_end_to_end_workflow_with_setup_and_execution() -> None:
     assert result_button is not None
     component_mw = get_component_middleware(Button)
     for mw in sorted(component_mw.get("pre_resolution", []), key=lambda m: m.priority):
-        result_button = mw(Button, result_button, context)
-    assert result_button is not None
+        result = mw(Button, result_button, context)
+        assert result is not None
+        # In this test, all middleware is synchronous
+        result_button = cast(dict[str, Any], result)
 
     # Step 5: Execute middleware for function component
     props_heading = {"text": "Welcome"}
@@ -333,9 +342,7 @@ def test_stateful_and_stateless_middleware_together() -> None:
     # Stateless middleware registered in manager
     manager = MiddlewareManager()
     manager.register_middleware(LoggingMiddleware(priority=-10, tracker=tracker))
-    manager.register_middleware(
-        AssetCollectionMiddleware(priority=0, tracker=tracker)
-    )
+    manager.register_middleware(AssetCollectionMiddleware(priority=0, tracker=tracker))
 
     @dataclass
     class TestComponent:
@@ -440,8 +447,10 @@ def test_multiple_components_with_different_middleware() -> None:
     assert result_button is not None
     button_mw = get_component_middleware(Button)
     for mw in sorted(button_mw.get("pre_resolution", []), key=lambda m: m.priority):
-        result_button = mw(Button, result_button, context)
-    assert result_button is not None
+        # In this test, all middleware is synchronous
+        result = mw(Button, result_button, context)
+        assert result is not None
+        result_button = cast(dict[str, Any], result)
 
     # Execute Heading
     props_heading = {"text": "Welcome"}
@@ -449,8 +458,10 @@ def test_multiple_components_with_different_middleware() -> None:
     assert result_heading is not None
     heading_mw = get_component_middleware(Heading)
     for mw in sorted(heading_mw.get("pre_resolution", []), key=lambda m: m.priority):
-        result_heading = mw(Heading, result_heading, context)
-    assert result_heading is not None
+        # In this test, all middleware is synchronous
+        result = mw(Heading, result_heading, context)
+        assert result is not None
+        result_heading = cast(dict[str, Any], result)
 
     # Verify middleware isolation
     assert result_button["label"] == "transformed_Submit"
@@ -550,7 +561,8 @@ def test_lifecycle_phase_transitions() -> None:
 
         assert result_props is not None
 
-        props = result_props
+        # In this test, all middleware is synchronous
+        props = cast(dict[str, Any], result_props)
 
     # Execute post-resolution phase
     for mw in sorted(component_mw.get("post_resolution", []), key=lambda m: m.priority):
@@ -558,7 +570,8 @@ def test_lifecycle_phase_transitions() -> None:
 
         assert result_props is not None
 
-        props = result_props
+        # In this test, all middleware is synchronous
+        props = cast(dict[str, Any], result_props)
 
     # Execute rendering phase
     for mw in sorted(component_mw.get("rendering", []), key=lambda m: m.priority):
@@ -566,7 +579,8 @@ def test_lifecycle_phase_transitions() -> None:
 
         assert result_props is not None
 
-        props = result_props
+        # In this test, all middleware is synchronous
+        props = cast(dict[str, Any], result_props)
 
     # Verify each phase executed independently
     assert pre_tracker.executions == ["global_logging(TestComponent)"]
@@ -614,7 +628,9 @@ def test_middleware_with_context_service_injection() -> None:
             """Use logger service from context."""
             # Context protocol provides dict-like access
             logger = context.get(Logger)  # type: ignore[arg-type]
-            comp_name = component.__name__ if hasattr(component, "__name__") else str(component)
+            comp_name = (
+                component.__name__ if hasattr(component, "__name__") else str(component)
+            )
             self.tracker.record(f"logged_by_{logger.name}({comp_name})")
             props["logger_name"] = logger.name
             return props
@@ -649,6 +665,7 @@ def test_performance_stress_with_many_middleware() -> None:
     manager = MiddlewareManager()
     num_middleware = 50
     for i in range(num_middleware):
+
         @dataclass
         class StressTestMiddleware:
             """Middleware for stress testing."""

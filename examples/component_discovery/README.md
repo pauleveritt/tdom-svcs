@@ -1,39 +1,46 @@
-# Example: Component Discovery and Registration
+# Component Discovery Example
 
-This example demonstrates the complete workflow for automatic component discovery using `@injectable` decorator and `scan_components()` function. It shows advanced scenarios beyond the basic example.
+This example demonstrates automatic component discovery using `@injectable` decorator and direct type-based resolution with HopscotchInjector.
 
 ## Key Concepts
 
-- Multiple components in a package
+- Multiple components with `@injectable` decorator
 - Components with different dependency patterns
-- Mixed regular and injected parameters
-- Automatic scanning and registration
-- ComponentLookup resolution
+- Direct type-based resolution (no strings!)
+- Dependency injection via `Inject[]` type hints
 
 ## What This Example Shows
 
-✅ Multiple component classes in components/ package
-✅ Components with no dependencies (Button)
-✅ Components with one dependency (UserProfile)
-✅ Components with multiple dependencies (AdminPanel)
-✅ Mixing regular parameters with Inject[]
-✅ Automatic discovery via scan_components()
+✅ Component with no dependencies (Button)
+✅ Component with one dependency (UserProfile)
+✅ Component with multiple dependencies (AdminPanel)
+✅ Mixed regular and injected parameters
+✅ Direct type-based component resolution
 
 ## Structure
 
-- `app.py` - Standard setup with scanning
-- `site.py` - Demonstrates resolving different components
-- `components/` - Three example components
+- `app.py` - Setup and component resolution
+- `site.py` - Service registration
+- `components/` - Three example components showing different patterns
 - `services/` - DatabaseService and AuthService
 
 ## Running
 
 ```bash
-python -m examples.component_discovery.site
+uv run python -m examples.component_discovery.app
 ```
 
-## Comparison
+## Pattern
 
-- `basic_tdom_injectable` - Simpler introduction
-- This example - More components, more patterns
-- `resource_based_components` - Adds resource-based resolution
+```python
+# Components are decorated with @injectable
+@injectable
+@dataclass
+class AdminPanel:
+    db: Inject[DatabaseService]
+    auth: Inject[AuthService]
+
+# Resolve directly by type
+container = Container(registry)
+panel = container.get(AdminPanel)  # DI happens automatically!
+```

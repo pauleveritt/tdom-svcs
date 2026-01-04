@@ -1,5 +1,5 @@
 """Service package exports."""
 
-from basic_tdom_svcs.services.database import DatabaseService
+from examples.basic_tdom_svcs.services.database import DatabaseService
 
 __all__ = ["DatabaseService"]

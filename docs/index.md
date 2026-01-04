@@ -8,7 +8,7 @@ TDOM integration with svcs dependency injection.
 
 ### Key Features
 
-- **String-based component resolution:** Reference components by name in templates
+- **Type-safe component resolution:** Resolve components directly by type from the container
 - **Automatic dependency injection:** Use `Inject[]` to declare dependencies
 - **Component discovery:** Automatically find and register components via `@injectable`
 - **Middleware system:** Add lifecycle hooks for logging, validation, and transformation
@@ -18,11 +18,10 @@ TDOM integration with svcs dependency injection.
 
 ### Architecture
 
-tdom-svcs provides three core services:
+tdom-svcs provides core services:
 
-1. **ComponentNameRegistry:** Maps string names to component class types
-2. **ComponentLookup:** Resolves component names to instances with full DI
-3. **MiddlewareManager:** Executes lifecycle hooks during component resolution
+1. **HopscotchInjector:** Resolves components with full DI support
+2. **MiddlewareManager:** Executes lifecycle hooks during component resolution
 
 ## Quick Links
 
@@ -34,8 +33,6 @@ tdom-svcs provides three core services:
 
 ### Services Documentation
 
-- {doc}`services/component_registry` - ComponentNameRegistry service
-- {doc}`services/component_lookup` - ComponentLookup service
 - {doc}`services/middleware` - MiddlewareManager service
 
 ## Contents
@@ -46,8 +43,6 @@ tdom-svcs provides three core services:
 getting_started
 core_concepts
 how_it_works
-services/component_registry
-services/component_lookup
 services/middleware
 examples
 api_reference
@@ -72,9 +67,11 @@ pip install tdom-svcs
 Here's a minimal example showing dependency injection with a class component:
 
 ```python
+import svcs
 from dataclasses import dataclass
 from svcs_di import Inject
 from svcs_di.injectors.decorators import injectable
+from svcs_di.injectors.locator import HopscotchInjector, scan
 
 # Define a service
 class DatabaseService:
@@ -91,9 +88,19 @@ class DataDisplay:
     def __call__(self) -> str:
         data = self.db.get_data()
         return f"<div><h2>{self.title}</h2><p>{data}</p></div>"
+
+# Setup and use
+registry = svcs.Registry()
+registry.register_value(DatabaseService, DatabaseService())
+scan(registry, __name__)
+registry.register_factory(HopscotchInjector, HopscotchInjector)
+
+container = svcs.Container(registry)
+component = container.get(DataDisplay)
+output = component()
 ```
 
-Components are automatically discovered, dependencies are injected, and you can reference them by name in templates.
+Components are automatically discovered via `@injectable`, dependencies are injected automatically, and you resolve them directly by type from the container.
 
 ## Next Steps
 

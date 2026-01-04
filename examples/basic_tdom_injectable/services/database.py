@@ -1,6 +1,10 @@
 """Database service for dependency injection."""
 
+from dataclasses import dataclass, field
+from typing import Dict
 
+
+@dataclass
 class DatabaseService:
     """
     Example database service.
@@ -8,7 +12,9 @@ class DatabaseService:
     This service can be injected into components using Inject[DatabaseService].
     """
 
-    def __init__(self):
+    _users: Dict[int, dict] = field(default_factory=dict, init=False)
+
+    def __post_init__(self):
         """Initialize with mock data."""
         self._users = {
             1: {"id": 1, "name": "Alice", "role": "admin", "email": "alice@example.com"},

@@ -38,7 +38,9 @@ Usage::
 See spec documentation for complete examples and lifecycle phase definitions.
 """
 
-from typing import Any, Callable, Optional, overload
+from typing import Any, Callable, overload
+
+from tdom_svcs.types import Component
 
 from .models import Middleware
 
@@ -46,9 +48,9 @@ __all__ = ["component", "register_component", "get_component_middleware"]
 
 
 def _store_component_middleware(
-    target: type | Callable[..., Any],
+    target: Component,
     middleware: dict[str, list[Middleware]] | None = None,
-) -> type | Callable[..., Any]:
+) -> Component:
     """
     Store middleware metadata on target component for later retrieval.
 
@@ -111,10 +113,10 @@ class _ComponentDecorator:
 
     def __call__(
         self,
-        target: type | Callable[..., Any] | None = None,
+        target: Component | None = None,
         *,
         middleware: dict[str, list[Middleware]] | None = None,
-    ) -> type | Callable[..., Any]:
+    ) -> Component:
         """
         Apply @component decorator to target component.
 
@@ -172,7 +174,7 @@ class _ComponentDecorator:
             return _store_component_middleware(target, middleware=None)
 
         # Called decorator: @component() or @component(middleware={...})
-        def decorator(comp: type | Callable[..., Any]) -> type | Callable[..., Any]:
+        def decorator(comp: Component) -> Component:
             return _store_component_middleware(comp, middleware=middleware)
 
         return decorator  # type: ignore[return-value]
@@ -182,22 +184,8 @@ class _ComponentDecorator:
 component = _ComponentDecorator()
 
 
-@overload
 def register_component(
-    target: type,
-    middleware: dict[str, list[Middleware]] | None = None,
-) -> None: ...
-
-
-@overload
-def register_component(
-    target: Callable[..., Any],
-    middleware: dict[str, list[Middleware]] | None = None,
-) -> None: ...
-
-
-def register_component(
-    target: type | Callable[..., Any],
+    target: Component,
     middleware: dict[str, list[Middleware]] | None = None,
 ) -> None:
     """
@@ -238,7 +226,7 @@ def register_component(
 
 
 def get_component_middleware(
-    component: type | Callable[..., Any],
+    component: Component,
 ) -> dict[str, list[Middleware]]:
     """
     Retrieve per-component middleware from component metadata.

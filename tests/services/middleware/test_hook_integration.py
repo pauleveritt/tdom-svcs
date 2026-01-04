@@ -5,14 +5,11 @@ component lifecycle (pre-resolution, post-resolution, rendering) and that both
 global and per-component middleware work correctly with proper priority ordering.
 """
 
-import pytest
 from dataclasses import dataclass
-from typing import Any, Callable
-from collections.abc import Mapping
+from typing import Any, Callable, cast
 
 from tdom_svcs.services.middleware import (
     Context,
-    Middleware,
     MiddlewareManager,
     component,
     get_component_middleware,
@@ -34,7 +31,9 @@ class MockMiddleware:
         context: Context,
     ) -> dict[str, Any] | None:
         """Record execution and modify props."""
-        comp_name = component.__name__ if hasattr(component, "__name__") else str(component)
+        comp_name = (
+            component.__name__ if hasattr(component, "__name__") else str(component)
+        )
         self.execution_log.append(f"{self.name}({comp_name})")
         # Add marker to props to track middleware execution
         props[f"_middleware_{self.name}"] = True
@@ -64,12 +63,16 @@ def test_middleware_execution_order_with_priorities() -> None:
         value: str = "test"
 
     props = {"value": "test"}
-    context: dict[str, Any] = {}
+    context: Context = cast(Context, {})
 
     result = manager.execute(TestComponent, props, context)
 
     # Verify execution order (lower priority first)
-    assert execution_log == ["mw1(TestComponent)", "mw2(TestComponent)", "mw3(TestComponent)"]
+    assert execution_log == [
+        "mw1(TestComponent)",
+        "mw2(TestComponent)",
+        "mw3(TestComponent)",
+    ]
     assert result is not None
     assert result["_middleware_mw1"] is True
     assert result["_middleware_mw2"] is True
@@ -84,7 +87,9 @@ def test_global_middleware_executes_before_per_component_middleware() -> None:
     global_mw = MockMiddleware(name="global", priority=0, execution_log=execution_log)
 
     # Create per-component middleware
-    component_mw = MockMiddleware(name="component", priority=0, execution_log=execution_log)
+    component_mw = MockMiddleware(
+        name="component", priority=0, execution_log=execution_log
+    )
 
     # Register global middleware
     manager = MiddlewareManager()
@@ -99,7 +104,7 @@ def test_global_middleware_executes_before_per_component_middleware() -> None:
 
     # Execute global middleware
     props = {"value": "test"}
-    context: dict[str, Any] = {}
+    context: Context = cast(Context, {})
     props_after_global = manager.execute(TestComponent, props, context)
 
     # Execute per-component middleware
@@ -108,11 +113,13 @@ def test_global_middleware_executes_before_per_component_middleware() -> None:
 
     assert props_after_global is not None
     for mw in sorted(pre_resolution_middleware, key=lambda m: m.priority):
-        props_after_global = mw(TestComponent, props_after_global, context)
+        result = mw(TestComponent, props_after_global, context)
+        assert result is not None
+        # In this test, all middleware is synchronous
+        props_after_global = cast(dict[str, Any], result)
 
     # Verify execution order: global then component
     assert execution_log == ["global(TestComponent)", "component(TestComponent)"]
-    assert props_after_global is not None
     assert props_after_global["_middleware_global"] is True
     assert props_after_global["_middleware_component"] is True
 
@@ -132,7 +139,7 @@ def test_middleware_works_with_class_components() -> None:
         label: str = "Button"
 
     props = {"label": "Click"}
-    context: dict[str, Any] = {}
+    context: Context = cast(Context, {})
 
     result = manager.execute(ClassComponent, props, context)
 
@@ -156,7 +163,7 @@ def test_middleware_works_with_function_components() -> None:
         return f"<div>{text}</div>"
 
     props = {"text": "World"}
-    context: dict[str, Any] = {}
+    context: Context = cast(Context, {})
 
     result = manager.execute(function_component, props, context)
 
@@ -188,7 +195,7 @@ def test_per_component_middleware_respects_priority_ordering() -> None:
     pre_resolution_middleware = component_middleware.get("pre_resolution", [])
 
     props = {"value": "test"}
-    context: dict[str, Any] = {}
+    context: Context = cast(Context, {})
 
     current_props = props
     for mw in sorted(pre_resolution_middleware, key=lambda m: m.priority):
@@ -222,7 +229,9 @@ def test_middleware_halt_stops_execution() -> None:
             return None  # Halt execution
 
     # Create middleware that should not execute
-    mw_after_halt = MockMiddleware(name="after_halt", priority=10, execution_log=execution_log)
+    mw_after_halt = MockMiddleware(
+        name="after_halt", priority=10, execution_log=execution_log
+    )
 
     manager = MiddlewareManager()
     manager.register_middleware(HaltingMiddleware())
@@ -235,7 +244,7 @@ def test_middleware_halt_stops_execution() -> None:
         value: str = "test"
 
     props = {"value": "test"}
-    context: dict[str, Any] = {}
+    context: Context = cast(Context, {})
 
     result = manager.execute(TestComponent, props, context)
 
@@ -273,15 +282,19 @@ def test_middleware_integration_with_multiple_lifecycle_phases() -> None:
 
     # Execute pre-resolution middleware
     props = {"value": "test"}
-    context: dict[str, Any] = {}
+    context: Context = cast(Context, {})
 
     for mw in component_middleware["pre_resolution"]:
-        props = mw(TestComponent, props, context)
+        result = mw(TestComponent, props, context)
+        assert result is not None
+        props = cast(dict[str, Any], result)
 
     assert pre_log == ["pre(TestComponent)"]
 
     # Execute post-resolution middleware
     for mw in component_middleware["post_resolution"]:
-        props = mw(TestComponent, props, context)
+        result = mw(TestComponent, props, context)
+        assert result is not None
+        props = cast(dict[str, Any], result)
 
     assert post_log == ["post(TestComponent)"]

@@ -1,20 +1,15 @@
-"""Greeting function component."""
+"""Greeting component."""
 
-from svcs_di import Inject
+from dataclasses import dataclass
 
-from basic_tdom_svcs.services.database import DatabaseService
+from examples.basic_tdom_svcs.services.database import DatabaseService
 
 
-def greeting(user_id: int, db: Inject[DatabaseService]) -> str:
+def greeting(db: DatabaseService) -> str:
     """
-    Greeting function component that shows user information.
+    A simple function component that receives a service.
 
-    Args:
-        user_id: The ID of the user to greet
-        db: Injected database service
-
-    Returns:
-        HTML string with greeting
+    NOTE: KeywordInjector is used for this example.
     """
-    user = db.get_user(user_id)
-    return f'<div class="greeting">Hello, {user["name"]}! (Role: {user["role"]})</div>'
+    users = db.list_users()
+    return f"<div>Hello from tdom_svcs! (Users: {len(users)})</div>"

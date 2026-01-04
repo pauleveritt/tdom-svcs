@@ -16,11 +16,9 @@ _sybil_src = Sybil(
     parsers=[DocTestParser()],
     patterns=["*.py"],
     path="src",
-    excludes=[],
-    fixtures=[],
 )
 
-# Configure Sybil for README.md
+# Configure Sybil for README.md (root only)
 _sybil_readme = Sybil(
     parsers=[PythonCodeBlockParser()],
     patterns=["README.md"],
@@ -33,5 +31,9 @@ _readme_hook = _sybil_readme.pytest()
 
 
 def pytest_collect_file(file_path, parent):
-    """Collect from src/ and README.md."""
+    """Collect from src/ and README.md, excluding examples/."""
+    # Only allow Sybil to search src/ and root README (the path filter in Sybil doesn't always prevent collection)
+    if "examples/" in str(file_path):
+        return None
+        
     return _src_hook(file_path, parent) or _readme_hook(file_path, parent)

@@ -581,7 +581,6 @@ result = await manager.execute_async(component, props, context)
 ## See Also
 
 - {doc}`../core_concepts` - Understand middleware concepts
-- {doc}`component_lookup` - How ComponentLookup integrates middleware
 - {doc}`../how_it_works` - Architecture and patterns
 - {doc}`../examples` - More usage examples
-- [Middleware Examples Directory](../../examples/middleware/) - 7 complete examples
+- [Middleware Examples Directory](../../examples/middleware/) - Complete examples

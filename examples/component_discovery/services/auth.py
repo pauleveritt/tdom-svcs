@@ -1,13 +1,14 @@
-"""Authentication service."""
+"""Authentication service for component discovery example."""
 
 
 class AuthService:
-    """Example authentication service."""
+    """Mock authentication service."""
+
+    def get_current_user_id(self) -> int:
+        return 1
 
     def is_authenticated(self) -> bool:
-        """Check if user is authenticated."""
         return True
 
-    def get_current_role(self) -> str:
-        """Get current user's role."""
-        return "admin"
+    def has_permission(self, permission: str) -> bool:
+        return permission == "admin"

@@ -18,10 +18,9 @@ tdom-svcs makes a clear distinction between class and function components:
 
 **What they can do:**
 - Use `Inject[]` for automatic dependency injection
-- Be registered by string name in ComponentNameRegistry
-- Be discovered via `@injectable` decorator and `scan_components()`
-- Be resolved via ComponentLookup by string name
-- Be referenced in templates (e.g., `<Button label="Click">`)
+- Be discovered via `@injectable` decorator and `scan()`
+- Be resolved directly from the container by type
+- Be easily tested and composed
 
 **Example:**
 ```python
@@ -51,10 +50,9 @@ class Button:
 - Be called programmatically with dependencies resolved
 
 **What they CANNOT do:**
-- Be registered by string name
 - Be discovered via `@injectable` (svcs-di enforces this)
-- Be resolved via ComponentLookup
-- Be referenced in templates
+- Be registered in the container
+- Be used in component composition patterns
 
 **Example:**
 ```python
@@ -67,23 +65,23 @@ def simple_widget(
     color = theme.get_color()
     return f"<div style='color: {color}'>{label}</div>"
 
-# Must be called directly, cannot use ComponentLookup:
+# Must be called directly with injector:
 injector = KeywordInjector(container=container)
 result = injector(simple_widget, label="Hello")
 ```
 
 ### Why This Distinction?
 
-**String name lookup requires classes:**
-- Templates reference components by name: `<Button>`
-- ComponentNameRegistry maps strings to types
-- Only classes can be reliably registered and discovered
-- Functions lack metadata needed for advanced resolution
+**Production-ready patterns:**
+- Classes provide consistent interfaces for DI composition
+- Type checkers understand `type[T]` generics better
+- Classes can be easily composed and tested
+- Functions are more flexible but less suitable for production
 
-**Type safety:**
-- `ComponentNameRegistry` only accepts `type` (not `Callable`)
-- Enforced at registration time with clear error messages
-- Type checker understands `type[T]` generics throughout
+**Best practices:**
+- Use class components with HopscotchInjector for production
+- Register via `@injectable` decorator and `scan()`
+- Resolve directly from container with `container.get(ComponentType)`
 
 ## Injector Usage Policy
 
@@ -92,7 +90,6 @@ tdom-svcs supports two types of injectors from `svcs-di`. Choose the right one f
 ### HopscotchInjector (Production - Use This)
 
 **When to use:**
-- Class components with ComponentLookup
 - Production applications
 - Multi-tenant or context-aware applications
 - Any time you need resource or location-based resolution
@@ -101,7 +98,7 @@ tdom-svcs supports two types of injectors from `svcs-di`. Choose the right one f
 - ✅ Resource-based resolution (`resource=CustomerContext`)
 - ✅ Location-based resolution (`location=PurePath("/admin")`)
 - ✅ Multi-implementation support
-- ✅ Full ComponentLookup integration
+- ✅ Direct component resolution from container
 - ✅ Async component support via `HopscotchAsyncInjector`
 
 **Example:**
@@ -112,23 +109,22 @@ from svcs_di.injectors.locator import HopscotchInjector, HopscotchAsyncInjector
 registry.register_factory(HopscotchInjector, HopscotchInjector)
 registry.register_factory(HopscotchAsyncInjector, HopscotchAsyncInjector)
 
-# Use with ComponentLookup
-lookup = ComponentLookup(container=container)
-button = lookup("Button", context={"label": "Submit"})
+# Resolve components directly
+button = container.get(Button)
 ```
 
 ### KeywordInjector (Educational Only)
 
 **When to use:**
 - Simple educational examples
-- Function components without ComponentLookup
+- Function components
 - Demonstrating basic `Inject[]` concept
 
 **Limitations:**
 - ❌ No resource-based resolution
 - ❌ No location-based resolution
-- ❌ No ComponentLookup integration
-- ❌ Cannot resolve components by string name
+- ❌ Not suitable for class components in production
+- ❌ Cannot be used with container.get()
 
 **Example (educational only):**
 ```python
@@ -143,7 +139,7 @@ injector = KeywordInjector(container=container)
 result = injector(greet, name="World")
 ```
 
-**Important:** Do not use KeywordInjector with ComponentLookup or class components in production code.
+**Important:** Use HopscotchInjector for production applications with class components.
 
 ## Type Hinting Approach
 
@@ -176,100 +172,18 @@ def _construct_sync_component(self, component_type: type[T]) -> T:
 
 **Early validation is better than late failure:**
 
-```python
-def register(self, name: str, component_type: type) -> None:
-    """Register a component class type."""
-    # Validate immediately - fail fast
-    if not isinstance(component_type, type):
-        raise TypeError(
-            f"ComponentNameRegistry only accepts class types, "
-            f"got {type(component_type).__name__}. "
-            f"Function components cannot be registered by string name."
-        )
+Components are validated when registered during application setup. This ensures errors are caught early rather than during request handling.
 
-    self._registry[name] = component_type
-```
-
-**Why this matters:**
-- Errors happen at registration (setup time), not lookup (request time)
-- Clear, actionable error messages
-- Type checker can reason about types after validation
+**Benefits:**
+- Errors happen at startup (setup time), not at runtime (request time)
+- Clear, actionable error messages from the container
+- Type checker can reason about component types correctly
 
 ## Core Architecture
 
-### ComponentNameRegistry
 
-**Purpose:** Maps string names to component class types.
 
-**Key features:**
-- Thread-safe with locking
-- Class-only registration (validated)
-- Simple dictionary-based lookup
-- Returns `type` or `None`
-
-**Usage:**
-```python
-registry = ComponentNameRegistry()
-
-# Register components by name
-registry.register("Button", Button)
-registry.register("Card", Card)
-
-# Retrieve component types
-button_class = registry.get_type("Button")  # Returns: type[Button]
-unknown = registry.get_type("Unknown")  # Returns: None
-
-# List all registered names
-all_names = registry.get_all_names()  # Returns: ["Button", "Card"]
-```
-
-For more details, see {doc}`services/component_registry`.
-
-### ComponentLookup
-
-**Purpose:** Bridge between string names and component instances with full dependency injection.
-
-**Workflow:**
-1. Look up component class type by name (ComponentNameRegistry)
-2. Execute pre-resolution middleware (if registered)
-3. Detect if component is async (check `__call__` method)
-4. Get appropriate injector from container (sync or async)
-5. Construct component instance with dependencies injected
-6. Return the constructed component
-
-**Usage:**
-```python
-lookup = ComponentLookup(container=container)
-
-# Resolve sync component
-button = lookup("Button", context={"label": "Submit"})
-# Returns: Button instance with dependencies injected
-output = button()  # Call to render
-
-# Resolve async component
-alert = lookup("Alert", context={"message": "Warning"})
-# Returns: Coroutine (needs await)
-output = await alert  # Then call to render
-```
-
-**Error handling:**
-```python
-try:
-    component = lookup("Unknown", context={})
-except ComponentNotFoundError:
-    # Component name not registered
-    pass
-except InjectorNotFoundError:
-    # Required injector not in container
-    pass
-except RegistryNotSetupError:
-    # ComponentNameRegistry not registered
-    pass
-```
-
-For more details, see {doc}`services/component_lookup`.
-
-### scan_components()
+### scan()
 
 **Purpose:** Automatically discover `@injectable` decorated classes and register them.
 
@@ -277,18 +191,20 @@ For more details, see {doc}`services/component_lookup`.
 1. Scan specified packages for modules
 2. Find classes decorated with `@injectable`
 3. Extract metadata (resource, location, etc.)
-4. Register in both svcs.Registry and ComponentNameRegistry
+4. Register in svcs.Registry
 5. Validate all items are classes (skip non-classes with warning)
 
 **Usage:**
 ```python
-from tdom_svcs import scan_components
+from svcs_di.injectors.locator import scan
 
 # Scan packages for components
-scan_components(
+scan(
     registry,              # svcs.Registry
-    component_registry,    # ComponentNameRegistry
     "app.components",      # Package to scan
+)
+scan(
+    registry,
     "app.widgets",         # Another package
 )
 
@@ -457,10 +373,8 @@ class AsyncAlert:
         """Async rendering."""
         return f"<div>{self.message}</div>"
 
-# ComponentLookup detects async __call__ and returns coroutine
-result = lookup("AsyncAlert", context={"message": "Warning"})
-# result is a coroutine, needs await:
-component = await result
+# Container resolves async components - can await construction
+component = await container.get(AsyncAlert)
 output = await component()  # If component() is also async
 ```
 
@@ -553,9 +467,9 @@ tdom-svcs supports three patterns for overriding component implementations: glob
 
 ### Global Override Pattern
 
-Override a component everywhere in your application by registering it last:
+Override a component everywhere in your application by registering the custom implementation. The most recently registered version is used when resolving by type:
 
-```text
+```python
 # Base component
 @injectable
 @dataclass
@@ -568,17 +482,15 @@ class Button:
 # Site-specific override
 @injectable
 @dataclass
-class CustomButton:
-    label: str = "Click"
+class CustomButton(Button):  # Inherit interface
     theme: Inject[ThemeService]
 
     def __call__(self) -> str:
         color = self.theme.get_brand_color()
         return f"<button style='color: {color}'>{self.label}</button>"
 
-# Register both - last one wins for global override
-component_registry.register("Button", Button)
-component_registry.register("Button", CustomButton)  # This one is used
+# Register the custom implementation
+registry.register_value(Button, CustomButton)
 ```
 
 See [examples/override_global.py](../examples/override_global.py) for a complete working example showing how to override components at the site level.
@@ -672,8 +584,7 @@ Use `container.register_value()` to provide test doubles:
 
 ```text
 import svcs
-from tdom_svcs import ComponentNameRegistry, scan_components
-from tdom_svcs.services.component_lookup import ComponentLookup
+from svcs_di.injectors.locator import HopscotchInjector, scan
 
 def test_button_with_fake_database():
     """Test component with a fake database service."""
@@ -685,24 +596,16 @@ def test_button_with_fake_database():
 
     # Setup container with fake
     registry = svcs.Registry()
-    component_registry = ComponentNameRegistry()
 
     registry.register_value(DatabaseService, FakeDatabaseService())
 
     # Scan and setup components
-    scan_components(registry, component_registry, __name__)
-    registry.register_value(ComponentNameRegistry, component_registry)
+    scan(registry, __name__)
     registry.register_factory(HopscotchInjector, HopscotchInjector)
-
-    def component_lookup_factory(container: svcs.Container) -> ComponentLookup:
-        return ComponentLookup(container=container)
-
-    registry.register_factory(ComponentLookup, component_lookup_factory)
 
     # Test with fake
     container = svcs.Container(registry)
-    lookup = container.get(ComponentLookup)
-    button = lookup("Button", context={"label": "Test"})
+    button = container.get(Button)
     output = button()
 
     assert "red" in output or "Test" in output
@@ -760,9 +663,13 @@ def test_user_profile_component():
     registry.register_value(CacheService, FakeCache())
 
     # Register and resolve component
-    component_registry = ComponentNameRegistry()
-    scan_components(registry, component_registry, __name__)
-    # ... setup and test
+    scan(registry, __name__)
+    registry.register_factory(HopscotchInjector, HopscotchInjector)
+    container = svcs.Container(registry)
+    
+    # Now test the component
+    component = container.get(UserProfile)
+    # ... test assertions
 ```
 
 ### Integration Testing
@@ -775,33 +682,23 @@ def test_component_resolution_integration():
 
     # Setup real services (or fakes)
     registry = svcs.Registry()
-    component_registry = ComponentNameRegistry()
 
     # Register all services
     registry.register_value(DatabaseService, DatabaseService())
     registry.register_value(ThemeService, ThemeService())
 
     # Scan components
-    scan_components(registry, component_registry, "myapp.components")
+    scan(registry, "myapp.components")
 
-    # Setup infrastructure
-    registry.register_value(ComponentNameRegistry, component_registry)
+    # Setup injector
     registry.register_factory(HopscotchInjector, HopscotchInjector)
-
-    def component_lookup_factory(container: svcs.Container) -> ComponentLookup:
-        return ComponentLookup(container=container)
-
-    registry.register_factory(ComponentLookup, component_lookup_factory)
 
     # Test resolution
     container = svcs.Container(registry)
-    lookup = container.get(ComponentLookup)
-
-    button = lookup("Button", context={"label": "Submit"})
+    button = container.get(Button)
     output = button()
 
-    assert "Submit" in output
-    assert "<button" in output
+    assert "Submit" in output or "<button" in output
 ```
 
 For complete testing examples, see [examples/middleware/03_testing_with_fakes.py](../examples/middleware/03_testing_with_fakes.py).
@@ -809,243 +706,5 @@ For complete testing examples, see [examples/middleware/03_testing_with_fakes.py
 ## Complete Setup Example
 
 Here's a complete application setup showing all the pieces together:
-
-```python
-import svcs
-from svcs_di.injectors.locator import HopscotchInjector, HopscotchAsyncInjector
-from tdom_svcs import ComponentNameRegistry, scan_components
-from tdom_svcs.services.component_lookup import ComponentLookup
-
-def setup_application() -> tuple[svcs.Registry, svcs.Container]:
-    """Set up the application with dependency injection."""
-
-    # Create registries
-    registry = svcs.Registry()
-    component_registry = ComponentNameRegistry()
-
-    # Register services (non-component dependencies)
-    from app.services.database import DatabaseService
-    from app.services.auth import AuthService
-
-    registry.register_value(DatabaseService, DatabaseService())
-    registry.register_value(AuthService, AuthService())
-
-    # Scan for @injectable components
-    scan_components(
-        registry,
-        component_registry,
-        "app.components",  # Your component package
-    )
-
-    # Register component infrastructure
-    registry.register_value(ComponentNameRegistry, component_registry)
-    registry.register_factory(HopscotchInjector, HopscotchInjector)
-    registry.register_factory(HopscotchAsyncInjector, HopscotchAsyncInjector)
-
-    # Register ComponentLookup service
-    def component_lookup_factory(container: svcs.Container) -> ComponentLookup:
-        return ComponentLookup(container=container)
-
-    registry.register_factory(ComponentLookup, component_lookup_factory)
-
-    # Create container
-    container = svcs.Container(registry)
-
-    return registry, container
-
-# Use in your application
-registry, container = setup_application()
-
-# Get ComponentLookup service
-lookup = container.get(ComponentLookup)
-
-# Resolve components by name
-button = lookup("Button", context={"label": "Submit"})
-output = button()  # Render component
-```
-
-## Best Practices
-
-### 1. Use Class Components for Templates
-
-Always use class components when you need string name resolution:
-
-```python
-# ✅ Good - can be referenced in templates as <Button>
-@injectable
-@dataclass
-class Button:
-    label: str = "Click"
-
-    def __call__(self) -> str:
-        return f"<button>{self.label}</button>"
-
-# ❌ Bad - functions cannot be registered by name
-def button(label: str = "Click") -> str:
-    return f"<button>{label}</button>"
-```
-
-### 2. Use HopscotchInjector in Production
-
-Always use HopscotchInjector for production applications:
-
-```python
-# ✅ Good - production-ready
-from svcs_di.injectors.locator import HopscotchInjector
-registry.register_factory(HopscotchInjector, HopscotchInjector)
-
-# ❌ Bad - limited features, educational only
-from svcs_di.injectors.keyword import KeywordInjector
-registry.register_value(KeywordInjector, KeywordInjector(container))
-```
-
-### 3. Validate Early
-
-Use `scan_components()` at application startup to catch errors early:
-
-```python
-# ✅ Good - errors happen at startup
-def setup_application():
-    scan_components(registry, component_registry, "app.components")
-    # Any registration errors happen here, before serving requests
-    return container
-
-# ❌ Bad - errors happen during requests
-def handle_request():
-    # Component registration happens per-request
-    component_registry.register("Button", Button)  # Too late!
-```
-
-### 4. Proper Field Order
-
-Always put `Inject[]` fields before fields with defaults:
-
-```python
-# ✅ Good
-@dataclass
-class MyComponent:
-    db: Inject[DatabaseService]  # No default - comes first
-    name: str = "default"        # Has default - comes second
-
-# ❌ Bad - causes TypeError
-@dataclass
-class MyComponent:
-    name: str = "default"
-    db: Inject[DatabaseService]  # Error: non-default after default
-```
-
-### 5. Use Type Hints
-
-Always provide type hints for better IDE support and type checking:
-
-```python
-# ✅ Good - clear types
-@dataclass
-class Button:
-    db: Inject[DatabaseService]
-    label: str
-
-    def __call__(self) -> str:
-        return f"<button>{self.label}</button>"
-
-# ❌ Bad - missing types
-@dataclass
-class Button:
-    db: Inject[DatabaseService]
-    label  # Type unclear
-
-    def __call__(self):  # Return type unclear
-        return f"<button>{self.label}</button>"
-```
-
-## Error Handling
-
-### Common Errors and Solutions
-
-#### ComponentNotFoundError
-
-**Cause:** Component name not registered.
-
-```python
-try:
-    component = lookup("UnknownComponent", context={})
-except ComponentNotFoundError as e:
-    print(f"Component not registered: {e}")
-    # Solution: Check component name, ensure it's decorated with @injectable
-```
-
-#### InjectorNotFoundError
-
-**Cause:** Required injector not in container.
-
-```python
-try:
-    component = lookup("Button", context={})
-except InjectorNotFoundError as e:
-    print(f"Injector missing: {e}")
-    # Solution: Register HopscotchInjector in setup:
-    # registry.register_factory(HopscotchInjector, HopscotchInjector)
-```
-
-#### RegistryNotSetupError
-
-**Cause:** ComponentNameRegistry not registered in container.
-
-```python
-try:
-    component = lookup("Button", context={})
-except RegistryNotSetupError as e:
-    print(f"Registry not setup: {e}")
-    # Solution: Register ComponentNameRegistry:
-    # registry.register_value(ComponentNameRegistry, component_registry)
-```
-
-#### TypeError: non-default argument follows default argument
-
-**Cause:** Dataclass field order violation - `Inject[]` field after field with default.
-
-```python
-# ❌ This fails:
-@dataclass
-class MyComponent:
-    name: str = "default"
-    db: Inject[DatabaseService]  # Error!
-
-# ✅ Fix: Reorder fields
-@dataclass
-class MyComponent:
-    db: Inject[DatabaseService]  # No default first
-    name: str = "default"        # Default second
-```
-
-#### TypeError: only accepts class types
-
-**Cause:** Attempting to register a function in ComponentNameRegistry.
-
-```python
-def my_function():
-    return "hello"
-
-try:
-    component_registry.register("MyFunc", my_function)
-except TypeError as e:
-    print(f"Cannot register function: {e}")
-    # Solution: Convert to a class component or call directly with injector
-```
-
-## Summary
-
-tdom-svcs provides a powerful, type-safe way to integrate dependency injection with template-based rendering:
-
-- **Class components** for template integration and string name resolution
-- **Function components** for simple, direct usage (no template integration)
-- **HopscotchInjector** for production with advanced resolution strategies
-- **KeywordInjector** for educational function examples only
-- **Type-safe** with `type[T]` generics and early validation
-- **Flexible** with resource and location-based resolution
-- **Easy setup** with `scan_components()` for automatic discovery
-- **Middleware system** for lifecycle hooks and cross-cutting concerns
-- **Override patterns** for customization (global, resource, location)
-- **Testing patterns** with fakes for isolated unit tests
 
 For more examples, see {doc}`examples` and the `examples/` directory in the repository.

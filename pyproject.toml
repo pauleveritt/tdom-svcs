@@ -39,8 +39,8 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
+testpaths = ["tests", "examples"]
+python_files = ["test_*.py", "test_example.py"]
 addopts = "-p no:doctest -m \"not slow\""
 pythonpath = ["examples"]
 markers = [

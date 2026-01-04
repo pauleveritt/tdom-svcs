@@ -4,24 +4,21 @@ Complete API documentation for tdom-svcs.
 
 ## Core Functions
 
-### scan_components()
+### scan()
 
 ```python
-def scan_components(
+def scan(
     registry: svcs.Registry,
-    component_registry: ComponentNameRegistry,
     *package_names: str,
 ) -> None:
     """
     Scan packages for @injectable components and register them.
 
     Discovers all classes decorated with @injectable in the specified packages
-    and registers them in both svcs.Registry (for DI) and ComponentNameRegistry
-    (for name lookup).
+    and registers them in svcs.Registry (for DI).
 
     Args:
         registry: The svcs.Registry to register components in for DI
-        component_registry: The ComponentNameRegistry for string name mapping
         *package_names: One or more package names to scan
 
     Raises:
@@ -29,9 +26,9 @@ def scan_components(
         ValueError: If package structure is invalid
 
     Example:
+        >>> from svcs_di.injectors.locator import scan
         >>> registry = svcs.Registry()
-        >>> component_registry = ComponentNameRegistry()
-        >>> scan_components(registry, component_registry, "myapp.components")
+        >>> scan(registry, "myapp.components")
     """
 ```
 
@@ -39,117 +36,7 @@ def scan_components(
 
 ## Core Classes
 
-### ComponentNameRegistry
 
-Thread-safe registry mapping component names to class types.
-
-```python
-class ComponentNameRegistry:
-    """
-    Registry for mapping string component names to class types.
-
-    Provides thread-safe registration and lookup of component types by name.
-    Only accepts class types, not functions or other callables.
-    """
-
-    def register(self, name: str, component_type: type) -> None:
-        """
-        Register a component class under a string name.
-
-        Args:
-            name: String name for the component (e.g., "Button")
-            component_type: The component class type
-
-        Raises:
-            TypeError: If component_type is not a class type
-
-        Example:
-            >>> registry = ComponentNameRegistry()
-            >>> registry.register("Button", Button)
-        """
-
-    def get_type(self, name: str) -> type | None:
-        """
-        Get component class type by name.
-
-        Args:
-            name: Component name to look up
-
-        Returns:
-            The component class type if registered, None otherwise
-
-        Example:
-            >>> button_type = registry.get_type("Button")
-            >>> if button_type:
-            ...     instance = button_type(label="Click")
-        """
-
-    def get_all_names(self) -> list[str]:
-        """
-        Get all registered component names.
-
-        Returns:
-            List of all registered component names
-
-        Example:
-            >>> names = registry.get_all_names()
-            >>> print(f"Registered: {', '.join(names)}")
-        """
-```
-
-**See also:** {doc}`services/component_registry` for detailed documentation.
-
-### ComponentLookup
-
-Service for resolving component names to instances with dependency injection.
-
-```python
-class ComponentLookup:
-    """
-    Service for resolving component names to component instances.
-
-    Bridges string-based component references (from templates) to Python
-    objects with full dependency injection and middleware support.
-    """
-
-    def __init__(self, container: svcs.Container) -> None:
-        """
-        Initialize ComponentLookup with a container.
-
-        Args:
-            container: svcs.Container with registered services
-
-        Example:
-            >>> lookup = ComponentLookup(container=container)
-        """
-
-    def __call__(
-        self,
-        component_name: str,
-        context: dict[str, Any],
-    ) -> Any:
-        """
-        Resolve component by name with dependency injection.
-
-        Args:
-            component_name: String name of component to resolve
-            context: Dictionary of context values for non-injected fields
-
-        Returns:
-            Constructed component instance (or coroutine for async)
-
-        Raises:
-            ComponentNotFoundError: If component name not registered
-            InjectorNotFoundError: If required injector not in container
-            RegistryNotSetupError: If ComponentNameRegistry not registered
-
-        Example:
-            >>> button = lookup("Button", context={"label": "Submit"})
-            >>> output = button()
-        """
-```
-
-**See also:** {doc}`services/component_lookup` for detailed documentation.
 
 ### MiddlewareManager
 
@@ -323,64 +210,6 @@ Contains request-specific data, configuration, etc.
 """
 ```
 
-## Exceptions
-
-### ComponentNotFoundError
-
-```python
-class ComponentNotFoundError(Exception):
-    """
-    Raised when a component name is not registered in ComponentNameRegistry.
-
-    Attributes:
-        component_name: The name that was not found
-        available_names: List of registered component names
-
-    Example:
-        >>> try:
-        ...     component = lookup("Unknown", context={})
-        ... except ComponentNotFoundError as e:
-        ...     print(f"Not found: {e.component_name}")
-        ...     print(f"Available: {e.available_names}")
-    """
-```
-
-### InjectorNotFoundError
-
-```python
-class InjectorNotFoundError(Exception):
-    """
-    Raised when required injector is not registered in container.
-
-    Indicates setup issue - HopscotchInjector or HopscotchAsyncInjector
-    needs to be registered in the svcs.Registry.
-
-    Example:
-        >>> try:
-        ...     component = lookup("Button", context={})
-        ... except InjectorNotFoundError as e:
-        ...     print("Register HopscotchInjector in setup")
-    """
-```
-
-### RegistryNotSetupError
-
-```python
-class RegistryNotSetupError(Exception):
-    """
-    Raised when ComponentNameRegistry is not registered in container.
-
-    Indicates setup issue - ComponentNameRegistry needs to be registered
-    as a service in the svcs.Registry.
-
-    Example:
-        >>> try:
-        ...     component = lookup("Button", context={})
-        ... except RegistryNotSetupError as e:
-        ...     print("Register ComponentNameRegistry in setup")
-    """
-```
-
 ## Integration with svcs-di
 
 tdom-svcs uses types from `svcs-di` for dependency injection:
@@ -431,32 +260,16 @@ registry.register_factory(HopscotchAsyncInjector, HopscotchAsyncInjector)
 
 ## Full Type Signatures
 
-### scan_components
+### scan
 
 ```python
-def scan_components(
+def scan(
     registry: svcs.Registry,
-    component_registry: ComponentNameRegistry,
     *package_names: str,
 ) -> None
 ```
 
-### ComponentNameRegistry
 
-```python
-class ComponentNameRegistry:
-    def register(self, name: str, component_type: type) -> None
-    def get_type(self, name: str) -> type | None
-    def get_all_names(self) -> list[str]
-```
-
-### ComponentLookup
-
-```python
-class ComponentLookup:
-    def __init__(self, container: svcs.Container) -> None
-    def __call__(self, component_name: str, context: dict[str, Any]) -> Any
-```
 
 ### MiddlewareManager
 
@@ -487,7 +300,5 @@ class MiddlewareManager:
 - {doc}`getting_started` - Installation and quickstart
 - {doc}`core_concepts` - Fundamental concepts
 - {doc}`how_it_works` - Architecture deep dive
-- {doc}`services/component_registry` - ComponentNameRegistry details
-- {doc}`services/component_lookup` - ComponentLookup details
 - {doc}`services/middleware` - MiddlewareManager details
 - {doc}`examples` - Working examples

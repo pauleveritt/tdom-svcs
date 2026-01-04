@@ -1,25 +1,15 @@
-"""Button function component."""
+"""Interactive components."""
 
-from svcs_di import Inject
+from dataclasses import dataclass
 
-from basic_tdom_svcs.services.database import DatabaseService
+from examples.basic_tdom_svcs.services.database import DatabaseService
 
 
-def button(label: str, db: Inject[DatabaseService]) -> str:
+def button(label: str, db: DatabaseService) -> str:
     """
-    Simple button function component with dependency injection.
+    A simple button component that receives a service.
 
-    This is a function component - it cannot be registered by string name
-    or discovered with @injectable. It must be called directly.
-
-    Args:
-        label: The button label text
-        db: Injected database service (automatically provided by KeywordInjector)
-
-    Returns:
-        HTML string for the button
+    NOTE: KeywordInjector is used for this example.
     """
-    # Access injected database service
-    user = db.get_user(1)
-
-    return f'<button class="btn">{label} - User: {user["name"]}</button>'
+    status = db.get_status()
+    return f"<button title='DB: {status}'>{label}</button>"

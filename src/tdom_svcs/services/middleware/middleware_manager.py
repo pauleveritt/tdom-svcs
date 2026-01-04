@@ -3,7 +3,9 @@
 import inspect
 import threading
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any, cast
+
+from tdom_svcs.types import Component
 
 from .models import Context, Middleware
 
@@ -190,7 +192,7 @@ class MiddlewareManager:
 
     def execute(
         self,
-        component: type | Callable[..., Any],
+        component: Component,
         props: dict[str, Any],
         context: Context,
     ) -> dict[str, Any] | None:
@@ -236,7 +238,10 @@ class MiddlewareManager:
                     f"synchronous execution. Use execute_async() instead."
                 )
 
-            result = middleware(component, current_props, context)
+            # Type checker: after iscoroutinefunction check, we know result is not a coroutine
+            result = cast(
+                dict[str, Any] | None, middleware(component, current_props, context)
+            )
 
             # Halt if middleware returns None
             if result is None:
@@ -248,7 +253,7 @@ class MiddlewareManager:
 
     async def execute_async(
         self,
-        component: type | Callable[..., Any],
+        component: Component,
         props: dict[str, Any],
         context: Context,
     ) -> dict[str, Any] | None:
@@ -293,7 +298,11 @@ class MiddlewareManager:
                 coro = middleware(component, current_props, context)
                 result = await coro  # type: ignore[misc]
             else:
-                result = middleware(component, current_props, context)
+                # Type checker: after iscoroutinefunction check, we know result is not a coroutine
+                result = cast(
+                    dict[str, Any] | None,
+                    middleware(component, current_props, context),
+                )
 
             # Halt if middleware returns None
             if result is None:

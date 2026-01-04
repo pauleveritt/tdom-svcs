@@ -30,7 +30,7 @@ python examples/example_name.py
 The simplest possible example showing config and context as plain dictionaries with no svcs container or DI framework. Perfect for understanding the core concepts.
 
 **Key concepts:**
-- Config as a simple dataclass with component_lookup
+- Config as a simple dataclass
 - Context as a plain dictionary
 - Components receiving and using context data
 - How context flows from parent to child components
@@ -282,7 +282,7 @@ See {doc}`how_it_works` for complete application setup examples showing:
 - Service registration
 - Component scanning
 - Infrastructure setup
-- ComponentLookup integration
+- DI integration
 
 ## Example Categories Summary
 
@@ -303,22 +303,15 @@ All examples follow a consistent setup pattern:
 def setup_application() -> svcs.Container:
     """Set up application with all services."""
     registry = svcs.Registry()
-    component_registry = ComponentNameRegistry()
 
     # Register services
     registry.register_value(SomeService, SomeService())
 
     # Discover components
-    scan_components(registry, component_registry, __name__)
+    scan(registry, __name__)
 
-    # Register infrastructure
-    registry.register_value(ComponentNameRegistry, component_registry)
+    # Register injector
     registry.register_factory(HopscotchInjector, HopscotchInjector)
-
-    def component_lookup_factory(container: svcs.Container) -> ComponentLookup:
-        return ComponentLookup(container=container)
-
-    registry.register_factory(ComponentLookup, component_lookup_factory)
 
     return svcs.Container(registry)
 ```
@@ -386,8 +379,6 @@ We recommend exploring examples in this order:
 
 After exploring examples:
 - Read {doc}`how_it_works` for architectural deep dive
-- Review {doc}`services/component_registry` for ComponentNameRegistry details
-- Check {doc}`services/component_lookup` for resolution workflow
 - Study {doc}`services/middleware` for middleware system details
 
 ## Contributing Examples

@@ -1,55 +1,48 @@
-"""Application setup: registry, scanning, and container creation."""
+"""Component discovery example application.
 
-import svcs
+This example demonstrates resolving multiple components with different
+dependency patterns using direct type-based resolution.
+"""
+
+from svcs import Registry, Container
 from svcs_di.injectors.locator import HopscotchInjector
+from examples.component_discovery import site
+from examples.component_discovery.components import Button, UserProfile, AdminPanel
 
-from tdom_svcs import ComponentNameRegistry, scan_components
-from tdom_svcs.services.component_lookup import ComponentLookup
 
+def main() -> str:
+    """Main application entry point."""
+    registry = Registry()
 
-def setup_application() -> tuple[svcs.Registry, svcs.Container]:
-    """
-    Set up the application with dependency injection.
+    # Setup services from site.py
+    site.svcs_setup(registry)
 
-    Returns:
-        Tuple of (registry, container) ready for use.
-    """
-    # Create registries
-    registry = svcs.Registry()
-    component_registry = ComponentNameRegistry()
+    # Register components - @injectable decorator marks them for DI
+    registry.register_factory(Button, Button)
+    registry.register_factory(UserProfile, UserProfile)
+    registry.register_factory(AdminPanel, AdminPanel)
 
-    # Register services
-    from component_discovery.services.auth import AuthService
-    from component_discovery.services.database import DatabaseService
-
-    registry.register_value(DatabaseService, DatabaseService())
-    registry.register_value(AuthService, AuthService())
-
-    # Scan for @injectable components
-    scan_components(
-        registry,
-        component_registry,
-        "components",
-        "services",
-    )
-
-    # Register component registry and injector
-    registry.register_value(ComponentNameRegistry, component_registry)
+    # Register HopscotchInjector for dependency injection
     registry.register_factory(HopscotchInjector, HopscotchInjector)
 
-    # Register ComponentLookup
-    def component_lookup_factory(container: svcs.Container) -> ComponentLookup:
-        return ComponentLookup(container=container)
+    with Container(registry) as container:
+        # Get the injector which handles Inject[] dependencies
+        injector = container.get(HopscotchInjector)
 
-    registry.register_factory(ComponentLookup, component_lookup_factory)
+        # Resolve components - injector handles Inject[] automatically
+        button = injector(Button)
+        profile = injector(UserProfile)
+        panel = injector(AdminPanel)
 
-    # Create container
-    container = svcs.Container(registry)
+        # Render components
+        results = [
+            button(),
+            profile(),
+            panel(),
+        ]
 
-    return registry, container
+        return "\n".join(results)
 
 
 if __name__ == "__main__":
-    registry, container = setup_application()
-    print("✓ Application setup complete")
-    print("✓ Components scanned: Button, UserProfile, AdminPanel")
+    print(main())

@@ -5,12 +5,11 @@ These tests verify that html() accepts optional config and context parameters
 while maintaining backward compatibility.
 """
 
-import typing
 from collections.abc import Mapping
 from dataclasses import dataclass
 
 
-from tdom_svcs import ComponentLookup, html
+from tdom_svcs import html
 
 
 def test_html_without_parameters():
@@ -29,9 +28,9 @@ def test_html_accepts_config_parameter():
 
     @dataclass
     class MockConfig:
-        component_lookup: ComponentLookup | None = None
+        pass  # Config can have custom attributes
 
-    mock_config = MockConfig(component_lookup=None)
+    mock_config = MockConfig()
 
     # Should accept config without error
     node = html(t"<div>Hello</div>", config=mock_config)
@@ -40,7 +39,7 @@ def test_html_accepts_config_parameter():
 
 def test_html_accepts_context_parameter():
     """Test that html() accepts context parameter."""
-    mock_context: Mapping[str, typing.Any] = {"key": "value"}
+    mock_context: Mapping[str, object] = {"key": "value"}
 
     # Should accept context without error
     node = html(t"<div>Hello</div>", context=mock_context)
@@ -52,10 +51,10 @@ def test_html_accepts_both_config_and_context():
 
     @dataclass
     class MockConfig:
-        component_lookup: ComponentLookup | None = None
+        pass  # Config can have custom attributes
 
-    mock_config = MockConfig(component_lookup=None)
-    mock_context: Mapping[str, typing.Any] = {"key": "value"}
+    mock_config = MockConfig()
+    mock_context: Mapping[str, object] = {"key": "value"}
 
     # Should accept both parameters without error
     node = html(t"<div>Hello</div>", config=mock_config, context=mock_context)
@@ -73,10 +72,10 @@ def test_html_with_nested_elements():
 
     @dataclass
     class MockConfig:
-        component_lookup: ComponentLookup | None = None
+        pass  # Config can have custom attributes
 
-    mock_config = MockConfig(component_lookup=None)
-    mock_context: Mapping[str, typing.Any] = {"key": "value"}
+    mock_config = MockConfig()
+    mock_context: Mapping[str, object] = {"key": "value"}
 
     # Nested elements should process without error
     node = html(

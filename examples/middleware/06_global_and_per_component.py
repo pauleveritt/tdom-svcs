@@ -26,6 +26,7 @@ from tdom_svcs.services.middleware import (
     register_component,
     setup_container,
 )
+from tdom_svcs.types import Component
 
 
 # Define global middleware (applies to all components)
@@ -37,12 +38,12 @@ class GlobalLoggingMiddleware:
 
     def __call__(
         self,
-        comp: type | Callable[..., Any],
+        component: Component,
         props: dict[str, Any],
         context: Context,
     ) -> dict[str, Any] | None:
         """Log all component processing."""
-        name = comp.__name__ if hasattr(comp, "__name__") else str(comp)
+        name = component.__name__ if hasattr(component, "__name__") else str(component)
         print(f"  [GLOBAL-LOG] Processing {name}")
         return props
 
@@ -55,7 +56,7 @@ class GlobalValidationMiddleware:
 
     def __call__(
         self,
-        comp: type | Callable[..., Any],
+        component: Component,
         props: dict[str, Any],
         context: Context,
     ) -> dict[str, Any] | None:
@@ -79,7 +80,7 @@ class GlobalTimestampMiddleware:
 
     def __call__(
         self,
-        comp: type | Callable[..., Any],
+        component: Component,
         props: dict[str, Any],
         context: Context,
     ) -> dict[str, Any] | None:
@@ -100,7 +101,7 @@ class ButtonSpecificMiddleware:
 
     def __call__(
         self,
-        comp: type | Callable[..., Any],
+        component: Component,
         props: dict[str, Any],
         context: Context,
     ) -> dict[str, Any] | None:
@@ -119,7 +120,7 @@ class ButtonValidationMiddleware:
 
     def __call__(
         self,
-        comp: type | Callable[..., Any],
+        component: Component,
         props: dict[str, Any],
         context: Context,
     ) -> dict[str, Any] | None:
@@ -140,7 +141,7 @@ class CardEnrichmentMiddleware:
 
     def __call__(
         self,
-        comp: type | Callable[..., Any],
+        component: Component,
         props: dict[str, Any],
         context: Context,
     ) -> dict[str, Any] | None:
@@ -184,14 +185,7 @@ class Card:
         print(f"      [CARD] Created: {self.title}")
 
 
-# Function component with decorator syntax
-@component(
-    middleware={
-        "pre_resolution": [
-            GlobalLoggingMiddleware(priority=-5),  # Override priority for this component
-        ]
-    }
-)
+# Function component without decorator (will use imperative registration)
 def Heading(text: str, level: int = 1) -> str:
     """Heading function component with per-component middleware."""
     print(f"      [HEADING] Rendering level {level}: {text}")
@@ -206,7 +200,7 @@ def Paragraph(text: str) -> str:
 
 
 def simulate_middleware_execution(
-    component: type | Callable[..., Any],
+    component: Component,
     props: dict[str, Any],
     manager: MiddlewareManager,
     context: Context,
@@ -224,10 +218,11 @@ def simulate_middleware_execution(
 
     # Phase 1: Execute global middleware (from MiddlewareManager)
     print(f"Phase 1: Global middleware (via MiddlewareManager)")
-    props = manager.execute(component, props, context)
-    if props is None:
+    result = manager.execute(component, props, context)
+    if result is None:
         print(f"HALTED by global middleware\n")
         return None
+    props = result
 
     # Phase 2: Execute per-component middleware
     print(f"Phase 2: Per-component middleware (via @component decorator)")
@@ -240,10 +235,12 @@ def simulate_middleware_execution(
         )
 
         for mw in middleware_list:
-            props = mw(component, props, context)
-            if props is None:
+            result = mw(component, props, context)
+            if result is None:
                 print(f"HALTED by per-component middleware\n")
                 return None
+            # In this example, all middleware is synchronous
+            props = cast(dict[str, Any], result)
     else:
         print(f"    (no per-component middleware)")
 
@@ -278,13 +275,12 @@ def main():
     print("  - GlobalValidationMiddleware (priority: 0)")
     print("  - GlobalTimestampMiddleware (priority: 10)")
 
-    # Register per-component middleware imperatively for Card and Paragraph
+    # Register per-component middleware imperatively for Card, Heading, and Paragraph
     print("\n" + "=" * 70)
     print("SETUP: Registering Per-Component Middleware")
     print("=" * 70)
     print("Via @component decorator:")
     print("  - Button: ButtonSpecificMiddleware, ButtonValidationMiddleware")
-    print("  - Heading: GlobalLoggingMiddleware (custom priority)")
     print("\nVia imperative register_component():")
 
     # Register Card with per-component middleware
@@ -297,6 +293,17 @@ def main():
         },
     )
     print("  - Card: CardEnrichmentMiddleware")
+
+    # Register Heading with per-component middleware
+    register_component(
+        Heading,
+        middleware={
+            "pre_resolution": [
+                GlobalLoggingMiddleware(priority=-5),  # Override priority for this component
+            ]
+        },
+    )
+    print("  - Heading: GlobalLoggingMiddleware (custom priority)")
 
     # Register Paragraph with per-component middleware
     register_component(

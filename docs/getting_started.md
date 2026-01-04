@@ -93,30 +93,20 @@ Register your services and components with the svcs container:
 
 ```python
 import svcs
-from svcs_di.injectors.locator import HopscotchInjector
-from tdom_svcs import ComponentNameRegistry, scan_components
-from tdom_svcs.services.component_lookup import ComponentLookup
+from svcs_di.injectors.locator import HopscotchInjector, scan
 
-# Create registries
+# Create registry
 registry = svcs.Registry()
-component_registry = ComponentNameRegistry()
 
 # Register the greeting service
 greeting_service = GreetingService()
 registry.register_value(GreetingService, greeting_service)
 
 # Scan for @injectable components (discovers Greeting)
-scan_components(registry, component_registry, __name__)
+scan(registry, __name__)
 
-# Register infrastructure services
-registry.register_value(ComponentNameRegistry, component_registry)
+# Register injector
 registry.register_factory(HopscotchInjector, HopscotchInjector)
-
-# Create ComponentLookup
-def component_lookup_factory(container: svcs.Container) -> ComponentLookup:
-    return ComponentLookup(container=container)
-
-registry.register_factory(ComponentLookup, component_lookup_factory)
 
 # Create container
 container = svcs.Container(registry)
@@ -124,17 +114,17 @@ container = svcs.Container(registry)
 
 ### Step 4: Use Your Component
 
-Resolve components by name and render them:
+Resolve components by type and render them:
 
 ```python
-# Get ComponentLookup service
-lookup = container.get(ComponentLookup)
+# Resolve component by type
+greeting = container.get(Greeting)
 
-# Resolve component by name
-greeting = lookup("Greeting", context={"name": "Alice"})
+# Create an instance with parameters
+greeting_instance = Greeting(service=greeting_service, name="Alice")
 
 # Render the component
-output = greeting()
+output = greeting_instance()
 print(output)  # <div>Hello, Alice!</div>
 ```
 
@@ -148,10 +138,7 @@ from dataclasses import dataclass
 import svcs
 from svcs_di import Inject
 from svcs_di.injectors.decorators import injectable
-from svcs_di.injectors.locator import HopscotchInjector
-
-from tdom_svcs import ComponentNameRegistry, scan_components
-from tdom_svcs.services.component_lookup import ComponentLookup
+from svcs_di.injectors.locator import HopscotchInjector, scan
 
 
 # Step 1: Define service
@@ -181,23 +168,16 @@ class Greeting:
 def setup() -> svcs.Container:
     """Set up the application container."""
     registry = svcs.Registry()
-    component_registry = ComponentNameRegistry()
 
     # Register services
     greeting_service = GreetingService()
     registry.register_value(GreetingService, greeting_service)
 
     # Scan for components
-    scan_components(registry, component_registry, __name__)
+    scan(registry, __name__)
 
-    # Register infrastructure
-    registry.register_value(ComponentNameRegistry, component_registry)
+    # Register injector
     registry.register_factory(HopscotchInjector, HopscotchInjector)
-
-    def component_lookup_factory(container: svcs.Container) -> ComponentLookup:
-        return ComponentLookup(container=container)
-
-    registry.register_factory(ComponentLookup, component_lookup_factory)
 
     return svcs.Container(registry)
 
@@ -205,12 +185,11 @@ def setup() -> svcs.Container:
 # Step 4: Use the component
 if __name__ == "__main__":
     container = setup()
-    lookup = container.get(ComponentLookup)
 
-    # Resolve and render
-    greeting = lookup("Greeting", context={"name": "Alice"})
+    # Resolve component by type and create instance
+    greeting = container.get(Greeting)
     output = greeting()
-    print(output)  # <div>Hello, Alice!</div>
+    print(output)  # <div>Hello, World!</div>
 ```
 
 ## Next Steps
@@ -246,7 +225,7 @@ class MyComponent:
 
 Component name not registered. Check:
 - Is the component decorated with `@injectable`?
-- Did you call `scan_components()` with the correct package name?
+- Did you call `scan()` with the correct package name?
 - Is the component class (not function)?
 
 ### InjectorNotFoundError

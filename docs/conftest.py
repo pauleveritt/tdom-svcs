@@ -22,9 +22,7 @@ pytest_collect_file = Sybil(
             "injectable": __import__("svcs_di.injectors.decorators").injectors.decorators.injectable,
             "HopscotchInjector": __import__("svcs_di.injectors.locator").injectors.locator.HopscotchInjector,
             "HopscotchAsyncInjector": __import__("svcs_di.injectors.locator").injectors.locator.HopscotchAsyncInjector,
-            "ComponentNameRegistry": __import__("tdom_svcs").ComponentNameRegistry,
-            "scan_components": __import__("tdom_svcs").scan_components,
-            "ComponentLookup": __import__("tdom_svcs.services.component_lookup").services.component_lookup.ComponentLookup,
+            "scan": __import__("svcs_di.injectors.locator").injectors.locator.scan,
         }
     ),
 ).pytest()

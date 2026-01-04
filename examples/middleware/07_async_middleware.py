@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, cast
 
 from tdom_svcs.services.middleware import Context, MiddlewareManager
+from tdom_svcs.types import Component
 
 
 # Sync middleware (regular)
@@ -29,7 +30,7 @@ class SyncLoggingMiddleware:
 
     def __call__(
         self,
-        component: type | Callable[..., Any],
+        component: Component,
         props: dict[str, Any],
         context: Context,
     ) -> dict[str, Any] | None:
@@ -57,7 +58,7 @@ class AsyncDatabaseMiddleware:
 
     async def __call__(
         self,
-        component: type | Callable[..., Any],
+        component: Component,
         props: dict[str, Any],
         context: Context,
     ) -> dict[str, Any] | None:
@@ -93,7 +94,7 @@ class AsyncAPIMiddleware:
 
     async def __call__(
         self,
-        component: type | Callable[..., Any],
+        component: Component,
         props: dict[str, Any],
         context: Context,
     ) -> dict[str, Any] | None:
@@ -132,7 +133,7 @@ class AsyncValidationMiddleware:
 
     async def __call__(
         self,
-        component: type | Callable[..., Any],
+        component: Component,
         props: dict[str, Any],
         context: Context,
     ) -> dict[str, Any] | None:
@@ -169,7 +170,7 @@ class SyncTransformMiddleware:
 
     def __call__(
         self,
-        component: type | Callable[..., Any],
+        component: Component,
         props: dict[str, Any],
         context: Context,
     ) -> dict[str, Any] | None:
@@ -203,7 +204,7 @@ class AsyncErrorHandlerMiddleware:
 
     async def __call__(
         self,
-        component: type | Callable[..., Any],
+        component: Component,
         props: dict[str, Any],
         context: Context,
     ) -> dict[str, Any] | None:

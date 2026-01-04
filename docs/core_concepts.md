@@ -10,10 +10,9 @@ Components are reusable building blocks that render HTML or other output. tdom-s
 
 **Class components** are the recommended approach for production use. They are Python classes (typically dataclasses) that can be:
 
-- Registered by string name in ComponentNameRegistry
 - Discovered automatically via `@injectable` decorator
-- Resolved by name using ComponentLookup
-- Referenced in templates
+- Resolved directly from the container by type
+- Use dependency injection via `Inject[]`
 
 **Example:**
 
@@ -43,10 +42,11 @@ class Button:
 - Use `@injectable` for automatic discovery
 - Use `Inject[]` for dependencies
 - Implement `__call__()` to render output
+- Resolve with `container.get(Button)`
 
 ### Function Components
 
-**Function components** are simpler but have limited capabilities. They can use `Inject[]` but cannot be registered by name or referenced in templates.
+**Function components** are simpler but have limited capabilities. They can use `Inject[]` but should be called directly with an injector.
 
 **Example:**
 
@@ -63,15 +63,13 @@ def simple_widget(
 ```
 
 **Limitations:**
-- Cannot be registered in ComponentNameRegistry
 - Cannot be discovered via `@injectable`
-- Cannot be resolved by ComponentLookup
-- Must be called directly with an injector
+- Must be called directly with an injector (not via container)
 
-```{admonition} Use Class Components for Templates
+```{admonition} Use Class Components for Production
 :class: tip
 
-Always use class components when you need to reference components by name in templates. Function components are only suitable for direct programmatic use.
+Always use class components for production applications. Function components are suitable for simple, direct programmatic use only.
 ```
 
 ## Dependency Injection
@@ -194,108 +192,6 @@ from svcs_di.injectors.locator import HopscotchInjector
 registry.register_factory(HopscotchInjector, HopscotchInjector)
 ```
 
-## ComponentNameRegistry
-
-The **ComponentNameRegistry** service maps string component names to class types. This enables template-based component references.
-
-### Basic Usage
-
-```python
-from tdom_svcs import ComponentNameRegistry
-
-# Create registry
-registry = ComponentNameRegistry()
-
-# Register components by name
-registry.register("Button", Button)
-registry.register("Card", Card)
-
-# Retrieve component types
-button_class = registry.get_type("Button")  # Returns: type[Button]
-unknown = registry.get_type("Unknown")       # Returns: None
-
-# List all registered names
-all_names = registry.get_all_names()  # Returns: ["Button", "Card"]
-```
-
-### Automatic Registration
-
-Use `scan_components()` to automatically discover and register components:
-
-```python
-from tdom_svcs import scan_components
-
-# Scan packages for @injectable components
-scan_components(
-    registry,              # svcs.Registry
-    component_registry,    # ComponentNameRegistry
-    "myapp.components",    # Package to scan
-    "myapp.widgets",       # Another package
-)
-```
-
-This finds all classes decorated with `@injectable` and registers them in both registries.
-
-```{admonition} Class Components Only
-:class: warning
-
-ComponentNameRegistry only accepts class types. Attempting to register a function will raise a TypeError with a helpful error message.
-```
-
-## ComponentLookup
-
-The **ComponentLookup** service resolves component names to instances with full dependency injection. It bridges string names (from templates) to Python objects.
-
-### Resolution Workflow
-
-When you call `lookup("Button", context={...})`, ComponentLookup:
-
-1. Looks up the component class type by name (ComponentNameRegistry)
-2. Executes pre-resolution middleware (if registered)
-3. Detects if the component is async
-4. Gets the appropriate injector (sync or async)
-5. Constructs the component with dependencies injected
-6. Returns the constructed component
-
-### Basic Usage
-
-```python
-from tdom_svcs.services.component_lookup import ComponentLookup
-
-# Get ComponentLookup from container
-lookup = container.get(ComponentLookup)
-
-# Resolve sync component
-button = lookup("Button", context={"label": "Submit", "disabled": False})
-output = button()  # Render component
-
-# Resolve async component
-alert = lookup("AsyncAlert", context={"message": "Warning"})
-component = await alert  # Await construction
-output = await component()  # Render
-```
-
-### Error Handling
-
-ComponentLookup provides clear error messages:
-
-```python
-from tdom_svcs.services.component_lookup.exceptions import (
-    ComponentNotFoundError,
-    InjectorNotFoundError,
-    RegistryNotSetupError,
-)
-
-try:
-    component = lookup("Unknown", context={})
-except ComponentNotFoundError as e:
-    print(f"Component not registered: {e}")
-except InjectorNotFoundError as e:
-    print(f"Injector missing: {e}")
-except RegistryNotSetupError as e:
-    print(f"Registry not setup: {e}")
-```
-
 ## Putting It All Together
 
 Here's a complete example showing all concepts:
@@ -306,10 +202,7 @@ from dataclasses import dataclass
 import svcs
 from svcs_di import Inject
 from svcs_di.injectors.decorators import injectable
-from svcs_di.injectors.locator import HopscotchInjector
-
-from tdom_svcs import ComponentNameRegistry, scan_components
-from tdom_svcs.services.component_lookup import ComponentLookup
+from svcs_di.injectors.locator import HopscotchInjector, scan
 
 
 # 1. Define services
@@ -338,22 +231,15 @@ class Button:
 def setup_application() -> svcs.Container:
     """Set up the application with all services."""
     registry = svcs.Registry()
-    component_registry = ComponentNameRegistry()
 
     # Register services
     registry.register_value(ThemeService, ThemeService())
 
     # Discover components
-    scan_components(registry, component_registry, __name__)
+    scan(registry, __name__)
 
-    # Register infrastructure
-    registry.register_value(ComponentNameRegistry, component_registry)
+    # Register injector
     registry.register_factory(HopscotchInjector, HopscotchInjector)
-
-    def component_lookup_factory(container: svcs.Container) -> ComponentLookup:
-        return ComponentLookup(container=container)
-
-    registry.register_factory(ComponentLookup, component_lookup_factory)
 
     return svcs.Container(registry)
 
@@ -361,16 +247,14 @@ def setup_application() -> svcs.Container:
 # 4. Use the application
 if __name__ == "__main__":
     container = setup_application()
-    lookup = container.get(ComponentLookup)
 
-    # Resolve and render component
-    button = lookup("Button", context={"label": "Submit"})
-    print(button())  # <button style="color: #007bff">Submit</button>
+    # Resolve component by type and render
+    button = container.get(Button)
+    print(button())  # <button style="color: #007bff">Click</button>
 ```
 
 ## Next Steps
 
 - {doc}`how_it_works` - Deep dive into architecture and advanced features
-- {doc}`services/component_registry` - Detailed ComponentNameRegistry documentation
-- {doc}`services/component_lookup` - Detailed ComponentLookup documentation
+- {doc}`services/middleware` - Add lifecycle hooks to components
 - {doc}`examples` - Browse more examples

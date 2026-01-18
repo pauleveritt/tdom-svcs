@@ -1,10 +1,12 @@
 from dataclasses import dataclass
-from svcs import Registry
+
+from svcs_di import HopscotchRegistry
+
+from tdom_svcs import Component
 from tdom_svcs.services.middleware import (
     Context,
     setup_container,
 )
-from tdom_svcs import Component
 
 
 @dataclass
@@ -19,10 +21,9 @@ class GlobalLoggingMiddleware:
         props: dict,
         context: Context,
     ) -> dict | None:
-        print(f"  [GLOBAL-LOG] Processing {component}")
         return props
 
 
-def svcs_setup(registry: Registry, context: dict):
+def svcs_setup(registry: HopscotchRegistry, context: dict) -> None:
     """Configure the service registry for this application."""
     setup_container(context, registry)

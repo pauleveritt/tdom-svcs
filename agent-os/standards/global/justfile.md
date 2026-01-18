@@ -4,6 +4,42 @@
 - Below is an example of setting up a Justfile for one of our projects
 - Add a Justfile to new projects created by Agent OS `plan-project`
 
+## CRITICAL: Agent OS Must Use Astral Skills, NOT Just
+
+**Agent OS and Claude Code MUST NOT use Just recipes for Python tooling.** The Justfile exists for:
+1. **Manual command-line use** by developers
+2. **CI/CD pipelines** (GitHub Actions, etc.)
+
+### Agent OS MUST Use Astral Plugin Skills
+
+| Task | ❌ DON'T (Just) | ✅ DO (Astral Skill) |
+|------|-----------------|----------------------|
+| Run tests | `Bash("just test")` | `Skill(skill="astral:uv", args="run pytest")` |
+| Lint code | `Bash("just lint")` | `Skill(skill="astral:ruff")` |
+| Format code | `Bash("just fmt")` | `Skill(skill="astral:ruff")` |
+| Type check | `Bash("just typecheck")` | Trust LSP or `Skill(skill="astral:ty")` |
+| Add package | `Bash("uv add pkg")` | `Skill(skill="astral:uv", args="add pkg")` |
+| Run script | `Bash("uv run x.py")` | `Skill(skill="astral:uv", args="run x.py")` |
+
+### Why Astral Skills Over Just?
+
+1. **Skill guidance**: Skills provide context-aware guidance for each tool
+2. **LSP integration**: The ty LSP provides real-time type checking via `<new-diagnostics>`
+3. **Consistency**: Skills ensure tools are invoked correctly with proper flags
+4. **Discovery**: Skills are loaded on-demand when relevant to the task
+
+### When Just IS Appropriate for Agent OS
+
+Only use Bash with Just for tasks that have **no Astral skill equivalent**:
+- `just docs` / `just docs-live` - Sphinx documentation
+- `just install` / `just setup` - Initial project setup
+- `just clean` - Cleanup artifacts
+- `just ci-checks` - Full CI pipeline (but prefer individual skills during development)
+
+---
+
+## Justfile Reference (For Manual/CI Use)
+
 ```just
 # Requires: just, uv, Python 3.14.2t (free-threaded build)
 # All tasks use uv to ensure isolated, reproducible runs.

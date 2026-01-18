@@ -2,8 +2,12 @@
 
 from dataclasses import dataclass
 from pathlib import PurePath
+
 from svcs_di import Inject
 from svcs_di.injectors.decorators import injectable
+from tdom import Node
+from tdom_svcs import html
+
 from examples.location_based_components.services.auth import AuthService
 from examples.location_based_components.services.content import ContentService
 
@@ -15,11 +19,11 @@ class AdminPanel:
 
     auth: Inject[AuthService]
 
-    def __call__(self) -> str:
+    def __call__(self) -> Node:
         if not self.auth.is_admin():
-            return "<div>Access Denied</div>"
+            return html(t"<div>Access Denied</div>")
         user = self.auth.get_current_user()
-        return f"<div>Admin Panel: {user}</div>"
+        return html(t"<div>Admin Panel: {user}</div>")
 
 
 @injectable(location=PurePath("/admin/users"))
@@ -29,8 +33,8 @@ class UserManagement:
 
     auth: Inject[AuthService]
 
-    def __call__(self) -> str:
-        return "<div>User Management</div>"
+    def __call__(self) -> Node:
+        return html(t"<div>User Management</div>")
 
 
 @injectable(location=PurePath("/"))
@@ -40,6 +44,6 @@ class HomePage:
 
     content: Inject[ContentService]
 
-    def __call__(self) -> str:
+    def __call__(self) -> Node:
         page_content = self.content.get_page_content("/")
-        return f"<div>Home: {page_content}</div>"
+        return html(t"<div>Home: {page_content}</div>")

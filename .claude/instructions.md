@@ -191,7 +191,7 @@ def main():
     print("Example: Component Discovery and Registration")
     print("=" * 60)
 
-    # Setup application (standardized in app.py)
+    # Setup application (standardized in pure_tdom.py)
     registry, container = setup_application()
 
     # Example-specific demonstration
@@ -366,7 +366,7 @@ Examples should be runnable as modules:
 # Run the site.py (main entry point)
 python -m examples.component-discovery.site
 
-# Or run app.py to verify setup
+# Or run pure_tdom.py to verify setup
 python -m examples.component-discovery.app
 ```
 

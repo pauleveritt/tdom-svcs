@@ -1,55 +1,45 @@
-"""
-Middleware with Service Dependencies Example.
+"""Middleware with service dependencies example.
 
-This example demonstrates:
-1. Middleware as services with their own dependencies
-2. Using register_middleware_service() for DI-constructed middleware
-3. Factory functions that use svcs.Container to resolve dependencies
-
-This pattern enables:
-- Middleware that depend on other services
-- Automatic dependency injection for middleware
-- Different middleware implementations per environment
+Demonstrates:
+- Middleware as services with their own dependencies
+- Using register_middleware_service() for DI-constructed middleware
+- Factory functions that resolve dependencies from container
 """
 
-from dataclasses import dataclass
-from typing import cast
+from dataclasses import dataclass, field
+from typing import Any, cast
 
 import svcs
+
+from svcs_di import HopscotchContainer, HopscotchRegistry
 
 from tdom_svcs.services.middleware import Context, MiddlewareManager, setup_container
 
 
-# Define service dependencies
 @dataclass
 class Logger:
     """Logger service for middleware to use."""
 
     name: str
+    messages: list = field(default_factory=list)
 
     def info(self, message: str) -> None:
-        """Log info message."""
-        print(f"[{self.name}] INFO: {message}")
-
-    def error(self, message: str) -> None:
-        """Log error message."""
-        print(f"[{self.name}] ERROR: {message}")
+        self.messages.append(message)
 
 
 @dataclass
 class MetricsCollector:
     """Metrics service for tracking component usage."""
 
-    def __init__(self):
-        self._metrics = {}
+    _metrics: dict = field(default_factory=dict)
 
     def record(self, component_name: str) -> None:
-        """Record component usage."""
         self._metrics[component_name] = self._metrics.get(component_name, 0) + 1
-        print(f"[METRICS] Component '{component_name}' used {self._metrics[component_name]} time(s)")
+
+    def get_count(self, component_name: str) -> int:
+        return self._metrics.get(component_name, 0)
 
 
-# Define middleware with dependencies
 @dataclass
 class LoggingMiddleware:
     """Middleware that depends on Logger service."""
@@ -58,10 +48,7 @@ class LoggingMiddleware:
     priority: int = -10
 
     def __call__(self, component, props, context):
-        """Log component processing using logger service."""
-        component_name = (
-            component.__name__ if hasattr(component, "__name__") else str(component)
-        )
+        component_name = component.__name__
         self.logger.info(f"Processing {component_name}")
         return props
 
@@ -74,15 +61,11 @@ class MetricsMiddleware:
     priority: int = 0
 
     def __call__(self, component, props, context):
-        """Record component metrics."""
-        component_name = (
-            component.__name__ if hasattr(component, "__name__") else str(component)
-        )
+        component_name = component.__name__
         self.metrics.record(component_name)
         return props
 
 
-# Example component
 class Button:
     """Example component."""
 
@@ -90,68 +73,48 @@ class Button:
         self.title = title
 
 
-def main():
-    """Demonstrate middleware with service dependencies."""
-    print("=== Middleware with Service Dependencies Example ===\n")
+def main() -> dict[str, Any]:
+    """Execute middleware with injected service dependencies."""
+    registry = HopscotchRegistry()
 
-    # 1. Setup: Create registry and register dependency services
-    registry = svcs.Registry()
+    # Register dependency services
+    logger = Logger(name="APP")
+    metrics = MetricsCollector()
+    registry.register_value(Logger, logger)
+    registry.register_value(MetricsCollector, metrics)
 
-    print("Registering dependency services...")
-    registry.register_value(Logger, Logger(name="APP"))
-    registry.register_factory(MetricsCollector, MetricsCollector)
-    print("✓ Logger and MetricsCollector registered\n")
-
-    # 2. Register middleware services with factory functions
-    # Factory functions receive container to resolve dependencies
+    # Register middleware with factory functions
     def create_logging_middleware(container: svcs.Container) -> LoggingMiddleware:
-        """Factory that creates LoggingMiddleware with injected Logger."""
-        logger = container.get(Logger)
-        return LoggingMiddleware(logger=logger)
+        return LoggingMiddleware(logger=container.get(Logger))
 
     def create_metrics_middleware(container: svcs.Container) -> MetricsMiddleware:
-        """Factory that creates MetricsMiddleware with injected MetricsCollector."""
-        metrics = container.get(MetricsCollector)
-        return MetricsMiddleware(metrics=metrics)
+        return MetricsMiddleware(metrics=container.get(MetricsCollector))
 
-    print("Registering middleware as services...")
     registry.register_factory(LoggingMiddleware, create_logging_middleware)
     registry.register_factory(MetricsMiddleware, create_metrics_middleware)
-    print("✓ Middleware registered as services with DI\n")
 
-    # 3. Setup container (registers MiddlewareManager as service by default)
+    # Setup container
     context: Context = cast(Context, {"config": {"debug": True}})
     setup_container(context, registry)
-    print("✓ MiddlewareManager registered\n")
 
-    # 4. Get manager and register middleware services
-    container = svcs.Container(registry)
-    manager = container.get(MiddlewareManager)
+    with HopscotchContainer(registry) as container:
+        manager = container.get(MiddlewareManager)
 
-    print("Registering middleware services with manager...")
-    manager.register_middleware_service(LoggingMiddleware, container)
-    manager.register_middleware_service(MetricsMiddleware, container)
-    print("✓ Middleware services registered (will be constructed with DI)\n")
+        # Register middleware services
+        manager.register_middleware_service(LoggingMiddleware, container)
+        manager.register_middleware_service(MetricsMiddleware, container)
 
-    # 5. Execute middleware chain multiple times
-    print("--- Executing with Button component (1st time) ---")
-    props = {"title": "Click Me"}
-    result = manager.execute(Button, props, context)
-    print(f"✓ Result: {result}\n")
+        # Execute multiple times
+        for title in ["Click Me", "Submit", "Cancel"]:
+            result = manager.execute(Button, {"title": title}, context)
+            assert result is not None
 
-    print("--- Executing with Button component (2nd time) ---")
-    props = {"title": "Submit"}
-    result = manager.execute(Button, props, context)
-    print(f"✓ Result: {result}\n")
+        # Verify metrics were recorded
+        assert metrics.get_count("Button") == 3
+        assert len(logger.messages) == 3
 
-    print("--- Executing with Button component (3rd time) ---")
-    props = {"title": "Cancel"}
-    result = manager.execute(Button, props, context)
-    print(f"✓ Result: {result}\n")
-
-    print("=== Example Complete ===")
-    print("Note: Metrics show Button was used 3 times!")
+        return {"button_count": metrics.get_count("Button")}
 
 
 if __name__ == "__main__":
-    main()
+    print(main())

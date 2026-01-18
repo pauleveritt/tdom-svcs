@@ -89,14 +89,14 @@ In dataclasses, fields without defaults (`Inject[]` fields) must come before fie
 
 ### Step 3: Set Up the Container
 
-Register your services and components with the svcs container:
+Register your services and components with `HopscotchRegistry` and `HopscotchContainer`:
 
 ```python
-import svcs
-from svcs_di.injectors.locator import HopscotchInjector, scan
+from svcs_di import HopscotchContainer, HopscotchRegistry
+from svcs_di.injectors.locator import scan
 
 # Create registry
-registry = svcs.Registry()
+registry = HopscotchRegistry()
 
 # Register the greeting service
 greeting_service = GreetingService()
@@ -105,26 +105,25 @@ registry.register_value(GreetingService, greeting_service)
 # Scan for @injectable components (discovers Greeting)
 scan(registry, __name__)
 
-# Register injector
-registry.register_factory(HopscotchInjector, HopscotchInjector)
-
 # Create container
-container = svcs.Container(registry)
+container = HopscotchContainer(registry)
 ```
 
 ### Step 4: Use Your Component
 
-Resolve components by type and render them:
+Resolve components using `inject()` and render them:
 
 ```python
-# Resolve component by type
-greeting = container.get(Greeting)
-
-# Create an instance with parameters
-greeting_instance = Greeting(service=greeting_service, name="Alice")
+# Resolve component with dependency injection
+greeting = container.inject(Greeting)
 
 # Render the component
-output = greeting_instance()
+output = greeting()
+print(output)  # <div>Hello, World!</div>
+
+# Or with custom parameters
+greeting_custom = container.inject(Greeting, name="Alice")
+output = greeting_custom()
 print(output)  # <div>Hello, Alice!</div>
 ```
 
@@ -135,10 +134,9 @@ Here's the full working example:
 ```python
 from dataclasses import dataclass
 
-import svcs
-from svcs_di import Inject
+from svcs_di import HopscotchContainer, HopscotchRegistry, Inject
 from svcs_di.injectors.decorators import injectable
-from svcs_di.injectors.locator import HopscotchInjector, scan
+from svcs_di.injectors.locator import scan
 
 
 # Step 1: Define service
@@ -165,9 +163,9 @@ class Greeting:
 
 
 # Step 3: Set up container
-def setup() -> svcs.Container:
+def setup() -> HopscotchContainer:
     """Set up the application container."""
-    registry = svcs.Registry()
+    registry = HopscotchRegistry()
 
     # Register services
     greeting_service = GreetingService()
@@ -176,18 +174,15 @@ def setup() -> svcs.Container:
     # Scan for components
     scan(registry, __name__)
 
-    # Register injector
-    registry.register_factory(HopscotchInjector, HopscotchInjector)
-
-    return svcs.Container(registry)
+    return HopscotchContainer(registry)
 
 
 # Step 4: Use the component
 if __name__ == "__main__":
     container = setup()
 
-    # Resolve component by type and create instance
-    greeting = container.get(Greeting)
+    # Resolve component with dependency injection
+    greeting = container.inject(Greeting)
     output = greeting()
     print(output)  # <div>Hello, World!</div>
 ```
@@ -226,12 +221,10 @@ class MyComponent:
 Component name not registered. Check:
 - Is the component decorated with `@injectable`?
 - Did you call `scan()` with the correct package name?
-- Is the component class (not function)?
+- Is the component a class (not function)?
 
-### InjectorNotFoundError
+### Service Not Found
 
-Required injector not in container. Make sure you registered:
-
-```python
-registry.register_factory(HopscotchInjector, HopscotchInjector)
-```
+If `container.inject()` or `container.get()` fails to find a service:
+- Check that you registered the service with `registry.register_value()` or `registry.register_factory()`
+- Verify the service type matches exactly (no subclasses unless you use protocols)

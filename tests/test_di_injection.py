@@ -3,9 +3,8 @@
 import threading
 from dataclasses import dataclass
 
-import svcs
 from markupsafe import Markup
-from svcs_di import Inject, KeywordInjector
+from svcs_di import HopscotchContainer, HopscotchRegistry, Inject, KeywordInjector
 
 from tdom_svcs import html
 from tdom_svcs.processor import needs_dependency_injection
@@ -82,11 +81,11 @@ def test_needs_dependency_injection_returns_false_for_functions():
 
 def test_keyword_injector_injects_dependencies():
     """Test that KeywordInjector correctly injects dependencies."""
-    registry = svcs.Registry()
+    registry = HopscotchRegistry()
     db = DatabaseService()
     registry.register_value(DatabaseService, db)
 
-    with svcs.Container(registry) as container:
+    with HopscotchContainer(registry) as container:
         injector = KeywordInjector(container=container)
 
         # Call injector with just label (db should be injected)
@@ -105,11 +104,11 @@ def test_simple_component_without_di():
 
 def test_component_with_di_in_context():
     """Test that components with DI work when passing context."""
-    registry = svcs.Registry()
+    registry = HopscotchRegistry()
     db = DatabaseService()
     registry.register_value(DatabaseService, db)
 
-    with svcs.Container(registry) as container:
+    with HopscotchContainer(registry) as container:
         result = html(t"<{ButtonWithDI} label='Click Me' />", context=container)
 
     assert str(result) == "<button>Hello Alice: Click Me</button>"
@@ -118,13 +117,13 @@ def test_component_with_di_in_context():
 def test_component_with_multiple_di_dependencies():
     """Test component with multiple DI dependencies."""
 
-    registry = svcs.Registry()
+    registry = HopscotchRegistry()
     db = DatabaseService()
     auth = AuthService()
     registry.register_value(DatabaseService, db)
     registry.register_value(AuthService, auth)
 
-    with svcs.Container(registry) as container:
+    with HopscotchContainer(registry) as container:
         result = html(t"<{ComplexComponent} title='Admin Panel' />", context=container)
 
     expected = "<div>Admin Panel: User=Alice, Auth=Yes</div>"
@@ -134,11 +133,11 @@ def test_component_with_multiple_di_dependencies():
 def test_multiple_components_in_template():
     """Test multiple components with and without DI in same template."""
 
-    registry = svcs.Registry()
+    registry = HopscotchRegistry()
     db = DatabaseService()
     registry.register_value(DatabaseService, db)
 
-    with svcs.Container(registry) as container:
+    with HopscotchContainer(registry) as container:
         result = html(
             t"""
             <div>
@@ -162,8 +161,8 @@ def test_nested_components_with_di():
     """
 
     @dataclass
-    class Container:
-        container: svcs.Container | None = None
+    class ContainerComponent:
+        container: HopscotchContainer | None = None
 
         def __call__(self) -> Markup:
             button_html = html(
@@ -171,12 +170,14 @@ def test_nested_components_with_di():
             )
             return Markup(f"<div class='container'>{button_html}</div>")
 
-    registry = svcs.Registry()
+    registry = HopscotchRegistry()
     db = DatabaseService()
     registry.register_value(DatabaseService, db)
 
-    with svcs.Container(registry) as container:
-        result = html(t"<{Container} container={container} />", context=container)
+    with HopscotchContainer(registry) as container:
+        result = html(
+            t"<{ContainerComponent} container={container} />", context=container
+        )
 
     html_str = str(result)
     assert "class='container'" in html_str
@@ -186,11 +187,11 @@ def test_nested_components_with_di():
 def test_di_context_is_thread_safe():
     """Test that DI works correctly in multi-threaded environments."""
 
-    registry1 = svcs.Registry()
+    registry1 = HopscotchRegistry()
     db1 = DatabaseService()
     registry1.register_value(DatabaseService, db1)
 
-    registry2 = svcs.Registry()
+    registry2 = HopscotchRegistry()
 
     class DifferentDB(DatabaseService):
         def get_user(self) -> str:
@@ -202,12 +203,12 @@ def test_di_context_is_thread_safe():
     results = {}
 
     def thread1_work():
-        with svcs.Container(registry1) as container:
+        with HopscotchContainer(registry1) as container:
             result = html(t"<{ButtonWithDI} label='Thread1' />", context=container)
             results["thread1"] = str(result)
 
     def thread2_work():
-        with svcs.Container(registry2) as container:
+        with HopscotchContainer(registry2) as container:
             result = html(t"<{ButtonWithDI} label='Thread2' />", context=container)
             results["thread2"] = str(result)
 
@@ -253,12 +254,14 @@ def test_component_with_default_di_value():
             return Markup(f"<div>User: {user}, Label: {self.label}</div>")
 
     # With context, injects dependency
-    registry = svcs.Registry()
+    registry = HopscotchRegistry()
     db = DatabaseService()
     registry.register_value(DatabaseService, db)
 
-    with svcs.Container(registry) as container:
-        result = html(t"<{ComponentWithDefault} label='WithContext' />", context=container)
+    with HopscotchContainer(registry) as container:
+        result = html(
+            t"<{ComponentWithDefault} label='WithContext' />", context=container
+        )
 
     assert "User: Alice" in str(result)
 
@@ -279,11 +282,11 @@ def test_component_with_children_and_di():
                 f"<p>User: {user}</p>{children_html}</div>"
             )
 
-    registry = svcs.Registry()
+    registry = HopscotchRegistry()
     db = DatabaseService()
     registry.register_value(DatabaseService, db)
 
-    with svcs.Container(registry) as container:
+    with HopscotchContainer(registry) as container:
         result = html(
             t"<{Card} title='Profile'><p>Child content</p></{Card}>",
             context=container,

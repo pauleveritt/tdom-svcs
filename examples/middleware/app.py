@@ -1,34 +1,52 @@
-from svcs import Registry, Container
+"""Middleware system example.
+
+Demonstrates using MiddlewareManager with global and per-component middleware
+for component lifecycle hooks.
+"""
+
+from typing import cast
+
+from svcs_di import HopscotchContainer, HopscotchRegistry
+
 from examples.middleware import site
 from examples.middleware.components import Button
-from tdom_svcs.services.middleware import MiddlewareManager, get_component_middleware
+from examples.middleware.site import GlobalLoggingMiddleware
+from tdom_svcs.services.middleware import (
+    Context,
+    MiddlewareManager,
+    get_component_middleware,
+)
 
 
-def main() -> str:
-    registry = Registry()
-    context = {"config": {"debug": True}}
+def main() -> dict:
+    """Execute middleware chain on a component."""
+    registry = HopscotchRegistry()
+    context: Context = cast(Context, {"config": {"debug": True}})
 
     # Custom setup from site.py
     site.svcs_setup(registry, context)
 
-    with Container(registry) as container:
-        from examples.middleware.site import GlobalLoggingMiddleware
+    with HopscotchContainer(registry) as container:
         manager = container.get(MiddlewareManager)
         manager.register_middleware(GlobalLoggingMiddleware())
 
         props = {"title": "Submit"}
+
         # Execute global middleware
         result = manager.execute(Button, props, context)
+        assert result is not None
 
         # Execute per-component middleware
-        if result is not None:
-            component_middleware = get_component_middleware(Button)
-            for mw in component_middleware.get("pre_resolution", []):
-                result = mw(Button, result, context)
-                if result is None:
-                    break
+        component_middleware = get_component_middleware(Button)
+        for mw in component_middleware.get("pre_resolution", []):
+            result = mw(Button, result, context)
+            if result is None:
+                break
 
-        return str(result)
+        assert result is not None
+        assert "title" in result
+
+        return result
 
 
 if __name__ == "__main__":

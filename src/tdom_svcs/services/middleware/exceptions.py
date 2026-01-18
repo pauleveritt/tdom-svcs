@@ -2,9 +2,24 @@
 
 
 class MiddlewareError(Exception):
-    """Base exception for all middleware-related errors."""
+    """
+    Base exception for all middleware-related errors.
 
-    pass
+    This is an abstract base class that should not be instantiated directly.
+    Use specific subclasses instead:
+    - MiddlewareExecutionError: For runtime execution failures
+    - MiddlewareConfigurationError: For setup/configuration issues
+    - ContextNotSetupError: For missing context setup
+    """
+
+    def __init__(self, message: str) -> None:
+        """
+        Initialize base middleware error.
+
+        Args:
+            message: Description of the error
+        """
+        super().__init__(message)
 
 
 class MiddlewareExecutionError(MiddlewareError):

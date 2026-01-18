@@ -143,27 +143,28 @@ When resolving:
 
 ## Service Container
 
-The **service container** is the registry of all services and components in your application. It's powered by the `svcs` library.
+The **service container** is the registry of all services and components in your application. tdom-svcs uses `HopscotchRegistry` and `HopscotchContainer` from svcs-di.
 
 ### Registry vs Container
 
-- **Registry (`svcs.Registry`):** Defines what services are available and how to create them
-- **Container (`svcs.Container`):** Provides access to service instances at runtime
+- **HopscotchRegistry:** Extends `svcs.Registry` with built-in `ServiceLocator` for multi-implementation support
+- **HopscotchContainer:** Extends `svcs.Container` with built-in `inject()` method for dependency injection
 
 ```python
-import svcs
+from svcs_di import HopscotchContainer, HopscotchRegistry
 
 # Create registry and define services
-registry = svcs.Registry()
+registry = HopscotchRegistry()
 registry.register_value(DatabaseService, DatabaseService())
 registry.register_factory(CacheService, create_cache)
 
-# Create container to access services
-container = svcs.Container(registry)
+# Create container with built-in inject()
+with HopscotchContainer(registry) as container:
+    # Get services directly
+    db = container.get(DatabaseService)
 
-# Get services from container
-db = container.get(DatabaseService)
-cache = container.get(CacheService)
+    # Or inject with automatic dependency resolution
+    component = container.inject(MyComponent)
 ```
 
 ### Registration Patterns
@@ -184,12 +185,16 @@ def create_cache() -> CacheService:
 registry.register_factory(CacheService, create_cache)
 ```
 
-**Register with factory class** (for injectors):
+**Register with multi-implementation** (for resource/location-based resolution):
 
 ```python
-from svcs_di.injectors.locator import HopscotchInjector
+from pathlib import PurePath
 
-registry.register_factory(HopscotchInjector, HopscotchInjector)
+# Default implementation
+registry.register_implementation(Dashboard, DefaultDashboard)
+
+# Admin-specific implementation
+registry.register_implementation(Dashboard, AdminDashboard, location=PurePath("/admin"))
 ```
 
 ## Putting It All Together
@@ -199,10 +204,9 @@ Here's a complete example showing all concepts:
 ```python
 from dataclasses import dataclass
 
-import svcs
-from svcs_di import Inject
+from svcs_di import HopscotchContainer, HopscotchRegistry, Inject
 from svcs_di.injectors.decorators import injectable
-from svcs_di.injectors.locator import HopscotchInjector, scan
+from svcs_di.injectors.locator import scan
 
 
 # 1. Define services
@@ -228,9 +232,9 @@ class Button:
 
 
 # 3. Set up container
-def setup_application() -> svcs.Container:
+def setup_application() -> HopscotchContainer:
     """Set up the application with all services."""
-    registry = svcs.Registry()
+    registry = HopscotchRegistry()
 
     # Register services
     registry.register_value(ThemeService, ThemeService())
@@ -238,19 +242,15 @@ def setup_application() -> svcs.Container:
     # Discover components
     scan(registry, __name__)
 
-    # Register injector
-    registry.register_factory(HopscotchInjector, HopscotchInjector)
-
-    return svcs.Container(registry)
+    return HopscotchContainer(registry)
 
 
 # 4. Use the application
 if __name__ == "__main__":
-    container = setup_application()
-
-    # Resolve component by type and render
-    button = container.get(Button)
-    print(button())  # <button style="color: #007bff">Click</button>
+    with setup_application() as container:
+        # Resolve component with inject() and render
+        button = container.inject(Button)
+        print(button())  # <button style="color: #007bff">Click</button>
 ```
 
 ## Next Steps

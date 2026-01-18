@@ -1,41 +1,39 @@
-"""Resource-based components example application.
+"""Resource-based component resolution example.
 
-This example demonstrates how to use resource-based component resolution
-with HopscotchInjector. Different components are resolved based on the
-resource type in the container context.
+Demonstrates how different components are resolved based on resource type
+(e.g., CustomerContext vs AdminContext) using HopscotchContainer.
 """
 
-from svcs import Registry, Container
-from svcs_di.injectors.locator import HopscotchInjector
+from svcs_di import HopscotchContainer, HopscotchRegistry
+
 from examples.resource_based_components import site
-from examples.resource_based_components.components import CustomerDashboard, AdminDashboard
+from examples.resource_based_components.components import AdminDashboard, CustomerDashboard
 from examples.resource_based_components.services.contexts import CustomerContext
 
 
 def main() -> str:
-    """Main application entry point."""
-    registry = Registry()
+    """Resolve components based on resource context type."""
+    registry = HopscotchRegistry()
 
     # Setup services from site.py
     site.svcs_setup(registry)
 
-    # Register components - HopscotchInjector uses their @injectable metadata
+    # Register components with resource metadata
     registry.register_factory(CustomerDashboard, CustomerDashboard)
     registry.register_factory(AdminDashboard, AdminDashboard)
 
-    # Register injector
-    registry.register_factory(HopscotchInjector, HopscotchInjector)
-
-    with Container(registry) as container:
-        # Push a resource context to select which dashboard variant to use
+    with HopscotchContainer(registry) as container:
+        # Register resource context for customer
         container.register_local_value(type, CustomerContext())
 
-        # Get the injector and construct the CustomerDashboard
-        # (because CustomerContext resource is in the container)
-        injector = container.get(HopscotchInjector)
-        dashboard = injector(CustomerDashboard)
+        # Resolve CustomerDashboard (matches CustomerContext resource)
+        dashboard = container.inject(CustomerDashboard, resource=CustomerContext)
+        result = str(dashboard())
 
-        return dashboard()
+        assert "Customer Dashboard" in result
+        assert "visits" in result
+
+        return result
 
 
 if __name__ == "__main__":

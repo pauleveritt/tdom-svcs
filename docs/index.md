@@ -20,7 +20,7 @@ TDOM integration with svcs dependency injection.
 
 tdom-svcs provides core services:
 
-1. **HopscotchInjector:** Resolves components with full DI support
+1. **HopscotchRegistry/HopscotchContainer:** Extended registry and container with built-in DI support
 2. **MiddlewareManager:** Executes lifecycle hooks during component resolution
 
 ## Quick Links
@@ -67,11 +67,10 @@ pip install tdom-svcs
 Here's a minimal example showing dependency injection with a class component:
 
 ```python
-import svcs
 from dataclasses import dataclass
-from svcs_di import Inject
+from svcs_di import HopscotchContainer, HopscotchRegistry, Inject
 from svcs_di.injectors.decorators import injectable
-from svcs_di.injectors.locator import HopscotchInjector, scan
+from svcs_di.injectors.locator import scan
 
 # Define a service
 class DatabaseService:
@@ -90,17 +89,16 @@ class DataDisplay:
         return f"<div><h2>{self.title}</h2><p>{data}</p></div>"
 
 # Setup and use
-registry = svcs.Registry()
+registry = HopscotchRegistry()
 registry.register_value(DatabaseService, DatabaseService())
 scan(registry, __name__)
-registry.register_factory(HopscotchInjector, HopscotchInjector)
 
-container = svcs.Container(registry)
-component = container.get(DataDisplay)
-output = component()
+with HopscotchContainer(registry) as container:
+    component = container.inject(DataDisplay)
+    output = component()
 ```
 
-Components are automatically discovered via `@injectable`, dependencies are injected automatically, and you resolve them directly by type from the container.
+Components are automatically discovered via `@injectable`, dependencies are injected automatically, and you resolve them using `container.inject()`.
 
 ## Next Steps
 

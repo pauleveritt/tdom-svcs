@@ -1,15 +1,16 @@
 """Interactive components."""
 
-from dataclasses import dataclass
+from tdom import Node
+from tdom_svcs import html
 
 from examples.basic_tdom_svcs.services.database import DatabaseService
 
 
-def button(label: str, db: DatabaseService) -> str:
+def button(label: str, db: DatabaseService) -> Node:
     """
     A simple button component that receives a service.
 
     NOTE: KeywordInjector is used for this example.
     """
     status = db.get_status()
-    return f"<button title='DB: {status}'>{label}</button>"
+    return html(t"<button title='DB: {status}'>{label}</button>")

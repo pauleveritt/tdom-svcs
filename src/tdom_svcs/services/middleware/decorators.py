@@ -2,8 +2,8 @@
 Decorator-based per-component middleware registration for tdom-svcs.
 
 Provides @component decorator for marking components with per-component middleware
-that executes during specific lifecycle phases. The decorator stores middleware
-metadata on components without performing registration, similar to @injectable.
+that executes during specific lifecycle phases. Uses a dataclass-based registry
+for type-safe metadata storage.
 
 Per-component middleware executes after global middleware, with both respecting
 priority ordering within their respective groups.
@@ -38,7 +38,9 @@ Usage::
 See spec documentation for complete examples and lifecycle phase definitions.
 """
 
-from typing import Any, Callable, overload
+from dataclasses import dataclass, field
+from typing import Callable, overload
+from weakref import WeakKeyDictionary
 
 from tdom_svcs.types import Component
 
@@ -47,25 +49,47 @@ from .models import Middleware
 __all__ = ["component", "register_component", "get_component_middleware"]
 
 
+# -------------------------------------------------------------------------
+# Component Middleware Registry (Dataclass-based)
+# -------------------------------------------------------------------------
+
+
+@dataclass
+class ComponentMetadata:
+    """
+    Metadata for per-component middleware configuration.
+
+    Stores middleware organized by lifecycle phase.
+    """
+
+    middleware: dict[str, list[Middleware]] = field(default_factory=dict)
+
+
+# Global registry using WeakKeyDictionary to avoid memory leaks
+# Components are keys, metadata are values
+_component_registry: WeakKeyDictionary[Component, ComponentMetadata] = (
+    WeakKeyDictionary()
+)
+
+
 def _store_component_middleware(
     target: Component,
     middleware: dict[str, list[Middleware]] | None = None,
 ) -> Component:
     """
-    Store middleware metadata on target component for later retrieval.
+    Store middleware metadata in registry for target component.
 
-    This function stores middleware configuration in the __tdom_svcs_middleware__
-    attribute on the component. The middleware dict maps lifecycle phases to
-    middleware lists.
+    This function stores middleware configuration in the global registry using
+    ComponentMetadata. The middleware dict maps lifecycle phases to middleware lists.
 
     Args:
-        target: Component class or function to store metadata on
+        target: Component class or function to store metadata for
         middleware: Dict mapping lifecycle phases to middleware lists.
                    Supported phases: "pre_resolution", "post_resolution", "rendering"
                    If None, empty dict is stored.
 
     Returns:
-        The target component unchanged (metadata stored as side effect)
+        The target component unchanged (metadata stored in registry)
 
     Example:
         >>> @dataclass
@@ -77,8 +101,8 @@ def _store_component_middleware(
     # Store middleware dict (empty if None provided)
     middleware_dict = middleware if middleware is not None else {}
 
-    # Store in __tdom_svcs_middleware__ attribute
-    target.__tdom_svcs_middleware__ = middleware_dict  # type: ignore[attr-defined]
+    # Store in global registry
+    _component_registry[target] = ComponentMetadata(middleware=middleware_dict)
 
     return target
 
@@ -89,34 +113,30 @@ class _ComponentDecorator:
 
     This decorator is similar to @injectable but adds per-component middleware
     lifecycle support. It can be used with or without parameters.
+
+    The simplified overload signatures cover both class and function components.
     """
 
     @overload
-    def __call__(self, target: type) -> type: ...
-
-    @overload
-    def __call__(self, target: Callable[..., Any]) -> Callable[..., Any]: ...
-
-    @overload
-    def __call__(
-        self,
-        *,
-        middleware: dict[str, list[Middleware]] | None = None,
-    ) -> Callable[[type], type]: ...
+    def __call__(self, target: Component) -> Component:
+        """Bare decorator usage: @component"""
+        ...
 
     @overload
     def __call__(
         self,
         *,
         middleware: dict[str, list[Middleware]] | None = None,
-    ) -> Callable[[Callable[..., Any]], Callable[..., Any]]: ...
+    ) -> Callable[[Component], Component]:
+        """Parametrized decorator usage: @component(middleware={...})"""
+        ...
 
     def __call__(
         self,
         target: Component | None = None,
         *,
         middleware: dict[str, list[Middleware]] | None = None,
-    ) -> Component:
+    ) -> Component | Callable[[Component], Component]:
         """
         Apply @component decorator to target component.
 
@@ -166,8 +186,8 @@ class _ComponentDecorator:
             ... @dataclass
             ... class Button:
             ...     label: str = "Click"
-            >>> hasattr(Button, "__tdom_svcs_middleware__")
-            True
+            >>> get_component_middleware(Button)
+            {}
         """
         # Bare decorator: @component (target provided directly)
         if target is not None:
@@ -177,7 +197,7 @@ class _ComponentDecorator:
         def decorator(comp: Component) -> Component:
             return _store_component_middleware(comp, middleware=middleware)
 
-        return decorator  # type: ignore[return-value]
+        return decorator
 
 
 # Create singleton decorator instance
@@ -213,14 +233,14 @@ def register_component(
         ...     label: str = "Click"
         >>> logging_mw = LoggingMiddleware()
         >>> register_component(Button, middleware={"pre_resolution": [logging_mw]})
-        >>> hasattr(Button, "__tdom_svcs_middleware__")
-        True
+        >>> get_component_middleware(Button)
+        {'pre_resolution': [LoggingMiddleware(...)]}
 
         >>> def heading(text: str) -> str:
         ...     return f"<h1>{text}</h1>"
         >>> register_component(heading, middleware={"pre_resolution": [logging_mw]})
-        >>> hasattr(heading, "__tdom_svcs_middleware__")
-        True
+        >>> get_component_middleware(heading)
+        {'pre_resolution': [LoggingMiddleware(...)]}
     """
     _store_component_middleware(target, middleware=middleware)
 
@@ -229,7 +249,7 @@ def get_component_middleware(
     component: Component,
 ) -> dict[str, list[Middleware]]:
     """
-    Retrieve per-component middleware from component metadata.
+    Retrieve per-component middleware from component registry.
 
     This utility function extracts the middleware dict stored by @component
     decorator or register_component() function. If no middleware is registered,
@@ -260,9 +280,10 @@ def get_component_middleware(
         >>> middleware
         {}
     """
-    # Check if component has middleware metadata
-    if hasattr(component, "__tdom_svcs_middleware__"):
-        return component.__tdom_svcs_middleware__  # type: ignore[attr-defined, no-any-return]
+    # Look up component in registry
+    metadata = _component_registry.get(component)
+    if metadata is not None:
+        return metadata.middleware
 
     # No metadata - return empty dict
     return {}

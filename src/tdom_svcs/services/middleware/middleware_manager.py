@@ -3,6 +3,7 @@
 import inspect
 import threading
 from dataclasses import dataclass, field
+from operator import attrgetter
 from typing import Any, cast
 
 from tdom_svcs.types import Component
@@ -142,19 +143,55 @@ class MiddlewareManager:
             >>> manager = MiddlewareManager()
             >>> manager.register_middleware_service(LoggingMiddleware, container)
         """
-        # Validate container has get() method (and isn't just a dict)
-        # We need a service container, not a plain dict
-        if isinstance(container, dict) or not (
-            hasattr(container, "get") and callable(getattr(container, "get", None))
-        ):
+        # Validate container is not a plain dict and has callable get() method
+        # Plain dicts have get() but resolve keys, not services
+        if isinstance(container, dict):
+            raise TypeError(
+                "Container cannot be a plain dict. "
+                "Expected svcs.Container or compatible service container."
+            )
+        if not (hasattr(container, "get") and callable(container.get)):
             raise TypeError(
                 f"Container of type {type(container).__name__} does not have "
-                f"'get()' method required for service resolution. "
+                f"callable 'get()' method required for service resolution. "
                 f"Expected svcs.Container or compatible service container."
             )
 
         with self._lock:
             self._middleware_services.append((middleware_type, container))
+
+    def _resolve_middleware_service(
+        self, middleware_type: type[Middleware], container: Any
+    ) -> Middleware:
+        """
+        Resolve a single middleware service from container.
+
+        Args:
+            middleware_type: The middleware class to resolve
+            container: Container to resolve from
+
+        Returns:
+            Resolved middleware instance
+
+        Raises:
+            RuntimeError: If resolution or validation fails
+        """
+        try:
+            middleware_instance = container.get(middleware_type)
+        except Exception as e:
+            raise RuntimeError(
+                f"Failed to resolve middleware service {middleware_type.__name__} "
+                f"from container: {e}"
+            ) from e
+
+        # Validate it satisfies protocol
+        if not isinstance(middleware_instance, Middleware):
+            raise RuntimeError(
+                f"Service {middleware_type.__name__} does not satisfy "
+                f"Middleware protocol after resolution from container."
+            )
+
+        return middleware_instance
 
     def _resolve_all_middleware(self) -> list[Middleware]:
         """
@@ -163,32 +200,115 @@ class MiddlewareManager:
         Returns a combined list of middleware from both direct registration
         and service-based registration, sorted by priority.
 
+        Thread safety: Copies data structures inside lock, then resolves
+        services outside lock to avoid holding lock during potentially
+        slow container.get() operations.
+
         Returns:
             List of middleware instances sorted by priority (lower first)
         """
+        # Copy data structures inside lock to minimize lock contention
         with self._lock:
-            # Start with direct instances
-            all_middleware = list(self._middleware)
+            direct_middleware = list(self._middleware)
+            service_registrations = list(self._middleware_services)
 
-            # Resolve service-based middleware from containers
-            for middleware_type, container in self._middleware_services:
-                try:
-                    middleware_instance = container.get(middleware_type)
-                    # Validate it satisfies protocol
-                    if not isinstance(middleware_instance, Middleware):
-                        raise TypeError(
-                            f"Service {middleware_type.__name__} does not satisfy "
-                            f"Middleware protocol after resolution from container."
-                        )
-                    all_middleware.append(middleware_instance)
-                except Exception as e:
-                    raise RuntimeError(
-                        f"Failed to resolve middleware service {middleware_type.__name__} "
-                        f"from container: {e}"
-                    ) from e
+        # Resolve services outside lock to avoid blocking during container.get()
+        # Use comprehension for cleaner code
+        service_instances = [
+            self._resolve_middleware_service(middleware_type, container)
+            for middleware_type, container in service_registrations
+        ]
 
-        # Sort by priority (lower numbers first)
-        return sorted(all_middleware, key=lambda m: m.priority)
+        # Combine and sort by priority (lower numbers first)
+        all_middleware = direct_middleware + service_instances
+        return sorted(all_middleware, key=attrgetter("priority"))
+
+    def _execute_middleware_chain(
+        self,
+        sorted_middleware: list[Middleware],
+        component: Component,
+        props: dict[str, Any],
+        context: Context,
+    ) -> dict[str, Any] | None:
+        """
+        Execute middleware chain synchronously.
+
+        Args:
+            sorted_middleware: List of middleware sorted by priority
+            component: Component being processed
+            props: Initial props dict
+            context: Execution context
+
+        Returns:
+            Final props dict or None if halted
+
+        Raises:
+            RuntimeError: If async middleware detected in sync execution
+        """
+        current_props = props
+        for middleware in sorted_middleware:
+            # Check if middleware is async
+            if inspect.iscoroutinefunction(middleware.__call__):
+                raise RuntimeError(
+                    f"Async middleware {type(middleware).__name__} detected in "
+                    f"synchronous execution. Use execute_async() instead."
+                )
+
+            # Type checker: after iscoroutinefunction check, we know result is not a coroutine
+            result = cast(
+                dict[str, Any] | None, middleware(component, current_props, context)
+            )
+
+            # Halt if middleware returns None
+            if result is None:
+                return None
+
+            current_props = result
+
+        return current_props
+
+    async def _execute_middleware_chain_async(
+        self,
+        sorted_middleware: list[Middleware],
+        component: Component,
+        props: dict[str, Any],
+        context: Context,
+    ) -> dict[str, Any] | None:
+        """
+        Execute middleware chain asynchronously.
+
+        Supports both sync and async middleware with automatic detection.
+
+        Args:
+            sorted_middleware: List of middleware sorted by priority
+            component: Component being processed
+            props: Initial props dict
+            context: Execution context
+
+        Returns:
+            Final props dict or None if halted
+        """
+        current_props = props
+        for middleware in sorted_middleware:
+            # Check if middleware is async
+            if inspect.iscoroutinefunction(middleware.__call__):
+                # Type checker needs help understanding async call returns coroutine
+                coro = middleware(component, current_props, context)
+                result = await coro  # type: ignore[misc]
+            else:
+                # Type checker: after iscoroutinefunction check, we know result is not a coroutine
+                result = cast(
+                    dict[str, Any] | None,
+                    middleware(component, current_props, context),
+                )
+
+            # Halt if middleware returns None
+            if result is None:
+                return None
+
+            current_props = result
+
+        return current_props
 
     def execute(
         self,
@@ -225,31 +345,10 @@ class MiddlewareManager:
             ...     # Middleware halted execution
             ...     pass
         """
-        # Resolve all middleware (direct instances + services)
         sorted_middleware = self._resolve_all_middleware()
-
-        # Execute middleware in priority order
-        current_props = props
-        for middleware in sorted_middleware:
-            # Check if middleware is async
-            if inspect.iscoroutinefunction(middleware.__call__):
-                raise RuntimeError(
-                    f"Async middleware {type(middleware).__name__} detected in "
-                    f"synchronous execution. Use execute_async() instead."
-                )
-
-            # Type checker: after iscoroutinefunction check, we know result is not a coroutine
-            result = cast(
-                dict[str, Any] | None, middleware(component, current_props, context)
-            )
-
-            # Halt if middleware returns None
-            if result is None:
-                return None
-
-            current_props = result
-
-        return current_props
+        return self._execute_middleware_chain(
+            sorted_middleware, component, props, context
+        )
 
     async def execute_async(
         self,
@@ -286,28 +385,7 @@ class MiddlewareManager:
             ...     # Middleware halted execution
             ...     pass
         """
-        # Resolve all middleware (direct instances + services)
         sorted_middleware = self._resolve_all_middleware()
-
-        # Execute middleware in priority order
-        current_props = props
-        for middleware in sorted_middleware:
-            # Check if middleware is async
-            if inspect.iscoroutinefunction(middleware.__call__):
-                # Type checker needs help understanding async call returns coroutine
-                coro = middleware(component, current_props, context)
-                result = await coro  # type: ignore[misc]
-            else:
-                # Type checker: after iscoroutinefunction check, we know result is not a coroutine
-                result = cast(
-                    dict[str, Any] | None,
-                    middleware(component, current_props, context),
-                )
-
-            # Halt if middleware returns None
-            if result is None:
-                return None
-
-            current_props = result
-
-        return current_props
+        return await self._execute_middleware_chain_async(
+            sorted_middleware, component, props, context
+        )

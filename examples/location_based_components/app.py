@@ -1,41 +1,39 @@
-"""Location-based components example application.
+"""Location-based component resolution example.
 
-This example demonstrates how to use location-based component resolution
-with HopscotchInjector. Different components are resolved based on the
-PurePath location in the container context.
+Demonstrates how different components are resolved based on PurePath location
+in the container context using HopscotchContainer.
 """
 
 from pathlib import PurePath
-from svcs import Registry, Container
-from svcs_di.injectors.locator import HopscotchInjector
+
+from svcs_di import HopscotchContainer, HopscotchRegistry
+
 from examples.location_based_components import site
-from examples.location_based_components.components import HomePage, AdminPanel
+from examples.location_based_components.components import AdminPanel, HomePage
 
 
 def main() -> str:
-    """Main application entry point."""
-    registry = Registry()
+    """Resolve components based on URL path location."""
+    registry = HopscotchRegistry()
 
     # Setup services from site.py
     site.svcs_setup(registry)
 
-    # Register components - HopscotchInjector uses their @injectable metadata
+    # Register components with location metadata
     registry.register_factory(HomePage, HomePage)
     registry.register_factory(AdminPanel, AdminPanel)
 
-    # Register injector
-    registry.register_factory(HopscotchInjector, HopscotchInjector)
-
-    with Container(registry) as container:
-        # Push a location context to select which page component to use
+    with HopscotchContainer(registry) as container:
+        # Register location context for home page
         container.register_local_value(PurePath, PurePath("/"))
 
-        # Get the injector and construct the HomePage
-        # (because PurePath("/") is in the container)
-        injector = container.get(HopscotchInjector)
-        page = injector(HomePage)
+        # Resolve HomePage (matches "/" location)
+        page = container.inject(HomePage)
+        result = str(page())
 
-        return page()
+        assert "Home:" in result
+
+        return result
 
 
 if __name__ == "__main__":

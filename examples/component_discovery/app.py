@@ -1,47 +1,43 @@
-"""Component discovery example application.
+"""Component discovery example.
 
-This example demonstrates resolving multiple components with different
-dependency patterns using direct type-based resolution.
+Demonstrates resolving multiple components with different dependency patterns
+using HopscotchContainer's inject() method.
 """
 
-from svcs import Registry, Container
-from svcs_di.injectors.locator import HopscotchInjector
+from svcs_di import HopscotchContainer, HopscotchRegistry
+
 from examples.component_discovery import site
-from examples.component_discovery.components import Button, UserProfile, AdminPanel
+from examples.component_discovery.components import AdminPanel, Button, UserProfile
 
 
 def main() -> str:
-    """Main application entry point."""
-    registry = Registry()
+    """Resolve and render components with dependency injection."""
+    registry = HopscotchRegistry()
 
     # Setup services from site.py
     site.svcs_setup(registry)
 
-    # Register components - @injectable decorator marks them for DI
+    # Register components
     registry.register_factory(Button, Button)
     registry.register_factory(UserProfile, UserProfile)
     registry.register_factory(AdminPanel, AdminPanel)
 
-    # Register HopscotchInjector for dependency injection
-    registry.register_factory(HopscotchInjector, HopscotchInjector)
+    with HopscotchContainer(registry) as container:
+        # Resolve components - inject() handles Inject[] automatically
+        button = container.inject(Button)
+        profile = container.inject(UserProfile)
+        panel = container.inject(AdminPanel)
 
-    with Container(registry) as container:
-        # Get the injector which handles Inject[] dependencies
-        injector = container.get(HopscotchInjector)
+        # Render and verify
+        button_html = str(button())
+        profile_html = str(profile())
+        panel_html = str(panel())
 
-        # Resolve components - injector handles Inject[] automatically
-        button = injector(Button)
-        profile = injector(UserProfile)
-        panel = injector(AdminPanel)
+        assert "<button>" in button_html
+        assert "User:" in profile_html
+        assert "Admin Panel" in panel_html
 
-        # Render components
-        results = [
-            button(),
-            profile(),
-            panel(),
-        ]
-
-        return "\n".join(results)
+        return f"{button_html}\n{profile_html}\n{panel_html}"
 
 
 if __name__ == "__main__":

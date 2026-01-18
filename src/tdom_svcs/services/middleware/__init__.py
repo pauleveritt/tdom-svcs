@@ -13,6 +13,71 @@ from .middleware_manager import MiddlewareManager
 from .models import Context, Middleware
 
 
+def _validate_registry(registry: Any, register_manager: bool) -> None:
+    """
+    Validate that registry has required methods.
+
+    Args:
+        registry: Registry to validate
+        register_manager: Whether manager registration is needed
+
+    Raises:
+        TypeError: If registry lacks required methods
+    """
+    if not hasattr(registry, "register_value"):
+        raise TypeError(
+            f"Registry of type {type(registry).__name__} does not have "
+            f"'register_value' method. Expected svcs.Registry or compatible object."
+        )
+
+    if register_manager and not hasattr(registry, "register_factory"):
+        raise TypeError(
+            f"Registry of type {type(registry).__name__} does not have "
+            f"'register_factory' method required for manager registration."
+        )
+
+
+def _register_context(registry: Any, context: Context) -> None:
+    """
+    Register context with registry.
+
+    Args:
+        registry: Registry to register with
+        context: Context to register
+
+    Raises:
+        MiddlewareConfigurationError: If registration fails
+    """
+    try:
+        registry.register_value(Context, context, enter=False)  # type: ignore[attr-defined]
+    except Exception as e:
+        raise MiddlewareConfigurationError(
+            f"Failed to register context with registry: {e}"
+        ) from e
+
+
+def _register_manager(registry: Any) -> None:
+    """
+    Register MiddlewareManager as a service.
+
+    Args:
+        registry: Registry to register with
+
+    Raises:
+        MiddlewareConfigurationError: If registration fails
+    """
+    try:
+        # Register MiddlewareManager as a factory service
+        # Each container.get(MiddlewareManager) returns same singleton instance
+        registry.register_factory(  # type: ignore[attr-defined]
+            MiddlewareManager, MiddlewareManager, enter=False
+        )
+    except Exception as e:
+        raise MiddlewareConfigurationError(
+            f"Failed to register MiddlewareManager with registry: {e}"
+        ) from e
+
+
 def setup_container(
     context: Any, registry: Any = None, register_manager: bool = True
 ) -> None:
@@ -102,43 +167,20 @@ def setup_container(
         )
 
     # If registry provided, register the context for dependency injection
-    if registry is not None:
-        # Check if registry has register_value method (e.g., svcs.Registry)
-        if not hasattr(registry, "register_value"):
-            raise TypeError(
-                f"Registry of type {type(registry).__name__} does not have "
-                f"'register_value' method. Expected svcs.Registry or compatible object."
-            )
+    if registry is None:
+        # For plain dict or custom contexts without registry, caller must pass
+        # the same context object directly to MiddlewareManager.execute()
+        return
 
-        try:
-            registry.register_value(Context, context, enter=False)  # type: ignore[attr-defined]
-        except Exception as e:
-            # If registration fails, wrap in configuration error
-            raise MiddlewareConfigurationError(
-                f"Failed to register context with registry: {e}"
-            ) from e
+    # Validate registry has required methods
+    _validate_registry(registry, register_manager)
 
-        # Optionally register MiddlewareManager as a service
-        if register_manager:
-            if not hasattr(registry, "register_factory"):
-                raise TypeError(
-                    f"Registry of type {type(registry).__name__} does not have "
-                    f"'register_factory' method required for manager registration."
-                )
+    # Register context with registry
+    _register_context(registry, context)
 
-            try:
-                # Register MiddlewareManager as a factory service
-                # Each container.get(MiddlewareManager) returns same singleton instance
-                registry.register_factory(  # type: ignore[attr-defined]
-                    MiddlewareManager, MiddlewareManager, enter=False
-                )
-            except Exception as e:
-                raise MiddlewareConfigurationError(
-                    f"Failed to register MiddlewareManager with registry: {e}"
-                ) from e
-
-    # For plain dict or custom contexts without registry, caller must pass
-    # the same context object directly to MiddlewareManager.execute()
+    # Optionally register MiddlewareManager as a service
+    if register_manager:
+        _register_manager(registry)
 
 
 __all__ = [

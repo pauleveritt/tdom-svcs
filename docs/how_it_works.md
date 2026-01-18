@@ -87,7 +87,7 @@ result = injector(simple_widget, label="Hello")
 
 tdom-svcs supports two types of injectors from `svcs-di`. Choose the right one for your use case:
 
-### HopscotchInjector (Production - Use This)
+### HopscotchContainer (Production - Use This)
 
 **When to use:**
 - Production applications
@@ -95,22 +95,27 @@ tdom-svcs supports two types of injectors from `svcs-di`. Choose the right one f
 - Any time you need resource or location-based resolution
 
 **Capabilities:**
+- ✅ Built-in `inject()` method with automatic dependency injection
 - ✅ Resource-based resolution (`resource=CustomerContext`)
 - ✅ Location-based resolution (`location=PurePath("/admin")`)
 - ✅ Multi-implementation support
-- ✅ Direct component resolution from container
-- ✅ Async component support via `HopscotchAsyncInjector`
+- ✅ Async component support via `ainject()`
 
 **Example:**
 ```python
-from svcs_di.injectors.locator import HopscotchInjector, HopscotchAsyncInjector
+from svcs_di import HopscotchContainer, HopscotchRegistry
 
-# Register the production injector
-registry.register_factory(HopscotchInjector, HopscotchInjector)
-registry.register_factory(HopscotchAsyncInjector, HopscotchAsyncInjector)
+# Create registry and container
+registry = HopscotchRegistry()
+registry.register_value(DatabaseService, DatabaseService())
 
-# Resolve components directly
-button = container.get(Button)
+# Use HopscotchContainer with built-in inject()
+with HopscotchContainer(registry) as container:
+    # Resolve components with automatic dependency injection
+    button = container.inject(Button)
+
+    # With resource-based resolution
+    dashboard = container.inject(Dashboard, resource=CustomerContext)
 ```
 
 ### KeywordInjector (Educational Only)
@@ -580,11 +585,11 @@ tdom-svcs follows svcs best practices for testing with fake/mock services.
 
 ### Testing with Fakes
 
-Use `container.register_value()` to provide test doubles:
+Use `registry.register_value()` to provide test doubles:
 
 ```text
-import svcs
-from svcs_di.injectors.locator import HopscotchInjector, scan
+from svcs_di import HopscotchContainer, HopscotchRegistry
+from svcs_di.injectors.locator import scan
 
 def test_button_with_fake_database():
     """Test component with a fake database service."""
@@ -595,18 +600,16 @@ def test_button_with_fake_database():
             return {"color": "red", "size": "large"}
 
     # Setup container with fake
-    registry = svcs.Registry()
-
+    registry = HopscotchRegistry()
     registry.register_value(DatabaseService, FakeDatabaseService())
 
-    # Scan and setup components
+    # Scan components
     scan(registry, __name__)
-    registry.register_factory(HopscotchInjector, HopscotchInjector)
 
-    # Test with fake
-    container = svcs.Container(registry)
-    button = container.get(Button)
-    output = button()
+    # Test with fake using inject()
+    with HopscotchContainer(registry) as container:
+        button = container.inject(Button)
+        output = button()
 
     assert "red" in output or "Test" in output
 ```
@@ -645,6 +648,9 @@ def test_validation_middleware():
 Test components with injected dependencies using fakes:
 
 ```text
+from svcs_di import HopscotchContainer, HopscotchRegistry
+from svcs_di.injectors.locator import scan
+
 def test_user_profile_component():
     """Test component with multiple injected dependencies."""
 
@@ -658,18 +664,17 @@ def test_user_profile_component():
             return None
 
     # Setup container with fakes
-    registry = svcs.Registry()
+    registry = HopscotchRegistry()
     registry.register_value(DatabaseService, FakeDatabase())
     registry.register_value(CacheService, FakeCache())
 
-    # Register and resolve component
+    # Scan for components
     scan(registry, __name__)
-    registry.register_factory(HopscotchInjector, HopscotchInjector)
-    container = svcs.Container(registry)
-    
-    # Now test the component
-    component = container.get(UserProfile)
-    # ... test assertions
+
+    # Test the component with inject()
+    with HopscotchContainer(registry) as container:
+        component = container.inject(UserProfile)
+        # ... test assertions
 ```
 
 ### Integration Testing
@@ -677,11 +682,14 @@ def test_user_profile_component():
 Test end-to-end component resolution:
 
 ```text
+from svcs_di import HopscotchContainer, HopscotchRegistry
+from svcs_di.injectors.locator import scan
+
 def test_component_resolution_integration():
     """Integration test for complete component resolution flow."""
 
     # Setup real services (or fakes)
-    registry = svcs.Registry()
+    registry = HopscotchRegistry()
 
     # Register all services
     registry.register_value(DatabaseService, DatabaseService())
@@ -690,13 +698,10 @@ def test_component_resolution_integration():
     # Scan components
     scan(registry, "myapp.components")
 
-    # Setup injector
-    registry.register_factory(HopscotchInjector, HopscotchInjector)
-
-    # Test resolution
-    container = svcs.Container(registry)
-    button = container.get(Button)
-    output = button()
+    # Test resolution with inject()
+    with HopscotchContainer(registry) as container:
+        button = container.inject(Button)
+        output = button()
 
     assert "Submit" in output or "<button" in output
 ```

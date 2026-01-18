@@ -1,9 +1,9 @@
 from dataclasses import dataclass
-from typing import Any, Callable
-from tdom_svcs.services.middleware import (
-    Context,
-    component,
-)
+from typing import Any
+
+from tdom import Node
+from tdom_svcs import html
+from tdom_svcs.services.middleware import Context, component
 from tdom_svcs.types import Component
 
 
@@ -36,5 +36,5 @@ class Button:
     title: str = ""
     variant: str = "default"
 
-    def __call__(self) -> str:
-        return f"<button class='{self.variant}'>{self.title}</button>"
+    def __call__(self) -> Node:
+        return html(t"<button class='{self.variant}'>{self.title}</button>")

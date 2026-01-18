@@ -1,11 +1,15 @@
 """Resource-based dashboard components."""
 
 from dataclasses import dataclass
+
 from svcs_di import Inject
 from svcs_di.injectors.decorators import injectable
-from examples.resource_based_components.services.contexts import CustomerContext, AdminContext
-from examples.resource_based_components.services.user import UserService
+from tdom import Node
+from tdom_svcs import html
+
 from examples.resource_based_components.services.analytics import AnalyticsService
+from examples.resource_based_components.services.contexts import AdminContext, CustomerContext
+from examples.resource_based_components.services.user import UserService
 
 
 @injectable(resource=CustomerContext)
@@ -16,10 +20,12 @@ class CustomerDashboard:
     user: Inject[UserService]
     analytics: Inject[AnalyticsService]
 
-    def __call__(self) -> str:
+    def __call__(self) -> Node:
         user_data = self.user.get_current_user()
         stats = self.analytics.get_stats()
-        return f"<div>Customer Dashboard for {user_data['name']}: {stats['visits']} visits</div>"
+        name = user_data['name']
+        visits = stats['visits']
+        return html(t"<div>Customer Dashboard for {name}: {visits} visits</div>")
 
 
 @injectable(resource=AdminContext)
@@ -29,6 +35,7 @@ class AdminDashboard:
 
     analytics: Inject[AnalyticsService]
 
-    def __call__(self) -> str:
+    def __call__(self) -> Node:
         stats = self.analytics.get_stats()
-        return f"<div>Admin Dashboard: Total visits {stats['visits']}</div>"
+        visits = stats['visits']
+        return html(t"<div>Admin Dashboard: Total visits {visits}</div>")

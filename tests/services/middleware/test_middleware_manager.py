@@ -5,7 +5,7 @@ This module tests the MiddlewareManager class which manages middleware
 registration and execution with priority-based ordering and async support.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable, cast
 
 import pytest
@@ -20,7 +20,6 @@ class LowPriorityMiddleware:
     """Middleware that runs early (priority -10)."""
 
     priority: int = -10
-    executed: list[str] = field(default_factory=list)  # Track execution order
 
     def __call__(
         self,
@@ -28,9 +27,12 @@ class LowPriorityMiddleware:
         props: dict[str, Any],
         context: Context,
     ) -> dict[str, Any] | None:
-        """Execute middleware and track order."""
-        self.executed.append("low")
+        """Execute middleware and track execution order in props."""
         props["low"] = True
+        # Track execution order by appending to _execution_order list in props
+        if "_execution_order" not in props:
+            props["_execution_order"] = []
+        props["_execution_order"].append("low")
         return props
 
 
@@ -39,7 +41,6 @@ class DefaultPriorityMiddleware:
     """Middleware that runs at default priority (0)."""
 
     priority: int = 0
-    executed: list[str] = field(default_factory=list)
 
     def __call__(
         self,
@@ -47,9 +48,12 @@ class DefaultPriorityMiddleware:
         props: dict[str, Any],
         context: Context,
     ) -> dict[str, Any] | None:
-        """Execute middleware and track order."""
-        self.executed.append("default")
+        """Execute middleware and track execution order in props."""
         props["default"] = True
+        # Track execution order by appending to _execution_order list in props
+        if "_execution_order" not in props:
+            props["_execution_order"] = []
+        props["_execution_order"].append("default")
         return props
 
 
@@ -58,7 +62,6 @@ class HighPriorityMiddleware:
     """Middleware that runs late (priority 10)."""
 
     priority: int = 10
-    executed: list[str] = field(default_factory=list)
 
     def __call__(
         self,
@@ -66,9 +69,12 @@ class HighPriorityMiddleware:
         props: dict[str, Any],
         context: Context,
     ) -> dict[str, Any] | None:
-        """Execute middleware and track order."""
-        self.executed.append("high")
+        """Execute middleware and track execution order in props."""
         props["high"] = True
+        # Track execution order by appending to _execution_order list in props
+        if "_execution_order" not in props:
+            props["_execution_order"] = []
+        props["_execution_order"].append("high")
         return props
 
 
@@ -93,7 +99,6 @@ class AsyncMiddleware:
     """Async middleware implementation."""
 
     priority: int = 5
-    executed: list[str] = field(default_factory=list)
 
     async def __call__(
         self,
@@ -102,8 +107,11 @@ class AsyncMiddleware:
         context: Context,
     ) -> dict[str, Any] | None:
         """Async middleware execution."""
-        self.executed.append("async")
         props["async"] = True
+        # Track execution order by appending to _execution_order list in props
+        if "_execution_order" not in props:
+            props["_execution_order"] = []
+        props["_execution_order"].append("async")
         return props
 
 
@@ -139,16 +147,10 @@ def test_middleware_manager_priority_ordering():
     """Test middleware executes in priority order (lower numbers first)."""
     manager = MiddlewareManager()
 
-    # Track execution order with shared list
-    execution_order: list[str] = []
-    high = HighPriorityMiddleware(executed=execution_order)
-    low = LowPriorityMiddleware(executed=execution_order)
-    default = DefaultPriorityMiddleware(executed=execution_order)
-
     # Register in random order
-    manager.register_middleware(high)
-    manager.register_middleware(low)
-    manager.register_middleware(default)
+    manager.register_middleware(HighPriorityMiddleware())
+    manager.register_middleware(LowPriorityMiddleware())
+    manager.register_middleware(DefaultPriorityMiddleware())
 
     props = {}
     context: Context = cast(Context, {})
@@ -156,8 +158,8 @@ def test_middleware_manager_priority_ordering():
     result = manager.execute(Button, props, context)
 
     # Should execute in priority order: low (-10), default (0), high (10)
-    assert execution_order == ["low", "default", "high"]
     assert result is not None
+    assert result["_execution_order"] == ["low", "default", "high"]
     assert result["low"] is True
     assert result["default"] is True
     assert result["high"] is True
@@ -167,15 +169,9 @@ def test_middleware_manager_halt_on_none():
     """Test execution halts when middleware returns None."""
     manager = MiddlewareManager()
 
-    # Track execution order
-    execution_order: list[str] = []
-    low = LowPriorityMiddleware(priority=-10, executed=execution_order)
-    halting = HaltingMiddleware(priority=0)
-    high = HighPriorityMiddleware(priority=10, executed=execution_order)
-
-    manager.register_middleware(low)
-    manager.register_middleware(halting)
-    manager.register_middleware(high)
+    manager.register_middleware(LowPriorityMiddleware(priority=-10))
+    manager.register_middleware(HaltingMiddleware(priority=0))
+    manager.register_middleware(HighPriorityMiddleware(priority=10))
 
     props = {}
     context: Context = cast(Context, {})
@@ -184,9 +180,9 @@ def test_middleware_manager_halt_on_none():
 
     # Execution should halt at halting middleware
     # Low priority runs, halting runs and returns None, high never runs
-    assert execution_order == ["low"]
     assert result is None
     assert "low" in props
+    assert props["_execution_order"] == ["low"]
     assert "high" not in props
 
 
@@ -231,16 +227,11 @@ async def test_middleware_manager_async_middleware():
     """Test execution with async middleware using anyio."""
     manager = MiddlewareManager()
 
-    execution_order: list[str] = []
-    sync_middleware = LowPriorityMiddleware(priority=-10, executed=execution_order)
-    async_middleware = AsyncMiddleware(priority=5, executed=execution_order)
-    sync_middleware2 = HighPriorityMiddleware(priority=10, executed=execution_order)
-
-    manager.register_middleware(sync_middleware)
+    manager.register_middleware(LowPriorityMiddleware(priority=-10))
     # Type checker can't detect async __call__ satisfies protocol at static analysis time
     # Runtime detection via inspect.iscoroutinefunction() handles this correctly
-    manager.register_middleware(async_middleware)  # type: ignore[arg-type]
-    manager.register_middleware(sync_middleware2)
+    manager.register_middleware(AsyncMiddleware(priority=5))  # type: ignore[arg-type]
+    manager.register_middleware(HighPriorityMiddleware(priority=10))
 
     props = {}
     context: Context = cast(Context, {})
@@ -249,8 +240,8 @@ async def test_middleware_manager_async_middleware():
     result = await manager.execute_async(Button, props, context)
 
     # Should execute in priority order: low (-10), async (5), high (10)
-    assert execution_order == ["low", "async", "high"]
     assert result is not None
+    assert result["_execution_order"] == ["low", "async", "high"]
     assert result["low"] is True
     assert result["async"] is True
     assert result["high"] is True
@@ -356,14 +347,9 @@ def test_middleware_manager_mixed_instance_and_service():
     container = svcs.Container(registry)
 
     # Register mix of direct instances and services
-    execution_order: list[str] = []
     manager = MiddlewareManager()
-    manager.register_middleware(LowPriorityMiddleware(executed=execution_order))
+    manager.register_middleware(LowPriorityMiddleware())
     manager.register_middleware_service(HighPriorityMiddleware, container)
-
-    # Also need to set up the execution tracking for the service-created instance
-    # This is a bit tricky since the service creates the instance
-    # Let's just verify both run
 
     props = {}
     context: Context = cast(Context, {})
@@ -371,6 +357,7 @@ def test_middleware_manager_mixed_instance_and_service():
     result = manager.execute(Button, props, context)
 
     assert result is not None
+    assert result["_execution_order"] == ["low", "high"]
     assert result["low"] is True
     assert result["high"] is True
 
@@ -379,10 +366,10 @@ def test_middleware_manager_service_invalid_container():
     """Test that invalid container raises TypeError."""
     manager = MiddlewareManager()
 
-    # Object without get() method
+    # Object that is a plain dict (not a service container)
     invalid_container = {"not": "container"}
 
-    with pytest.raises(TypeError, match="does not have 'get\\(\\)' method"):
+    with pytest.raises(TypeError, match="Container cannot be a plain dict"):
         manager.register_middleware_service(
             DefaultPriorityMiddleware,
             invalid_container,  # type: ignore[arg-type]

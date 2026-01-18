@@ -181,7 +181,7 @@ def verify_context_with_chainmap():
     user_context = {"user_id": 123, "theme": "dark"}  # theme override
     chain_map = ChainMap(user_context, base_context)
 
-    print(f"Passing ChainMap as context:")
+    print("Passing ChainMap as context:")
     print(f"  Base context: {base_context}")
     print(f"  User context: {user_context}")
     print(f"  Combined (theme should be 'dark'): {dict(chain_map)}")

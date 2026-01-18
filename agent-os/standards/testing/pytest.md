@@ -1,15 +1,75 @@
 # Testing Standards
 
-*ALWAYS* run pytest via `just test` (or `uv run pytest`). Don't run `python` or `pytest` directly.
+## Running Tests - ALWAYS Use Astral uv Skill
+
+**All tests MUST be run via the Astral `uv` skill.** Never use Bash or Just.
+
+### Correct Way to Run Tests
+
+```python
+# Run all tests
+Skill(skill="astral:uv", args="run pytest")
+
+# Run tests in a specific directory
+Skill(skill="astral:uv", args="run pytest tests/")
+
+# Run a specific test file
+Skill(skill="astral:uv", args="run pytest tests/test_user.py")
+
+# Run a specific test function
+Skill(skill="astral:uv", args="run pytest tests/test_user.py::test_login")
+
+# Run with verbose output
+Skill(skill="astral:uv", args="run pytest -v")
+
+# Run with coverage
+Skill(skill="astral:uv", args="run pytest --cov=src")
+
+# Run only tests matching a pattern
+Skill(skill="astral:uv", args="run pytest -k \"login\"")
+
+# Run doctests
+Skill(skill="astral:uv", args="run pytest src/ docs/ README.md")
+```
+
+### ❌ WRONG - Never Do This
+
+```python
+Bash("uv run pytest")           # WRONG - don't use Bash
+Bash("pytest tests/")           # WRONG - don't use Bash
+Bash("python -m pytest")        # WRONG - don't use Bash
+Bash("just test")               # WRONG - don't use Just
+```
 
 ## Test Structure
 
+- **Write tests as functions, NOT classes** - Do not use `class TestFoo:` style. Write standalone `def test_foo():` functions.
 - Place tests in `tests/` directory
 - Use descriptive function names: `test_<functionality>_<scenario>`
 - Organize test module names to match the module being tested
 - Test both the happy path and edge cases
 - Use `tests/conftest.py` and fixtures as appropriate (but only when useful)
 - When you create fixtures, write tests for those fixtures
+
+**Example - Correct:**
+```python
+def test_user_can_login_with_valid_credentials() -> None:
+    """Test successful login."""
+    ...
+
+def test_user_cannot_login_with_invalid_password() -> None:
+    """Test login failure with wrong password."""
+    ...
+```
+
+**Example - WRONG (do not do this):**
+```python
+class TestUserLogin:
+    def test_valid_credentials(self) -> None:
+        ...
+    def test_invalid_password(self) -> None:
+        ...
+```
 
 ## Coverage
 

@@ -42,9 +42,7 @@ from dataclasses import dataclass, field
 from typing import Callable, overload
 from weakref import WeakKeyDictionary
 
-from tdom_svcs.types import Component
-
-from .models import Middleware
+from tdom_svcs.types import Component, MiddlewareMap
 
 __all__ = ["component", "register_component", "get_component_middleware"]
 
@@ -62,7 +60,7 @@ class ComponentMetadata:
     Stores middleware organized by lifecycle phase.
     """
 
-    middleware: dict[str, list[Middleware]] = field(default_factory=dict)
+    middleware: MiddlewareMap = field(default_factory=dict)
 
 
 # Global registry using WeakKeyDictionary to avoid memory leaks
@@ -74,7 +72,7 @@ _component_registry: WeakKeyDictionary[Component, ComponentMetadata] = (
 
 def _store_component_middleware(
     target: Component,
-    middleware: dict[str, list[Middleware]] | None = None,
+    middleware: MiddlewareMap | None = None,
 ) -> Component:
     """
     Store middleware metadata in registry for target component.
@@ -107,106 +105,51 @@ def _store_component_middleware(
     return target
 
 
-class _ComponentDecorator:
+@overload
+def component(target: Component) -> Component:
+    """Bare decorator usage: @component"""
+    ...
+
+
+@overload
+def component(
+    *,
+    middleware: MiddlewareMap | None = None,
+) -> Callable[[Component], Component]:
+    """Parametrized decorator usage: @component(middleware={...})"""
+    ...
+
+
+def component(
+    target: Component | None = None,
+    *,
+    middleware: MiddlewareMap | None = None,
+) -> Component | Callable[[Component], Component]:
     """
-    Supports both @component and @component(middleware={...}) syntax.
+    Decorator for marking components with per-component middleware.
 
-    This decorator is similar to @injectable but adds per-component middleware
-    lifecycle support. It can be used with or without parameters.
+    Supports both @component (bare) and @component(middleware={...}) syntax.
 
-    The simplified overload signatures cover both class and function components.
+    Args:
+        target: Component class or function to decorate (when used bare)
+        middleware: Dict mapping lifecycle phases to middleware lists
+                   Phases: "pre_resolution", "post_resolution", "rendering"
+
+    Returns:
+        Decorated component with middleware metadata stored
     """
+    if target is not None:
+        return _store_component_middleware(target, middleware=None)
 
-    @overload
-    def __call__(self, target: Component) -> Component:
-        """Bare decorator usage: @component"""
-        ...
+    def decorator(comp: Component) -> Component:
+        return _store_component_middleware(comp, middleware=middleware)
 
-    @overload
-    def __call__(
-        self,
-        *,
-        middleware: dict[str, list[Middleware]] | None = None,
-    ) -> Callable[[Component], Component]:
-        """Parametrized decorator usage: @component(middleware={...})"""
-        ...
-
-    def __call__(
-        self,
-        target: Component | None = None,
-        *,
-        middleware: dict[str, list[Middleware]] | None = None,
-    ) -> Component | Callable[[Component], Component]:
-        """
-        Apply @component decorator to target component.
-
-        This decorator stores per-component middleware metadata on the component.
-        The middleware executes during specific lifecycle phases (pre_resolution,
-        post_resolution, rendering) after global middleware but within the same
-        priority ordering.
-
-        Usage patterns:
-            # Bare decorator on class
-            @component
-            @dataclass
-            class Button:
-                label: str = "Click"
-
-            # Bare decorator on function
-            @component
-            def heading(text: str) -> str:
-                return f"<h1>{text}</h1>"
-
-            # With middleware parameter
-            @component(middleware={"pre_resolution": [logging_mw]})
-            @dataclass
-            class Card:
-                title: str
-
-            # Multiple middleware and phases
-            @component(middleware={
-                "pre_resolution": [logging_mw, validation_mw],
-                "post_resolution": [transform_mw],
-            })
-            @dataclass
-            class Form:
-                action: str
-
-        Args:
-            target: Component class or function to decorate (when used bare)
-            middleware: Dict mapping lifecycle phases to middleware lists
-                       Phases: "pre_resolution", "post_resolution", "rendering"
-
-        Returns:
-            Decorated component with middleware metadata stored
-
-        Examples:
-            >>> from dataclasses import dataclass
-            >>> @component
-            ... @dataclass
-            ... class Button:
-            ...     label: str = "Click"
-            >>> get_component_middleware(Button)
-            {}
-        """
-        # Bare decorator: @component (target provided directly)
-        if target is not None:
-            return _store_component_middleware(target, middleware=None)
-
-        # Called decorator: @component() or @component(middleware={...})
-        def decorator(comp: Component) -> Component:
-            return _store_component_middleware(comp, middleware=middleware)
-
-        return decorator
-
-
-# Create singleton decorator instance
-component = _ComponentDecorator()
+    return decorator
 
 
 def register_component(
     target: Component,
-    middleware: dict[str, list[Middleware]] | None = None,
+    middleware: MiddlewareMap | None = None,
 ) -> None:
     """
     Register component with per-component middleware imperatively.
@@ -247,7 +190,7 @@ def register_component(
 
 def get_component_middleware(
     component: Component,
-) -> dict[str, list[Middleware]]:
+) -> MiddlewareMap:
     """
     Retrieve per-component middleware from component registry.
 

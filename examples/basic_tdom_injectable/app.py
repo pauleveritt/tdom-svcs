@@ -21,7 +21,7 @@ def main() -> str:
     registry.register_factory(Dashboard, Dashboard)
 
     with HopscotchContainer(registry) as container:
-        dashboard = container.inject(Dashboard)
+        dashboard = container.inject(Dashboard)  # ty: ignore[unresolved-attribute]
         result = str(dashboard())
 
         assert "dashboard" in result

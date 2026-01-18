@@ -12,107 +12,13 @@ import pytest
 
 from tdom_svcs.services.middleware import Context, MiddlewareManager
 
-# Test fixtures - middleware implementations
-
-
-@dataclass
-class LowPriorityMiddleware:
-    """Middleware that runs early (priority -10)."""
-
-    priority: int = -10
-
-    def __call__(
-        self,
-        component: type | Callable[..., Any],
-        props: dict[str, Any],
-        context: Context,
-    ) -> dict[str, Any] | None:
-        """Execute middleware and track execution order in props."""
-        props["low"] = True
-        # Track execution order by appending to _execution_order list in props
-        if "_execution_order" not in props:
-            props["_execution_order"] = []
-        props["_execution_order"].append("low")
-        return props
-
-
-@dataclass
-class DefaultPriorityMiddleware:
-    """Middleware that runs at default priority (0)."""
-
-    priority: int = 0
-
-    def __call__(
-        self,
-        component: type | Callable[..., Any],
-        props: dict[str, Any],
-        context: Context,
-    ) -> dict[str, Any] | None:
-        """Execute middleware and track execution order in props."""
-        props["default"] = True
-        # Track execution order by appending to _execution_order list in props
-        if "_execution_order" not in props:
-            props["_execution_order"] = []
-        props["_execution_order"].append("default")
-        return props
-
-
-@dataclass
-class HighPriorityMiddleware:
-    """Middleware that runs late (priority 10)."""
-
-    priority: int = 10
-
-    def __call__(
-        self,
-        component: type | Callable[..., Any],
-        props: dict[str, Any],
-        context: Context,
-    ) -> dict[str, Any] | None:
-        """Execute middleware and track execution order in props."""
-        props["high"] = True
-        # Track execution order by appending to _execution_order list in props
-        if "_execution_order" not in props:
-            props["_execution_order"] = []
-        props["_execution_order"].append("high")
-        return props
-
-
-@dataclass
-class HaltingMiddleware:
-    """Middleware that halts execution by returning None."""
-
-    priority: int = 0
-
-    def __call__(
-        self,
-        component: type | Callable[..., Any],
-        props: dict[str, Any],
-        context: Context,
-    ) -> dict[str, Any] | None:
-        """Return None to halt execution."""
-        return None
-
-
-@dataclass
-class AsyncMiddleware:
-    """Async middleware implementation."""
-
-    priority: int = 5
-
-    async def __call__(
-        self,
-        component: type | Callable[..., Any],
-        props: dict[str, Any],
-        context: Context,
-    ) -> dict[str, Any] | None:
-        """Async middleware execution."""
-        props["async"] = True
-        # Track execution order by appending to _execution_order list in props
-        if "_execution_order" not in props:
-            props["_execution_order"] = []
-        props["_execution_order"].append("async")
-        return props
+from ...conftest import (
+    AsyncMiddleware,
+    DefaultPriorityMiddleware,
+    HaltingMiddleware,
+    HighPriorityMiddleware,
+    LowPriorityMiddleware,
+)
 
 
 class Button:
@@ -369,7 +275,7 @@ def test_middleware_manager_service_invalid_container():
     # Object that is a plain dict (not a service container)
     invalid_container = {"not": "container"}
 
-    with pytest.raises(TypeError, match="Container cannot be a plain dict"):
+    with pytest.raises(TypeError, match="not a valid DI container"):
         manager.register_middleware_service(
             DefaultPriorityMiddleware,
             invalid_container,  # type: ignore[arg-type]

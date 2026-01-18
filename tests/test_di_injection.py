@@ -9,20 +9,7 @@ from svcs_di import HopscotchContainer, HopscotchRegistry, Inject, KeywordInject
 from tdom_svcs import html
 from tdom_svcs.processor import needs_dependency_injection
 
-
-class DatabaseService:
-    """Mock database service."""
-
-    def get_user(self) -> str:
-        return "Alice"
-
-
-class AuthService:
-    """Mock auth service."""
-
-    def is_authenticated(self) -> bool:
-        return True
-
+from .conftest import AuthService, DatabaseService
 
 # Test components
 

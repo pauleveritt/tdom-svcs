@@ -32,8 +32,8 @@ class UserProfile:
 
     def __call__(self) -> Node:
         user = self.db.get_user(self.user_id)
-        name = user['name']
-        role = user['role']
+        name = user["name"]
+        role = user["role"]
         return html(t"<div>User: {name} ({role})</div>")
 
 
@@ -55,6 +55,6 @@ class AdminPanel:
         user_count = self.db.get_users_count()
         user_id = self.auth.get_current_user_id()
         user = self.db.get_user(user_id)
-        user_name = user['name']
+        user_name = user["name"]
 
         return html(t"<div>Admin Panel - {user_name}: {user_count} users</div>")

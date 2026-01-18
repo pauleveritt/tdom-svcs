@@ -14,4 +14,4 @@ def greeting(db: DatabaseService) -> Node:
     """
     users = db.list_users()
     user_count = len(users)
-    return html(t'<div>Hello from tdom_svcs! (Users: {user_count})</div>')
+    return html(t"<div>Hello from tdom_svcs! (Users: {user_count})</div>")

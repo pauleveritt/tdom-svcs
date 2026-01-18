@@ -1,7 +1,24 @@
 from collections.abc import Coroutine
 from typing import Any, Callable, Protocol, TypeVar, runtime_checkable
 
+# -------------------------------------------------------------------------
+# Type Aliases
+# -------------------------------------------------------------------------
+
 type Component = type | Callable[..., Any]
+"""A component can be a class or a callable function."""
+
+type Props = dict[str, Any]
+"""Component properties passed to middleware and component callables."""
+
+type PropsResult = Props | None
+"""Result from synchronous middleware execution - either props dict or None to halt."""
+
+type MiddlewareResult = PropsResult | Coroutine[Any, Any, PropsResult]
+"""Full middleware return type - sync result or async coroutine returning result."""
+
+type MiddlewareMap = dict[str, list["Middleware"]]
+"""Mapping of lifecycle phases to middleware lists for per-component middleware."""
 
 T = TypeVar("T")
 
@@ -46,6 +63,25 @@ class DIContainer(Protocol):
         ...
 
 
+def is_di_container(obj: Any) -> bool:
+    """
+    Check if obj is a proper DI container (not just a dict with .get()).
+
+    The DIContainer protocol is @runtime_checkable, but a plain dict would
+    pass isinstance() since it has a .get() method. This function explicitly
+    excludes dicts to avoid false positives.
+
+    Args:
+        obj: Object to check
+
+    Returns:
+        True if obj is a DI container, False otherwise
+    """
+    if isinstance(obj, dict):
+        return False
+    return isinstance(obj, DIContainer)
+
+
 @runtime_checkable
 class Context(Protocol):
     """
@@ -67,6 +103,6 @@ class Middleware(Protocol):
     def __call__(
         self,
         component: Component,
-        props: dict[str, Any],
+        props: Props,
         context: Context,
-    ) -> dict[str, Any] | None | Coroutine[Any, Any, dict[str, Any] | None]: ...
+    ) -> MiddlewareResult: ...

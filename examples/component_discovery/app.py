@@ -24,9 +24,9 @@ def main() -> str:
 
     with HopscotchContainer(registry) as container:
         # Resolve components - inject() handles Inject[] automatically
-        button = container.inject(Button)
-        profile = container.inject(UserProfile)
-        panel = container.inject(AdminPanel)
+        button = container.inject(Button)  # ty: ignore[unresolved-attribute]
+        profile = container.inject(UserProfile)  # ty: ignore[unresolved-attribute]
+        panel = container.inject(AdminPanel)  # ty: ignore[unresolved-attribute]
 
         # Render and verify
         button_html = str(button())

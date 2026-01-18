@@ -8,7 +8,10 @@ from tdom import Node
 from tdom_svcs import html
 
 from examples.resource_based_components.services.analytics import AnalyticsService
-from examples.resource_based_components.services.contexts import AdminContext, CustomerContext
+from examples.resource_based_components.services.contexts import (
+    AdminContext,
+    CustomerContext,
+)
 from examples.resource_based_components.services.user import UserService
 
 
@@ -23,8 +26,8 @@ class CustomerDashboard:
     def __call__(self) -> Node:
         user_data = self.user.get_current_user()
         stats = self.analytics.get_stats()
-        name = user_data['name']
-        visits = stats['visits']
+        name = user_data["name"]
+        visits = stats["visits"]
         return html(t"<div>Customer Dashboard for {name}: {visits} visits</div>")
 
 
@@ -37,5 +40,5 @@ class AdminDashboard:
 
     def __call__(self) -> Node:
         stats = self.analytics.get_stats()
-        visits = stats['visits']
+        visits = stats["visits"]
         return html(t"<div>Admin Dashboard: Total visits {visits}</div>")

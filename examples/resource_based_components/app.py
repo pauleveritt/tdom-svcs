@@ -7,7 +7,10 @@ Demonstrates how different components are resolved based on resource type
 from svcs_di import HopscotchContainer, HopscotchRegistry
 
 from examples.resource_based_components import site
-from examples.resource_based_components.components import AdminDashboard, CustomerDashboard
+from examples.resource_based_components.components import (
+    AdminDashboard,
+    CustomerDashboard,
+)
 from examples.resource_based_components.services.contexts import CustomerContext
 
 
@@ -27,7 +30,9 @@ def main() -> str:
         container.register_local_value(type, CustomerContext())
 
         # Resolve CustomerDashboard (matches CustomerContext resource)
-        dashboard = container.inject(CustomerDashboard, resource=CustomerContext)
+        dashboard = container.inject(  # ty: ignore[unresolved-attribute]
+            CustomerDashboard, resource=CustomerContext
+        )
         result = str(dashboard())
 
         assert "Customer Dashboard" in result

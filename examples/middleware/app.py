@@ -39,8 +39,11 @@ def main() -> dict:
         # Execute per-component middleware
         component_middleware = get_component_middleware(Button)
         for mw in component_middleware.get("pre_resolution", []):
-            result = mw(Button, result, context)
-            if result is None:
+            mw_result = mw(Button, result, context)
+            # Per-component middleware in examples is always sync
+            if isinstance(mw_result, dict):
+                result = mw_result
+            elif mw_result is None:
                 break
 
         assert result is not None

@@ -79,7 +79,9 @@ def verify_protocol_structural_typing():
     config = MockConfig(component_lookup=lookup)
 
     # Verify they satisfy protocols via structural typing
-    print(f"MockComponentLookup satisfies ComponentLookup protocol: {isinstance(lookup, ComponentLookup)}")
+    print(
+        f"MockComponentLookup satisfies ComponentLookup protocol: {isinstance(lookup, ComponentLookup)}"
+    )
     print(f"MockConfig satisfies Config protocol: {isinstance(config, Config)}")
 
     return config
@@ -150,7 +152,7 @@ def verify_fallback_behavior():
     result = html(t"<{Button} label='Default' />", config=config, context=context)
     print(f"Result: {result}")
 
-    expected = '<button>Default</button>'
+    expected = "<button>Default</button>"
     assert str(result) == expected, f"Expected {expected}, got {str(result)}"
     print("SUCCESS: Fallback behavior works!")
 
@@ -161,7 +163,11 @@ def verify_context_with_dict():
 
     lookup = MockComponentLookup(container="test")
     config = MockConfig(component_lookup=lookup)
-    context_dict = {"user_id": 42, "session": "abc123", "permissions": ["read", "write"]}
+    context_dict = {
+        "user_id": 42,
+        "session": "abc123",
+        "permissions": ["read", "write"],
+    }
 
     print(f"Passing dict as context: {context_dict}")
     result = html(t"<{Button} label='Test' />", config=config, context=context_dict)
@@ -198,13 +204,13 @@ def verify_backward_compatibility():
     print("Calling html() without config or context...")
     result1 = html(t"<{Button} label='Old Style' />")
     print(f"Result: {result1}")
-    expected1 = '<button>Old Style</button>'
+    expected1 = "<button>Old Style</button>"
     assert str(result1) == expected1
 
     print("Calling html() with config=None, context=None...")
     result2 = html(t"<{Button} label='Explicit None' />", config=None, context=None)
     print(f"Result: {result2}")
-    expected2 = '<button>Explicit None</button>'
+    expected2 = "<button>Explicit None</button>"
     assert str(result2) == expected2
 
     print("SUCCESS: Backward compatibility maintained!")
@@ -224,12 +230,16 @@ def verify_no_svcs_dependencies():
         return False
 
     print("Checking Protocol definitions...")
-    assert hasattr(processor_module, "ComponentLookup"), "Missing ComponentLookup protocol"
+    assert hasattr(processor_module, "ComponentLookup"), (
+        "Missing ComponentLookup protocol"
+    )
     assert hasattr(processor_module, "Config"), "Missing Config protocol"
 
     # Verify ComponentLookup uses generic types
     lookup_protocol = processor_module.ComponentLookup
-    assert hasattr(lookup_protocol, "__protocol_attrs__"), "ComponentLookup not runtime_checkable"
+    assert hasattr(lookup_protocol, "__protocol_attrs__"), (
+        "ComponentLookup not runtime_checkable"
+    )
 
     print("SUCCESS: No svcs/svcs-di dependencies found!")
     print("  - ComponentLookup protocol defined")

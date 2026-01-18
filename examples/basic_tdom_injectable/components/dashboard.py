@@ -1,4 +1,5 @@
 """Dashboard component."""
+
 from dataclasses import dataclass
 
 from examples.basic_tdom_injectable.components.button import Button
@@ -13,7 +14,6 @@ from tdom_svcs import html
 @injectable
 @dataclass
 class Dashboard:
-
     counter: Inject[Counter]
 
     def __call__(self) -> Node:

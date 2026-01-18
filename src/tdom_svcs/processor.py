@@ -40,7 +40,6 @@ These functions/classes are imported directly from tdom.processor:
 
 import typing
 from string.templatelib import Interpolation, Template
-from typing import TypeGuard
 
 from svcs_di.auto import get_field_infos
 from svcs_di.injectors.hopscotch import HopscotchInjector
@@ -49,7 +48,7 @@ from tdom.callables import get_callable_info
 from tdom.nodes import Comment, DocumentType, Element, Fragment, Node, Text
 from tdom.parser import TComment, TComponent, TDocumentType, TElement, TFragment, TText
 
-from tdom_svcs.types import DIContainer
+from tdom_svcs.types import DIContainer, is_di_container
 from tdom.processor import (
     AttributesDict,
     CachableTemplate,
@@ -63,27 +62,6 @@ from tdom.processor import (
     format_interpolation,
     format_template,
 )
-
-# --------------------------------------------------------------------------
-# Type Guards
-# --------------------------------------------------------------------------
-
-
-def is_callable_value(obj: object) -> TypeGuard[typing.Callable[..., typing.Any]]:
-    """
-    Type guard for callable objects.
-
-    This function narrows the type of obj to Callable after checking,
-    eliminating the need for type casts.
-
-    Args:
-        obj: Object to check
-
-    Returns:
-        True if obj is callable, False otherwise
-    """
-    return callable(obj)
-
 
 # --------------------------------------------------------------------------
 # DI Helper Functions
@@ -109,23 +87,24 @@ def needs_dependency_injection(value: typing.Any) -> bool:
     return any(info.is_injectable for info in field_infos)
 
 
-def _is_di_container(obj: typing.Any) -> bool:
-    """
-    Check if obj is a proper DI container (not just a dict with .get()).
-
-    The DIContainer protocol is @runtime_checkable, but a plain dict would
-    pass isinstance() since it has a .get() method. This function explicitly
-    excludes dicts to avoid false positives.
-
-    Args:
-        obj: Object to check
-
-    Returns:
-        True if obj is a DI container, False otherwise
-    """
-    if isinstance(obj, dict):
-        return False
-    return isinstance(obj, DIContainer)
+def _add_extras_to_kwargs(
+    callable_info: typing.Any,
+    kwargs: dict[str, typing.Any],
+    context: typing.Any,
+    config: typing.Any,
+    children: tuple[typing.Any, ...],
+) -> None:
+    """Add context/config/children to kwargs if the callable accepts them."""
+    if context is not None and (
+        "context" in callable_info.named_params or callable_info.kwargs
+    ):
+        kwargs["context"] = context
+    if config is not None and (
+        "config" in callable_info.named_params or callable_info.kwargs
+    ):
+        kwargs["config"] = config
+    if "children" in callable_info.named_params or callable_info.kwargs:
+        kwargs["children"] = children
 
 
 def _call_instance_with_extras(
@@ -146,28 +125,12 @@ def _call_instance_with_extras(
     Returns:
         The result of calling the instance, or the instance itself if not callable
     """
-    if not is_callable_value(instance):
+    if not callable(instance):
         return instance
 
-    # Type narrowed to Callable by type guard
     callable_info = get_callable_info(instance)
     kwargs: dict[str, typing.Any] = {}
-
-    # Add context if instance accepts it
-    if context is not None and (
-        "context" in callable_info.named_params or callable_info.kwargs
-    ):
-        kwargs["context"] = context
-
-    # Add config if instance accepts it
-    if config is not None and (
-        "config" in callable_info.named_params or callable_info.kwargs
-    ):
-        kwargs["config"] = config
-
-    # Add children if instance accepts them
-    if "children" in callable_info.named_params or callable_info.kwargs:
-        kwargs["children"] = children
+    _add_extras_to_kwargs(callable_info, kwargs, context, config, children)
 
     return instance(**kwargs) if kwargs else instance()
 
@@ -177,7 +140,7 @@ def _call_instance_with_extras(
 #
 # Changes from original:
 # - Added `config` and `context` parameters
-# - Added DI container detection via _is_di_container()
+# - Added DI container detection via is_di_container()
 # - Added HopscotchInjector wrapping for components with Inject[] fields
 # - Split handling for class components (inject then call __call__) vs
 #   function components (inject and return result directly)
@@ -212,7 +175,7 @@ def _invoke_component(
     value = format_interpolation(interpolation)
 
     # Check if we have a DIContainer in context (exclude plain dicts)
-    container: DIContainer | None = context if _is_di_container(context) else None
+    container: DIContainer | None = context if is_di_container(context) else None
 
     # If we have a container and the component needs DI, wrap it
     if container is not None and needs_dependency_injection(value):
@@ -250,11 +213,10 @@ def _invoke_component(
             value = inject_and_call
 
     # Standard tdom component invocation logic (from tdom.processor._invoke_component)
-    if not is_callable_value(value):
+    if not callable(value):
         raise TypeError(
             f"Expected a callable for component invocation, got {type(value).__name__}"
         )
-    # Type narrowing: value is callable after the check
     value = typing.cast(typing.Callable[..., typing.Any], value)
     callable_info = get_callable_info(value)
 
@@ -275,50 +237,20 @@ def _invoke_component(
     # For function components, everything goes to the function
     is_class_component = isinstance(value, type)
 
+    # Add context/config/children to kwargs if callable accepts them
+    _add_extras_to_kwargs(callable_info, kwargs, context, config, tuple(children))
+
+    missing = callable_info.required_named_params - kwargs.keys()
+    if missing:
+        raise TypeError(
+            f"Missing required parameters for component: {', '.join(missing)}"
+        )
+
     if is_class_component:
-        # Class component: pass context/config/children to __init__ if it accepts them
-        # Then also pass them to __call__ if it accepts them (via _call_instance_with_extras)
-        if context is not None and (
-            "context" in callable_info.named_params or callable_info.kwargs
-        ):
-            kwargs["context"] = context
-
-        if config is not None and (
-            "config" in callable_info.named_params or callable_info.kwargs
-        ):
-            kwargs["config"] = config
-
-        if "children" in callable_info.named_params or callable_info.kwargs:
-            kwargs["children"] = tuple(children)
-
-        missing = callable_info.required_named_params - kwargs.keys()
-        if missing:
-            raise TypeError(
-                f"Missing required parameters for component: {', '.join(missing)}"
-            )
         instance = value(**kwargs)
         # Also pass extras to __call__ if it accepts them
         result = _call_instance_with_extras(instance, tuple(children), context, config)
     else:
-        # Function component: pass everything to the function
-        if context is not None and (
-            "context" in callable_info.named_params or callable_info.kwargs
-        ):
-            kwargs["context"] = context
-
-        if config is not None and (
-            "config" in callable_info.named_params or callable_info.kwargs
-        ):
-            kwargs["config"] = config
-
-        if "children" in callable_info.named_params or callable_info.kwargs:
-            kwargs["children"] = tuple(children)
-
-        missing = callable_info.required_named_params - kwargs.keys()
-        if missing:
-            raise TypeError(
-                f"Missing required parameters for component: {', '.join(missing)}"
-            )
         result = value(**kwargs)
 
     return _node_from_value(result)

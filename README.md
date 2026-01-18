@@ -172,6 +172,20 @@ def Page(context=None, children=()):
 result = html(t"<{Page}><p>Content</p></{Page}>", context={"user": "Alice"})
 ```
 
+## Type Aliases
+
+For middleware developers and advanced type hinting, these aliases are available from `tdom_svcs.types`:
+
+```python
+from tdom_svcs.types import Props, PropsResult, MiddlewareResult, MiddlewareMap, Component
+
+# Props: dict[str, Any] - Component properties
+# PropsResult: Props | None - Sync middleware result
+# MiddlewareResult: PropsResult | Coroutine[Any, Any, PropsResult] - Full middleware return type
+# MiddlewareMap: dict[str, list[Middleware]] - Per-component middleware mapping
+# Component: type | Callable[..., Any] - Component callable
+```
+
 ## Documentation
 
 See [How It Works](docs/how_it_works.md) for comprehensive documentation covering:
@@ -187,11 +201,18 @@ See [How It Works](docs/how_it_works.md) for comprehensive documentation coverin
 
 ```bash
 # Run tests
-pytest
+uv run pytest
 
 # Run tests in parallel
-pytest -n auto
+uv run pytest -n auto
 
 # Run with coverage
-pytest --cov=tdom_svcs
+uv run pytest --cov=tdom_svcs
+
+# Type check
+uv run ty check
+
+# Lint and format
+uv run ruff check .
+uv run ruff format .
 ```

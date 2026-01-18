@@ -7,7 +7,7 @@ Demonstrates the recommended pattern for using middleware as a service:
 - Execute middleware chain
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, cast
 
 from svcs_di import HopscotchContainer, HopscotchRegistry
@@ -20,10 +20,9 @@ class LoggingMiddleware:
     """Middleware that logs component processing."""
 
     priority: int = -10
-    logged: list = None  # For testing - captures what was logged
-
-    def __post_init__(self):
-        self.logged = []
+    logged: list[str] = field(
+        default_factory=list
+    )  # For testing - captures what was logged
 
     def __call__(self, component, props, context):
         self.logged.append(component.__name__)

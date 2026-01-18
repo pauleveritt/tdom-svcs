@@ -28,7 +28,7 @@ def main() -> str:
         container.register_local_value(PurePath, PurePath("/"))
 
         # Resolve HomePage (matches "/" location)
-        page = container.inject(HomePage)
+        page = container.inject(HomePage)  # ty: ignore[unresolved-attribute]
         result = str(page())
 
         assert "Home:" in result

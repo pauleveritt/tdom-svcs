@@ -6,9 +6,14 @@ from dataclasses import dataclass, field
 from operator import attrgetter
 from typing import Any, cast
 
-from tdom_svcs.types import Component
-
-from .models import Context, Middleware
+from tdom_svcs.types import (
+    Component,
+    Context,
+    Middleware,
+    Props,
+    PropsResult,
+    is_di_container,
+)
 
 
 @dataclass
@@ -143,18 +148,11 @@ class MiddlewareManager:
             >>> manager = MiddlewareManager()
             >>> manager.register_middleware_service(LoggingMiddleware, container)
         """
-        # Validate container is not a plain dict and has callable get() method
-        # Plain dicts have get() but resolve keys, not services
-        if isinstance(container, dict):
+        if not is_di_container(container):
             raise TypeError(
-                "Container cannot be a plain dict. "
-                "Expected svcs.Container or compatible service container."
-            )
-        if not (hasattr(container, "get") and callable(container.get)):
-            raise TypeError(
-                f"Container of type {type(container).__name__} does not have "
-                f"callable 'get()' method required for service resolution. "
-                f"Expected svcs.Container or compatible service container."
+                f"Container of type {type(container).__name__} is not a valid "
+                f"DI container. Expected svcs.Container or compatible container "
+                f"with get() method (plain dicts are not allowed)."
             )
 
         with self._lock:
@@ -227,9 +225,9 @@ class MiddlewareManager:
         self,
         sorted_middleware: list[Middleware],
         component: Component,
-        props: dict[str, Any],
+        props: Props,
         context: Context,
-    ) -> dict[str, Any] | None:
+    ) -> PropsResult:
         """
         Execute middleware chain synchronously.
 
@@ -255,9 +253,7 @@ class MiddlewareManager:
                 )
 
             # Type checker: after iscoroutinefunction check, we know result is not a coroutine
-            result = cast(
-                dict[str, Any] | None, middleware(component, current_props, context)
-            )
+            result = cast(PropsResult, middleware(component, current_props, context))
 
             # Halt if middleware returns None
             if result is None:
@@ -271,9 +267,9 @@ class MiddlewareManager:
         self,
         sorted_middleware: list[Middleware],
         component: Component,
-        props: dict[str, Any],
+        props: Props,
         context: Context,
-    ) -> dict[str, Any] | None:
+    ) -> PropsResult:
         """
         Execute middleware chain asynchronously.
 
@@ -298,8 +294,7 @@ class MiddlewareManager:
             else:
                 # Type checker: after iscoroutinefunction check, we know result is not a coroutine
                 result = cast(
-                    dict[str, Any] | None,
-                    middleware(component, current_props, context),
+                    PropsResult, middleware(component, current_props, context)
                 )
 
             # Halt if middleware returns None
@@ -313,9 +308,9 @@ class MiddlewareManager:
     def execute(
         self,
         component: Component,
-        props: dict[str, Any],
+        props: Props,
         context: Context,
-    ) -> dict[str, Any] | None:
+    ) -> PropsResult:
         """
         Execute middleware chain synchronously for a component.
 
@@ -353,9 +348,9 @@ class MiddlewareManager:
     async def execute_async(
         self,
         component: Component,
-        props: dict[str, Any],
+        props: Props,
         context: Context,
-    ) -> dict[str, Any] | None:
+    ) -> PropsResult:
         """
         Execute middleware chain asynchronously for a component.
 

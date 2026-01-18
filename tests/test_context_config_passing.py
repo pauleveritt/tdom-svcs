@@ -6,33 +6,27 @@ from markupsafe import Markup
 from svcs_di import HopscotchContainer, HopscotchRegistry, Inject
 
 from tdom_svcs import html
-from tdom_svcs.processor import _is_di_container
+from tdom_svcs.types import is_di_container
+
+from .conftest import DatabaseService
+
+# Test is_di_container helper
 
 
-class DatabaseService:
-    """Mock database service."""
-
-    def get_user(self) -> str:
-        return "Alice"
-
-
-# Test _is_di_container helper
-
-
-def test_is_di_container_rejects_plain_dict():
+def testis_di_container_rejects_plain_dict():
     """Plain dict should not be considered a DI container."""
     d = {"foo": "bar"}
-    assert not _is_di_container(d)
+    assert not is_di_container(d)
 
 
-def test_is_di_container_accepts_hopscotch_container():
+def testis_di_container_accepts_hopscotch_container():
     """HopscotchContainer should be recognized as a DI container."""
     registry = HopscotchRegistry()
     with HopscotchContainer(registry) as container:
-        assert _is_di_container(container)
+        assert is_di_container(container)
 
 
-def test_is_di_container_accepts_custom_container():
+def testis_di_container_accepts_custom_container():
     """Custom class implementing DIContainer protocol should be recognized."""
 
     class MyContainer:
@@ -40,12 +34,12 @@ def test_is_di_container_accepts_custom_container():
             return service_type()
 
     container = MyContainer()
-    assert _is_di_container(container)
+    assert is_di_container(container)
 
 
-def test_is_di_container_rejects_none():
+def testis_di_container_rejects_none():
     """None should not be a DI container."""
-    assert not _is_di_container(None)
+    assert not is_di_container(None)
 
 
 # Test context passing to components

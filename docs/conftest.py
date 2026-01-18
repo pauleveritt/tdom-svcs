@@ -19,9 +19,15 @@ pytest_collect_file = Sybil(
             "svcs": __import__("svcs"),
             "dataclasses": __import__("dataclasses"),
             "Inject": __import__("svcs_di").Inject,
-            "injectable": __import__("svcs_di.injectors.decorators").injectors.decorators.injectable,
-            "HopscotchInjector": __import__("svcs_di.injectors.locator").injectors.locator.HopscotchInjector,
-            "HopscotchAsyncInjector": __import__("svcs_di.injectors.locator").injectors.locator.HopscotchAsyncInjector,
+            "injectable": __import__(
+                "svcs_di.injectors.decorators"
+            ).injectors.decorators.injectable,
+            "HopscotchInjector": __import__(
+                "svcs_di.injectors.locator"
+            ).injectors.locator.HopscotchInjector,
+            "HopscotchAsyncInjector": __import__(
+                "svcs_di.injectors.locator"
+            ).injectors.locator.HopscotchAsyncInjector,
             "scan": __import__("svcs_di.injectors.locator").injectors.locator.scan,
         }
     ),

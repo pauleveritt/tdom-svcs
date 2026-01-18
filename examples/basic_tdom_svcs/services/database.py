@@ -26,7 +26,9 @@ class DatabaseService:
         Returns:
             User dictionary with id, name, and role
         """
-        return self._users.get(user_id, {"id": user_id, "name": "Unknown", "role": "guest"})
+        return self._users.get(
+            user_id, {"id": user_id, "name": "Unknown", "role": "guest"}
+        )
 
     def list_users(self) -> list[dict]:
         """
@@ -36,3 +38,12 @@ class DatabaseService:
             List of user dictionaries
         """
         return list(self._users.values())
+
+    def get_status(self) -> str:
+        """
+        Get database connection status.
+
+        Returns:
+            Status string
+        """
+        return "connected"

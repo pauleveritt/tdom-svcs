@@ -24,6 +24,6 @@ class GlobalLoggingMiddleware:
         return props
 
 
-def svcs_setup(registry: HopscotchRegistry, context: dict) -> None:
+def svcs_setup(registry: HopscotchRegistry, context: Context) -> None:
     """Configure the service registry for this application."""
     setup_container(context, registry)

@@ -103,14 +103,17 @@ def main() -> dict[str, Any]:
         # Execute per-component middleware
         component_mw = get_component_middleware(Button)
         for mw in component_mw.get("pre_resolution", []):
-            result = mw(Button, result, context)
+            mw_result = mw(Button, result, context)
+            # Per-component middleware in examples is always sync
+            if isinstance(mw_result, dict):
+                result = mw_result
 
         # Verify global middleware ran
         assert "global:Button" in global_logging.logged
 
         # Verify per-component middleware ran and added default variant
         assert "button:Button" in button_mw.logged
-        assert result["variant"] == "primary"
+        assert result is not None and result["variant"] == "primary"
 
         # Execute for Card (no per-component middleware)
         card_props = {"title": "Welcome", "content": "Hello"}

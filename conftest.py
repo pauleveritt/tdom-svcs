@@ -35,5 +35,5 @@ def pytest_collect_file(file_path, parent):
     # Only allow Sybil to search src/ and root README (the path filter in Sybil doesn't always prevent collection)
     if "examples/" in str(file_path):
         return None
-        
+
     return _src_hook(file_path, parent) or _readme_hook(file_path, parent)

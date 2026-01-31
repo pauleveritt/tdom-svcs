@@ -20,10 +20,17 @@
    multi-implementation scenarios, testing strategies, and migration guides from manual service wiring to tdom-svcs.
    Include real-world examples for multi-tenancy and feature flags. `L`
 
-6. [ ] Testing Utilities and Mock Injection — Create testing helpers for injecting mock services, implement test
+6. [ ] Path Middleware — Write a middleware example and docs that show path rewriting middleware. Use the specs
+   in [tdom-path](/Users/pauleveritt/projects/t-strings/tdom-path/agent-os) for research. This effort will be different
+   and simpler: you can register a service in the container that collects component paths and which assets are used and
+   need copying. Keep this example simple. Explain the goal of using relative paths to actual things on disk during
+   authoring, to let tooling help. To collect the path to the component, so you'll know where on disk it is relative
+   too. An emphasis on standard Python path types. A way later to render relative to the path of a future request.
+ 
+7. [ ] Testing Utilities and Mock Injection — Create testing helpers for injecting mock services, implement test
    container fixtures, and provide examples of testing components in isolation with mocked dependencies. `S`
 
-7. [ ] Performance Optimization and Caching — Add component resolution caching, optimize injector lookup performance,
+8. [ ] Performance Optimization and Caching — Add component resolution caching, optimize injector lookup performance,
    and implement lazy loading for component dependencies to minimize overhead. `M`
 
 8. [ ] Developer Experience Tools — Build CLI tools for component discovery validation, dependency graph visualization,

@@ -1,7 +1,5 @@
 """Middleware system for component lifecycle hooks."""
 
-from typing import Any
-
 from tdom_svcs.types import Context, Middleware
 
 from .decorators import component, get_component_middleware, register_component
@@ -15,7 +13,7 @@ from .middleware_manager import MiddlewareManager
 
 
 def setup_container(
-    context: Any, registry: Any = None, register_manager: bool = True
+    context: object, registry: object | None = None, register_manager: bool = True
 ) -> None:
     """
     Setup context for middleware system with service registration.

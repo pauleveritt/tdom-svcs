@@ -28,7 +28,7 @@ tdom-svcs provides core services:
 - {doc}`getting_started` - Install and create your first component
 - {doc}`core_concepts` - Understand components, DI, and registries
 - {doc}`how_it_works` - Deep dive into architecture and patterns
-- {doc}`examples` - Browse working examples
+- {doc}`examples/index` - Browse working examples
 - {doc}`api_reference` - API documentation
 
 ### Services Documentation
@@ -44,7 +44,7 @@ getting_started
 core_concepts
 how_it_works
 services/middleware
-examples
+examples/index
 api_reference
 ```
 
@@ -104,5 +104,5 @@ Components are automatically discovered via `@injectable`, dependencies are inje
 
 1. Follow the {doc}`getting_started` guide to set up your first application
 2. Read {doc}`core_concepts` to understand the fundamental concepts
-3. Explore {doc}`examples` for real-world patterns
+3. Explore {doc}`examples/index` for real-world patterns
 4. Dive into {doc}`how_it_works` for advanced topics

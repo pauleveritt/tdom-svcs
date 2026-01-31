@@ -4,11 +4,12 @@ import inspect
 import threading
 from dataclasses import dataclass, field
 from operator import attrgetter
-from typing import Any, cast
+from typing import cast
 
 from tdom_svcs.types import (
     Component,
     Context,
+    DIContainer,
     Middleware,
     Props,
     PropsResult,
@@ -69,7 +70,7 @@ class MiddlewareManager:
     """
 
     _middleware: list[Middleware] = field(default_factory=list, init=False, repr=False)
-    _middleware_services: list[tuple[type[Middleware], Any]] = field(
+    _middleware_services: list[tuple[type[Middleware], DIContainer]] = field(
         default_factory=list, init=False, repr=False
     )
     _lock: threading.Lock = field(
@@ -112,7 +113,7 @@ class MiddlewareManager:
             self._middleware.append(middleware)
 
     def register_middleware_service(
-        self, middleware_type: type[Middleware], container: Any
+        self, middleware_type: type[Middleware], container: object
     ) -> None:
         """
         Register a middleware service type for lazy construction via DI.
@@ -155,11 +156,13 @@ class MiddlewareManager:
                 f"with get() method (plain dicts are not allowed)."
             )
 
+        # TypeGuard narrowing: after the check above, container is DIContainer
+        validated_container = cast(DIContainer, container)
         with self._lock:
-            self._middleware_services.append((middleware_type, container))
+            self._middleware_services.append((middleware_type, validated_container))
 
     def _resolve_middleware_service(
-        self, middleware_type: type[Middleware], container: Any
+        self, middleware_type: type[Middleware], container: DIContainer
     ) -> Middleware:
         """
         Resolve a single middleware service from container.

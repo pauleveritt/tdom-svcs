@@ -38,17 +38,27 @@ These functions/classes are imported directly from tdom.processor:
 - AttributesDict, CachableTemplate
 """
 
-import typing
+from collections.abc import Callable, Sequence
 from string.templatelib import Interpolation, Template
+from typing import cast
 
 from svcs_di.auto import get_field_infos
 from svcs_di.injectors.hopscotch import HopscotchInjector
 from tdom import html as tdom_html
-from tdom.callables import get_callable_info
+from tdom.callables import CallableInfo, get_callable_info
 from tdom.nodes import Comment, DocumentType, Element, Fragment, Node, Text
-from tdom.parser import TComment, TComponent, TDocumentType, TElement, TFragment, TText
+from tdom.parser import (
+    TComment,
+    TComponent,
+    TDocumentType,
+    TElement,
+    TFragment,
+    TNode,
+    TText,
+)
+from tdom.template_utils import TemplateRef
 
-from tdom_svcs.types import DIContainer, is_di_container
+from tdom_svcs.types import is_di_container
 from tdom.processor import (
     AttributesDict,
     CachableTemplate,
@@ -64,11 +74,25 @@ from tdom.processor import (
 )
 
 # --------------------------------------------------------------------------
+# Type Aliases
+# --------------------------------------------------------------------------
+
+# Context can be a DIContainer for DI injection (svcs.Container, HopscotchContainer),
+# or a Mapping for passing to components. We use object | None because static type
+# checkers can't verify structural protocol satisfaction for external container types.
+type ContextArg = object | None
+
+# Config is typically a mapping of configuration values (dict, Mapping subclass).
+# We use object | None for the same reason as ContextArg.
+type ConfigArg = object | None
+
+
+# --------------------------------------------------------------------------
 # DI Helper Functions
 # --------------------------------------------------------------------------
 
 
-def needs_dependency_injection(value: typing.Any) -> bool:
+def needs_dependency_injection(value: object) -> bool:
     """
     Check if a callable needs dependency injection.
 
@@ -78,21 +102,21 @@ def needs_dependency_injection(value: typing.Any) -> bool:
         value: The callable to check
 
     Returns:
-        True if the callable has Inject[] fields/parameters, False otherwise
+        True if the callable has Inject[] or Resource[] fields/parameters, False otherwise
     """
     if not callable(value):
         return False
     # get_field_infos from svcs-di handles both classes and functions
     field_infos = get_field_infos(value)
-    return any(info.is_injectable for info in field_infos)
+    return any(info.is_injectable or info.is_resource for info in field_infos)
 
 
 def _add_extras_to_kwargs(
-    callable_info: typing.Any,
-    kwargs: dict[str, typing.Any],
-    context: typing.Any,
-    config: typing.Any,
-    children: tuple[typing.Any, ...],
+    callable_info: CallableInfo,
+    kwargs: dict[str, object],
+    context: ContextArg,
+    config: ConfigArg,
+    children: tuple[Node, ...],
 ) -> None:
     """Add context/config/children to kwargs if the callable accepts them."""
     if context is not None and (
@@ -108,11 +132,11 @@ def _add_extras_to_kwargs(
 
 
 def _call_instance_with_extras(
-    instance: typing.Any,
-    children: tuple[typing.Any, ...],
-    context: typing.Any = None,
-    config: typing.Any = None,
-) -> typing.Any:
+    instance: object,
+    children: tuple[Node, ...],
+    context: ContextArg = None,
+    config: ConfigArg = None,
+) -> object:
     """
     Call a component instance, passing children/context/config if it accepts them.
 
@@ -128,11 +152,14 @@ def _call_instance_with_extras(
     if not callable(instance):
         return instance
 
-    callable_info = get_callable_info(instance)
-    kwargs: dict[str, typing.Any] = {}
+    # Use __call__ method for get_callable_info to avoid hashability issues.
+    # Dataclass instances aren't hashable by default, but bound methods are.
+    call_method = cast(Callable[..., object], instance.__call__)  # type: ignore[union-attr]
+    callable_info = get_callable_info(call_method)
+    kwargs: dict[str, object] = {}
     _add_extras_to_kwargs(callable_info, kwargs, context, config, children)
 
-    return instance(**kwargs) if kwargs else instance()
+    return call_method(**kwargs) if kwargs else call_method()
 
 
 # --------------------------------------------------------------------------
@@ -148,12 +175,56 @@ def _call_instance_with_extras(
 # --------------------------------------------------------------------------
 
 
+def _get_implementation(context: ContextArg, cls: type) -> type:
+    """
+    Get the registered implementation for a class from the container's locator.
+
+    If the context is a DI container with a registry that has a locator,
+    check if there's a registered implementation for the given class.
+    This enables register_implementation() to override components in templates.
+
+    Supports resource-based and location-based resolution when the container
+    has resource/location attributes (e.g., HopscotchContainer).
+
+    Args:
+        context: The context (potentially a DI container)
+        cls: The class to look up an implementation for
+
+    Returns:
+        The registered implementation, or the original class if none found
+    """
+    if not is_di_container(context):
+        return cls
+
+    # Check if context has a registry with a locator
+    registry = getattr(context, "registry", None)
+    if registry is None:
+        return cls
+
+    locator = getattr(registry, "locator", None)
+    if locator is None:
+        return cls
+
+    # Try to get the implementation from the locator
+    get_impl = getattr(locator, "get_implementation", None)
+    if get_impl is None:
+        return cls
+
+    # Get resource and location from container for resource/location-based resolution
+    resource = getattr(context, "resource", None)
+    resource_type = type(resource) if resource is not None else None
+    location = getattr(context, "location", None)
+
+    impl = get_impl(cls, resource=resource_type, location=location)
+    return impl if impl is not None else cls
+
+
 def _invoke_component(
     attrs: AttributesDict,
     children: list[Node],
     interpolation: Interpolation,
-    config: typing.Any = None,
-    context: typing.Any = None,
+    config: ConfigArg = None,
+    context: ContextArg = None,
 ) -> Node:
     """
     Fork of tdom's _invoke_component with DI support.
@@ -174,20 +245,23 @@ def _invoke_component(
     """
     value = format_interpolation(interpolation)
 
-    # Check if we have a DIContainer in context (exclude plain dicts)
-    container: DIContainer | None = context if is_di_container(context) else None
+    # Check for registered implementation override (enables register_implementation)
+    if isinstance(value, type):
+        value = _get_implementation(context, value)
 
-    # If we have a container and the component needs DI, wrap it
-    if container is not None and needs_dependency_injection(value):
-        injector = HopscotchInjector(container=container)
+    # If we have a DI container in context and the component needs DI, wrap it
+    # is_di_container is a TypeGuard that narrows context to DIContainer
+    if is_di_container(context) and needs_dependency_injection(value):
+        # HopscotchInjector expects svcs.Container; DIContainer protocol is compatible
+        injector = HopscotchInjector(container=context)  # type: ignore[arg-type]
 
         if isinstance(value, type):
             # Class component: create instance via injector, then call with extras
             cls: type = value
 
-            def inject_and_invoke(**kwargs: typing.Any) -> typing.Any:
+            def inject_and_invoke(**kwargs: object) -> object:
                 """Inject dependencies and invoke class component with extras."""
-                extra_children = kwargs.pop("children", ())
+                extra_children = cast(tuple[Node, ...], kwargs.pop("children", ()))
                 ctx = kwargs.pop("context", None)
                 cfg = kwargs.pop("config", None)
                 instance = injector(cls, **kwargs)
@@ -199,9 +273,9 @@ def _invoke_component(
         else:
             # Function component: inject and call directly, result is returned
             # We're in the else branch of isinstance(value, type), so it's a callable
-            func = typing.cast(typing.Callable[..., typing.Any], value)
+            func = cast(Callable[..., object], value)
 
-            def inject_and_call(**kwargs: typing.Any) -> typing.Any:
+            def inject_and_call(**kwargs: object) -> object:
                 """Inject dependencies and call function component."""
                 # Remove special params that the injector doesn't know about
                 # The function may or may not accept these - injector will validate
@@ -217,7 +291,7 @@ def _invoke_component(
         raise TypeError(
             f"Expected a callable for component invocation, got {type(value).__name__}"
         )
-    value = typing.cast(typing.Callable[..., typing.Any], value)
+    value = cast(Callable[..., object], value)
     callable_info = get_callable_info(value)
 
     if callable_info.requires_positional:
@@ -266,10 +340,10 @@ def _invoke_component(
 
 
 def _substitute_and_flatten_children(
-    children: list[typing.Any],
+    children: Sequence[TNode],
     interpolations: tuple[Interpolation, ...],
-    config: typing.Any = None,
-    context: typing.Any = None,
+    config: ConfigArg = None,
+    context: ContextArg = None,
 ) -> list[Node]:
     """
     Fork of tdom's _substitute_and_flatten_children that uses our DI-aware _resolve_t_node.
@@ -277,7 +351,7 @@ def _substitute_and_flatten_children(
     Substitute placeholders in a list of children and flatten any fragments.
 
     Args:
-        children: List of TNode children to process
+        children: Sequence of TNode children to process
         interpolations: Template interpolations
         config: Optional config object
         context: Optional svcs.Container for dependency injection
@@ -300,13 +374,13 @@ def _substitute_and_flatten_children(
 
 
 def _resolve_t_text_ref(
-    ref: typing.Any, interpolations: tuple[Interpolation, ...]
+    ref: TemplateRef, interpolations: tuple[Interpolation, ...]
 ) -> Text | Fragment:
     """
     Resolve a TText ref into Text or Fragment by processing interpolations.
 
     Args:
-        ref: TText reference from parsed template
+        ref: TemplateRef from parsed template
         interpolations: Template interpolations
 
     Returns:
@@ -347,10 +421,10 @@ def _resolve_t_text_ref(
 
 
 def _resolve_t_node(
-    t_node: typing.Any,
+    t_node: TNode,
     interpolations: tuple[Interpolation, ...],
-    config: typing.Any = None,
-    context: typing.Any = None,
+    config: ConfigArg = None,
+    context: ContextArg = None,
 ) -> Node:
     """
     Fork of tdom's _resolve_t_node that uses our DI-aware _invoke_component.
@@ -432,8 +506,8 @@ def _resolve_t_node(
 def html(
     template: Template,
     *,
-    config: typing.Any = None,
-    context: typing.Any = None,
+    config: ConfigArg = None,
+    context: ContextArg = None,
 ) -> Node:
     """
     Process a template string into an HTML node tree with optional dependency injection.

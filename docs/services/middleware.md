@@ -456,17 +456,14 @@ assert result is None  # Halted by validation
 
 ## Full Example Links
 
-The `examples/middleware/` directory contains 7 complete working examples:
+The `examples/middleware/` directory contains complete working examples:
 
 | Example | Description | Key Concepts |
 |---------|-------------|--------------|
-| [01_basic_middleware.py](../../examples/middleware/01_basic_middleware.py) | Basic middleware usage with service pattern | Setup, registration, execution |
-| [02_middleware_with_dependencies.py](../../examples/middleware/02_middleware_with_dependencies.py) | Middleware with injected dependencies | Service-based registration, DI |
-| [03_testing_with_fakes.py](../../examples/middleware/03_testing_with_fakes.py) | Testing middleware with mock services | Test doubles, isolation |
-| [04_manual_registration.py](../../examples/middleware/04_manual_registration.py) | Manual MiddlewareManager registration | Direct instantiation |
-| [05_error_handling_middleware.py](../../examples/middleware/05_error_handling_middleware.py) | Error handling and recovery patterns | Exception handling, fallbacks |
-| [06_global_and_per_component.py](../../examples/middleware/06_global_and_per_component.py) | Global vs per-component middleware | Middleware scoping |
-| [07_async_middleware.py](../../examples/middleware/07_async_middleware.py) | Async middleware with mixed sync/async | Async support, automatic detection |
+| [basic/](../../examples/middleware/basic/) | Basic middleware usage | Chain execution, priority, halting |
+| [dependencies/](../../examples/middleware/dependencies/) | Middleware with injected services | Service-based registration, DI, testing with fakes |
+| [error_handling/](../../examples/middleware/error_handling/) | Error handling and recovery | Exception handling, fallbacks, circuit breaker |
+| [scoping/](../../examples/middleware/scoping/) | Global vs per-component middleware | Middleware scoping, async support |
 
 ## Best Practices
 
@@ -582,5 +579,5 @@ result = await manager.execute_async(component, props, context)
 
 - {doc}`../core_concepts` - Understand middleware concepts
 - {doc}`../how_it_works` - Architecture and patterns
-- {doc}`../examples` - More usage examples
-- [Middleware Examples Directory](../../examples/middleware/) - Complete examples
+- {doc}`../examples/index` - More usage examples
+- {doc}`../examples/middleware/index` - Complete middleware examples

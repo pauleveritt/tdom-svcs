@@ -257,4 +257,4 @@ if __name__ == "__main__":
 
 - {doc}`how_it_works` - Deep dive into architecture and advanced features
 - {doc}`services/middleware` - Add lifecycle hooks to components
-- {doc}`examples` - Browse more examples
+- {doc}`examples/index` - Browse more examples

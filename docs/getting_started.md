@@ -193,7 +193,7 @@ Now that you have a working component, explore:
 
 - {doc}`core_concepts` - Learn about components, DI, and registries
 - {doc}`how_it_works` - Understand the architecture in depth
-- {doc}`examples` - See more complex patterns and use cases
+- {doc}`examples/index` - See more complex patterns and use cases
 - {doc}`services/middleware` - Add lifecycle hooks to your components
 
 ## Common Issues

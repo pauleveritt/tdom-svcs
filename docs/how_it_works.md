@@ -330,7 +330,7 @@ class AdminDashboard:
 # HopscotchInjector selects correct implementation
 ```
 
-See [examples/override_resource.py](../examples/override_resource.py) for a complete working example.
+See {doc}`examples/hopscotch/resource` for a complete working example.
 
 ### Location-Based Resolution
 
@@ -362,7 +362,7 @@ class AdminPanel:
 # HopscotchInjector resolves based on current location
 ```
 
-See [examples/override_location.py](../examples/override_location.py) for a complete working example.
+See {doc}`examples/hopscotch/location` for a complete working example.
 
 ### Async Components
 
@@ -498,7 +498,7 @@ class CustomButton(Button):  # Inherit interface
 registry.register_value(Button, CustomButton)
 ```
 
-See [examples/override_global.py](../examples/override_global.py) for a complete working example showing how to override components at the site level.
+See {doc}`examples/hopscotch/override` for a complete working example showing how to override components at the site level.
 
 ### Resource-Based Override Pattern
 
@@ -540,7 +540,7 @@ class AdminDashboard:
 2. Base implementation with no resource
 3. Raises error if no match found
 
-See [examples/override_resource.py](../examples/override_resource.py) for a complete working example of multi-tenancy with resource-based component resolution.
+See {doc}`examples/hopscotch/resource` for a complete working example of multi-tenancy with resource-based component resolution.
 
 ### Location-Based Override Pattern
 
@@ -577,7 +577,7 @@ class AdminPageLayout:
 3. Root location match (e.g., `/`)
 4. Base implementation with no location
 
-See [examples/override_location.py](../examples/override_location.py) for a complete working example of URL path-based component resolution.
+See {doc}`examples/hopscotch/location` for a complete working example of URL path-based component resolution.
 
 ## Testing Patterns
 
@@ -706,10 +706,10 @@ def test_component_resolution_integration():
     assert "Submit" in output or "<button" in output
 ```
 
-For complete testing examples, see [examples/middleware/03_testing_with_fakes.py](../examples/middleware/03_testing_with_fakes.py).
+For complete testing examples, see the [dependencies middleware example](examples/middleware/dependencies), which demonstrates testing with fakes.
 
 ## Complete Setup Example
 
 Here's a complete application setup showing all the pieces together:
 
-For more examples, see {doc}`examples` and the `examples/` directory in the repository.
+For more examples, see {doc}`examples/index` and the `examples/` directory in the repository.

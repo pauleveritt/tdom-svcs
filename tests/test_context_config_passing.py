@@ -3,7 +3,8 @@
 from dataclasses import dataclass
 
 from markupsafe import Markup
-from svcs_di import HopscotchContainer, HopscotchRegistry, Inject
+from svcs_di import Inject
+from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
 
 from tdom_svcs import html
 from tdom_svcs.types import is_di_container

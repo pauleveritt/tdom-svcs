@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 import pytest
-from svcs_di import HopscotchContainer, HopscotchRegistry
+from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
 
 from tdom_svcs.services.middleware import Context
 

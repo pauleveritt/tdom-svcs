@@ -79,6 +79,20 @@ with HopscotchContainer(registry) as container:
 - **HopscotchRegistry** - Extended registry with `register_implementation()` for multi-implementation support
 - **HopscotchContainer** - Extended container with built-in `inject()` and `ainject()` methods
 
+### Component Overrides
+
+Use `register_implementation()` to override components in templates without changing the template code:
+
+```python
+@dataclass
+class FrenchGreeting(Greeting):
+    def __call__(self) -> Node:
+        return html(t"<h1>Bonjour {self.users.get_current_user()['name']}!</h1>")
+
+# Register override - templates using <{Greeting} /> will now use FrenchGreeting
+registry.register_implementation(Greeting, FrenchGreeting)
+```
+
 ### Injector Selection
 
 - **HopscotchContainer.inject()** (production) - Built-in DI with resource/location resolution

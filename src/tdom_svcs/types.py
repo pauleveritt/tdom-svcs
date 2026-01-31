@@ -1,5 +1,5 @@
 from collections.abc import Coroutine
-from typing import Any, Callable, Protocol, TypeVar, runtime_checkable
+from typing import Any, Callable, Protocol, TypeGuard, TypeVar, runtime_checkable
 
 # -------------------------------------------------------------------------
 # Type Aliases
@@ -63,13 +63,15 @@ class DIContainer(Protocol):
         ...
 
 
-def is_di_container(obj: Any) -> bool:
+def is_di_container(obj: object) -> TypeGuard[DIContainer]:
     """
     Check if obj is a proper DI container (not just a dict with .get()).
 
     The DIContainer protocol is @runtime_checkable, but a plain dict would
     pass isinstance() since it has a .get() method. This function explicitly
     excludes dicts to avoid false positives.
+
+    This function acts as a TypeGuard, narrowing the type when it returns True.
 
     Args:
         obj: Object to check

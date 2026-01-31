@@ -301,4 +301,4 @@ class MiddlewareManager:
 - {doc}`core_concepts` - Fundamental concepts
 - {doc}`how_it_works` - Architecture deep dive
 - {doc}`services/middleware` - MiddlewareManager details
-- {doc}`examples` - Working examples
+- {doc}`examples/index` - Working examples

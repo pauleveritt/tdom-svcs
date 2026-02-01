@@ -5,63 +5,55 @@ Demonstrates:
 - Per-component middleware (via @component decorator)
 - Async middleware support
 - Mixed sync and async chains
+
+This example uses Hopscotch patterns (decorators, scanning) for convenience.
+You can also use imperative registration with register_middleware() if preferred.
 """
 
 import asyncio
-from typing import Any, cast
 
 from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
-from svcs_di.injectors.scanning import scan
 
-from examples.common import Greeting, Request
-from examples.middleware.scoping import components, services
-from examples.middleware.scoping.components import Button, Card, button_mw
+from examples.common import SimpleComponent
+from examples.middleware.scoping import components, middleware
+from examples.middleware.scoping.components import Button, ButtonSpecificMiddleware, Card
 from examples.middleware.scoping.middleware import (
     AsyncDatabaseMiddleware,
     AsyncValidationMiddleware,
     GlobalLoggingMiddleware,
-    GlobalValidationMiddleware,
     SyncTransformMiddleware,
 )
-from tdom_svcs import html
-from tdom_svcs.services.middleware import (
-    Context,
-    MiddlewareManager,
+from tdom_svcs import (
+    execute_component_middleware,
+    execute_middleware,
+    execute_middleware_async,
     get_component_middleware,
-    setup_container,
+    html,
+    register_middleware,
+    scan,
 )
 
 
 async def main() -> str:
     """Execute global and per-component middleware with async support."""
+    # Create registry and scan for @injectable, @middleware, and @component
     registry = HopscotchRegistry()
-    scan(registry, services, components)
-
-    # Setup middleware manager
-    context: Context = cast(Context, {"config": {"debug": True}})
-    setup_container(context, registry)
+    scan(registry, middleware, components)
 
     with HopscotchContainer(registry) as container:
-        container.register_local_value(Request, Request(user_id="1"))
-
-        manager = container.get(MiddlewareManager)
-
-        # Register global middleware
-        global_logging = GlobalLoggingMiddleware()
-        manager.register_middleware(global_logging)
-        manager.register_middleware(GlobalValidationMiddleware())
+        # Get global logging middleware for verification
+        global_logging = container.get(GlobalLoggingMiddleware)
+        # Get button-specific middleware for verification
+        button_mw = container.get(ButtonSpecificMiddleware)
 
         # Test 1: Button with per-component middleware
         button_props = {"title": "Click Me"}
-        result = manager.execute(Button, button_props, context)
+        result = execute_middleware(Button, button_props, container)
         assert result is not None
 
-        # Execute per-component middleware
-        component_mw = get_component_middleware(Button)
-        for mw in component_mw.get("pre_resolution", []):
-            mw_result = mw(Button, result, context)
-            if isinstance(mw_result, dict):
-                result = mw_result
+        # Execute per-component middleware (resolves types from container)
+        result = execute_component_middleware(Button, result, container, "pre_resolution")
+        assert result is not None
 
         assert "global:Button" in global_logging.logged
         assert "button:Button" in button_mw.logged
@@ -69,30 +61,25 @@ async def main() -> str:
 
         # Test 2: Card without per-component middleware
         card_props = {"title": "Welcome", "content": "Hello there!"}
-        card_result = manager.execute(Card, card_props, context)
+        card_result = execute_middleware(Card, card_props, container)
         assert card_result is not None
         assert "global:Card" in global_logging.logged
 
         # Card has no per-component middleware
-        card_mw = get_component_middleware(Card)
+        card_mw = get_component_middleware(registry, Card)
         assert not card_mw.get("pre_resolution", [])
 
         # Test 3: Async middleware chain
-        # Create a new manager for async test
-        async_manager = MiddlewareManager()
-        sync_logging = GlobalLoggingMiddleware()
-        async_db = AsyncDatabaseMiddleware()
-        async_validation = AsyncValidationMiddleware()
-        sync_transform = SyncTransformMiddleware()
+        # Register async middleware imperatively for the async test
+        register_middleware(registry, AsyncDatabaseMiddleware)
+        register_middleware(registry, AsyncValidationMiddleware)
+        register_middleware(registry, SyncTransformMiddleware)
 
-        async_manager.register_middleware(sync_logging)
-        async_manager.register_middleware(async_db)
-        async_manager.register_middleware(async_validation)
-        async_manager.register_middleware(sync_transform)
-
-        # Execute async middleware chain using Greeting
+        # Execute async middleware chain
         async_props = {"title": "Main Dashboard"}
-        async_result = await async_manager.execute_async(Greeting, async_props, context)
+        async_result = await execute_middleware_async(
+            SimpleComponent, async_props, container
+        )
 
         assert async_result is not None
         assert "_db_user" in async_result
@@ -100,18 +87,14 @@ async def main() -> str:
         assert "_sync_processed" in async_result
 
         # Test 4: Async validation failure
-        invalid_result = await async_manager.execute_async(
-            Greeting, {"title": "Error", "invalid": True}, context
+        invalid_result = await execute_middleware_async(
+            SimpleComponent, {"title": "Error", "invalid": True}, container
         )
         assert invalid_result is None
 
-        # Render Greeting component
-        response = html(t"<{Greeting} />", context=container)
-        result_html = str(response)
-
-        assert "Hello Alice!" in result_html
-
-        return result_html
+        # Render component
+        response = html(t"<{SimpleComponent} />", context=container)
+        return str(response)
 
 
 if __name__ == "__main__":

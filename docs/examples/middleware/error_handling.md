@@ -1,60 +1,82 @@
 # Error Handling Middleware
 
-This example demonstrates patterns for handling errors gracefully: exception catching, fallback rendering, and the circuit breaker pattern.
+This example demonstrates patterns for handling errors gracefully: exception catching, fallback rendering, and the
+circuit breaker pattern.
+
+```{note}
+This example uses Hopscotch patterns (`@middleware`, `scan()`) for convenience.
+You can also use imperative registration with `register_middleware()` if preferred.
+```
 
 ## Project structure
 
 ```
 error_handling/
 ├── app.py              # Main entry point
-├── components.py       # Greeting, FailingComponent
-├── services.py         # Database, Users services
-├── middleware.py       # ErrorHandler, Fallback, CircuitBreaker
-├── request.py          # Request dataclass
-└── site/
-    └── __init__.py     # Site configuration placeholder
+├── components.py       # FailingComponent for error demos
+└── middleware.py       # ErrorHandler, Fallback, CircuitBreaker
+```
+
+## Defining middleware with decorators
+
+Middleware classes are marked with the `@middleware` decorator:
+
+```{literalinclude} ../../../examples/middleware/error_handling/middleware.py
+:start-after: The circuit breaker middleware
+:end-at: class CircuitBreakerMiddleware:
+:emphasize-lines: 1
+```
+
+The `@middleware` decorator both marks the class for discovery by `scan()` and makes it injectable for DI resolution.
+
+## Circuit breaker pattern
+
+The CircuitBreakerMiddleware implements fail-fast behavior after repeated failures:
+
+```{literalinclude} ../../../examples/middleware/error_handling/middleware.py
+:start-at: class CircuitBreakerMiddleware:
+:end-at: return props
+:emphasize-lines: 13-16
+```
+
+After exceeding the failure threshold, all subsequent requests immediately return `None`.
+
+## Fallback middleware
+
+FallbackMiddleware provides default values for missing props. Priority `-5` ensures it runs early:
+
+```{literalinclude} ../../../examples/middleware/error_handling/middleware.py
+:start-at: class FallbackMiddleware:
+:end-at: return props
+:emphasize-lines: 12-14
 ```
 
 ## Error handling middleware
 
-The ErrorHandlingMiddleware catches validation errors and can either halt or provide fallback props:
+ErrorHandlingMiddleware catches validation errors. High priority (100) ensures it runs late:
 
 ```{literalinclude} ../../../examples/middleware/error_handling/middleware.py
-:start-at: class ErrorHandlingMiddleware
+:start-at: class ErrorHandlingMiddleware:
 :end-at: return None
+:emphasize-lines: 18-21
 ```
 
-Note the high priority (100) which ensures this middleware runs late in the chain, after other middleware have had a chance to process.
+## Scanning and setup
 
-## Fallback middleware
-
-FallbackMiddleware provides default values for missing props:
-
-```{literalinclude} ../../../examples/middleware/error_handling/middleware.py
-:start-at: class FallbackMiddleware
-:end-at: return props
-```
-
-With priority -5, it runs early to set defaults before validation occurs.
-
-## Circuit breaker pattern
-
-CircuitBreakerMiddleware implements fail-fast behavior after repeated failures:
-
-```{literalinclude} ../../../examples/middleware/error_handling/middleware.py
-:start-at: class CircuitBreakerMiddleware
-:end-at: return props
-```
-
-After exceeding the failure threshold, all subsequent requests immediately return `None` without processing.
-
-## Using error handling middleware
-
-Register middleware with appropriate priorities:
+The `scan()` function discovers both `@injectable` services and `@middleware` classes:
 
 ```{literalinclude} ../../../examples/middleware/error_handling/app.py
-:start-at: circuit_breaker = CircuitBreakerMiddleware
-:end-at: manager.register_middleware(error_handler)
+:start-at: registry = HopscotchRegistry
+:end-at: scan(registry, middleware)
+```
+
+## Configuring middleware instances
+
+Get middleware from the container to allow assertions later:
+
+```{literalinclude} ../../../examples/middleware/error_handling/app.py
+:start-at: circuit_breaker = container.get
+:end-at: error_handler.fallback_props
 ```
 
 ## Running the example
@@ -64,25 +86,26 @@ uv run python -m examples.middleware.error_handling.app
 ```
 
 Output:
+
 ```
-<h1>Hello Alice!</h1>
+<div>Simple Component</div>
 ```
 
 The example uses assertions to verify behavior. All middleware logic is tested silently.
 
 ## Full source code
 
-### app.py
+### `app.py`
 
 ```{literalinclude} ../../../examples/middleware/error_handling/app.py
 ```
 
-### middleware.py
+### `middleware.py`
 
 ```{literalinclude} ../../../examples/middleware/error_handling/middleware.py
 ```
 
-### components.py
+### `components.py`
 
 ```{literalinclude} ../../../examples/middleware/error_handling/components.py
 ```

@@ -2,18 +2,21 @@
 Decorator-based per-component middleware registration for tdom-svcs.
 
 Provides @component decorator for marking components with per-component middleware
-that executes during specific lifecycle phases. Uses a dataclass-based registry
-for type-safe metadata storage.
+that executes during specific lifecycle phases. Uses registry metadata for storage.
 
-Per-component middleware executes after global middleware, with both respecting
-priority ordering within their respective groups.
+Two-phase registration:
+1. Decoration phase: @component marks the class with middleware config
+2. Scanning phase: scan() discovers marked classes and registers with registry
 
 Usage::
 
-    from tdom_svcs.services.middleware import component, Middleware
+    from tdom_svcs.services.middleware import component
+    from tdom_svcs import scan, execute_component_middleware
+    from svcs_di.injectors import injectable
     from dataclasses import dataclass
 
-    # Define middleware
+    # Define middleware (must be @injectable for container resolution)
+    @injectable
     @dataclass
     class LoggingMiddleware:
         priority: int = -10
@@ -22,87 +25,67 @@ Usage::
             print(f"Rendering {component.__name__}")
             return props
 
-    # Apply to component
-    @component(middleware={"pre_resolution": [LoggingMiddleware()]})
+    # Apply to component with middleware TYPE (not instance)
+    @component(middleware={"pre_resolution": [LoggingMiddleware]})
     @dataclass
     class Button:
         label: str = "Click me"
 
-    # Or use imperatively
-    @dataclass
-    class Card:
-        title: str
+    # In app.py
+    registry = HopscotchRegistry()
+    scan(registry, my_components)  # Registers component middleware
 
-    register_component(Card, middleware={"pre_resolution": [LoggingMiddleware()]})
+    # Execute per-component middleware (resolves types from container)
+    result = execute_component_middleware(Button, props, container, "pre_resolution")
 
 See spec documentation for complete examples and lifecycle phase definitions.
 """
 
-from dataclasses import dataclass, field
-from typing import Callable, overload
-from weakref import WeakKeyDictionary
+from operator import attrgetter
+from typing import Any, Callable, overload
 
-from tdom_svcs.types import Component, MiddlewareMap
+from svcs_di.injectors import injectable
 
-__all__ = ["component", "register_component", "get_component_middleware"]
+from tdom_svcs.types import Component, MiddlewareMap, Props, PropsResult
 
+__all__ = [
+    "COMPONENT_MIDDLEWARE_ATTR",
+    "component",
+    "execute_component_middleware",
+    "register_component",
+    "register_component_middleware",
+    "get_component_middleware",
+]
 
-# -------------------------------------------------------------------------
-# Component Middleware Registry (Dataclass-based)
-# -------------------------------------------------------------------------
+# Metadata attribute set by @component decorator
+COMPONENT_MIDDLEWARE_ATTR = "_tdom_component_middleware_"
 
-
-@dataclass
-class ComponentMetadata:
-    """
-    Metadata for per-component middleware configuration.
-
-    Stores middleware organized by lifecycle phase.
-    """
-
-    middleware: MiddlewareMap = field(default_factory=dict)
+# Registry metadata key for storing component middleware
+COMPONENT_MW_REGISTRY_KEY = "tdom.component_middleware"
 
 
-# Global registry using WeakKeyDictionary to avoid memory leaks
-# Components are keys, metadata are values
-_component_registry: WeakKeyDictionary[Component, ComponentMetadata] = (
-    WeakKeyDictionary()
-)
-
-
-def _store_component_middleware(
+def _mark_component(
     target: Component,
     middleware: MiddlewareMap | None = None,
 ) -> Component:
     """
-    Store middleware metadata in registry for target component.
+    Mark a component with middleware metadata attribute.
 
-    This function stores middleware configuration in the global registry using
-    ComponentMetadata. The middleware dict maps lifecycle phases to middleware lists.
+    This stores the middleware config on the class itself. The scan()
+    function will find this and register it with the registry.
+    Also applies @injectable so the component can be resolved from DI.
 
     Args:
-        target: Component class or function to store metadata for
+        target: Component class or function to mark.
         middleware: Dict mapping lifecycle phases to middleware lists.
-                   Supported phases: "pre_resolution", "post_resolution", "rendering"
-                   If None, empty dict is stored.
 
     Returns:
-        The target component unchanged (metadata stored in registry)
-
-    Example:
-        >>> @dataclass
-        ... class Button:
-        ...     label: str
-        >>> logging_mw = LoggingMiddleware()
-        >>> _store_component_middleware(Button, {"pre_resolution": [logging_mw]})
+        The target component with metadata attribute set and injectable marker.
     """
-    # Store middleware dict (empty if None provided)
     middleware_dict = middleware if middleware is not None else {}
-
-    # Store in global registry
-    _component_registry[target] = ComponentMetadata(middleware=middleware_dict)
-
-    return target
+    setattr(target, COMPONENT_MIDDLEWARE_ATTR, middleware_dict)
+    # Also make it injectable so it can be resolved from container
+    return injectable(target)
 
 
 @overload
@@ -129,20 +112,28 @@ def component(
     Decorator for marking components with per-component middleware.
 
     Supports both @component (bare) and @component(middleware={...}) syntax.
+    The component is marked with metadata that scan() will discover and
+    register with the registry.
 
     Args:
-        target: Component class or function to decorate (when used bare)
-        middleware: Dict mapping lifecycle phases to middleware lists
+        target: Component class or function to decorate (when used bare).
+        middleware: Dict mapping lifecycle phases to middleware lists.
                    Phases: "pre_resolution", "post_resolution", "rendering"
 
     Returns:
-        Decorated component with middleware metadata stored
+        Decorated component with middleware metadata attribute.
+
+    Example:
+        >>> @component(middleware={"pre_resolution": [LoggingMiddleware]})
+        ... @dataclass
+        ... class Button:
+        ...     label: str = "Click"
     """
     if target is not None:
-        return _store_component_middleware(target, middleware=None)
+        return _mark_component(target, middleware=None)
 
     def decorator(comp: Component) -> Component:
-        return _store_component_middleware(comp, middleware=middleware)
+        return _mark_component(comp, middleware=middleware)
 
     return decorator
 
@@ -152,81 +143,107 @@ def register_component(
     middleware: MiddlewareMap | None = None,
 ) -> None:
     """
-    Register component with per-component middleware imperatively.
+    Mark a component with per-component middleware imperatively.
 
-    This function provides a non-decorator alternative to @component for cases
-    where decorator syntax isn't suitable or preferred. It stores the same
-    metadata as the decorator approach.
-
-    Both class and function components are supported.
+    This function provides a non-decorator alternative to @component.
+    The component is marked with metadata that scan() will discover.
 
     Args:
-        target: Component class or function to register
+        target: Component class or function to mark.
         middleware: Dict mapping lifecycle phases to middleware lists.
-                   Supported phases: "pre_resolution", "post_resolution", "rendering"
-                   If None, empty dict is stored.
 
-    Returns:
-        None (performs side effect of storing metadata on target)
-
-    Examples:
-        >>> from dataclasses import dataclass
-        >>> @dataclass
-        ... class Button:
-        ...     label: str = "Click"
-        >>> logging_mw = LoggingMiddleware()
-        >>> register_component(Button, middleware={"pre_resolution": [logging_mw]})
-        >>> get_component_middleware(Button)
-        {'pre_resolution': [LoggingMiddleware(...)]}
-
-        >>> def heading(text: str) -> str:
-        ...     return f"<h1>{text}</h1>"
-        >>> register_component(heading, middleware={"pre_resolution": [logging_mw]})
-        >>> get_component_middleware(heading)
-        {'pre_resolution': [LoggingMiddleware(...)]}
+    Example:
+        >>> register_component(Button, middleware={"pre_resolution": [LoggingMiddleware]})
     """
-    _store_component_middleware(target, middleware=middleware)
+    _mark_component(target, middleware=middleware)
+
+
+def register_component_middleware(
+    registry: Any,
+    target: Component,
+    middleware: MiddlewareMap,
+) -> None:
+    """
+    Register component middleware with the registry.
+
+    This is called by scan() for each @component decorated class found.
+    Can also be called manually for programmatic registration.
+
+    Args:
+        registry: HopscotchRegistry to register with.
+        target: Component class or function.
+        middleware: Dict mapping lifecycle phases to middleware lists.
+    """
+    component_mw: dict[Component, MiddlewareMap] = registry.metadata(
+        COMPONENT_MW_REGISTRY_KEY, dict
+    )
+    component_mw[target] = middleware
 
 
 def get_component_middleware(
-    component: Component,
+    registry: Any,
+    comp: Component,
 ) -> MiddlewareMap:
     """
-    Retrieve per-component middleware from component registry.
-
-    This utility function extracts the middleware dict stored by @component
-    decorator or register_component() function. If no middleware is registered,
-    returns an empty dict.
-
-    Works with both decorator and imperative registration approaches.
+    Retrieve per-component middleware from registry.
 
     Args:
-        component: Component class or function to retrieve middleware from
+        registry: HopscotchRegistry to get middleware from.
+        comp: Component class or function to retrieve middleware for.
 
     Returns:
         Dict mapping lifecycle phases to middleware lists.
         Empty dict if no middleware registered.
 
-    Examples:
-        >>> @component(middleware={"pre_resolution": [logging_mw]})
-        ... @dataclass
-        ... class Button:
-        ...     label: str
-        >>> middleware = get_component_middleware(Button)
-        >>> "pre_resolution" in middleware
-        True
-
-        >>> @dataclass
-        ... class PlainComponent:
-        ...     name: str
-        >>> middleware = get_component_middleware(PlainComponent)
-        >>> middleware
-        {}
+    Example:
+        >>> mw = get_component_middleware(registry, Button)
+        >>> pre_mw = mw.get("pre_resolution", [])
     """
-    # Look up component in registry
-    metadata = _component_registry.get(component)
-    if metadata is not None:
-        return metadata.middleware
+    component_mw: dict[Component, MiddlewareMap] = registry.metadata(
+        COMPONENT_MW_REGISTRY_KEY, dict
+    )
+    return component_mw.get(comp, {})
 
-    # No metadata - return empty dict
-    return {}
+
+def execute_component_middleware(
+    comp: Component,
+    props: Props,
+    container: Any,
+    phase: str = "pre_resolution",
+) -> PropsResult:
+    """Execute per-component middleware for a lifecycle phase.
+
+    Resolves middleware types from the container. Middleware are sorted by
+    priority (lower runs first), consistent with global middleware.
+
+    Args:
+        comp: Component class or function.
+        props: Current component props.
+        container: DI container for resolving middleware types.
+        phase: Lifecycle phase to execute (default: "pre_resolution").
+
+    Returns:
+        Modified props dict, or None if middleware halted execution.
+
+    Example:
+        >>> result = execute_middleware(Button, props, container)
+        >>> result = execute_component_middleware(Button, result, container, "pre_resolution")
+    """
+    registry = container.registry
+    mw_map = get_component_middleware(registry, comp)
+    middleware_types = mw_map.get(phase, [])
+
+    # Resolve all types from container
+    resolved = [container.get(mw_type) for mw_type in middleware_types]
+
+    # Sort by priority (consistent with global middleware)
+    sorted_middleware = sorted(resolved, key=attrgetter("priority"))
+
+    current_props = props
+    for mw_instance in sorted_middleware:
+        result = mw_instance(comp, current_props, container)
+        if result is None:
+            return None
+        current_props = result
+
+    return current_props

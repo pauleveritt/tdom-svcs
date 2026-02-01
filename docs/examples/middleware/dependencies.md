@@ -1,74 +1,78 @@
 # Middleware with Dependencies
 
-This example demonstrates middleware that depend on services like Logger and MetricsCollector, using dependency injection and factory functions.
+This example demonstrates middleware that depend on services like Logger and MetricsCollector, using `Inject[]` for
+automatic dependency injection.
+
+```{note}
+This example uses Hopscotch patterns (`@middleware`, `Inject[]`, `scan()`) for convenience.
+You can also use imperative registration with `register_middleware()` if preferred.
+```
 
 ## Project structure
 
 ```
 dependencies/
 ├── app.py              # Main entry point
-├── components.py       # Greeting component
-├── services.py         # Database, Users, Logger, MetricsCollector
-├── middleware.py       # LoggingMiddleware, MetricsMiddleware with DI
-├── request.py          # Request dataclass
-└── site/
-    ├── __init__.py     # Site configuration with FakeLogger
-    └── services.py     # FakeLogger for testing
+├── services.py         # Logger, MetricsCollector services
+└── middleware.py       # LoggingMiddleware, MetricsMiddleware with DI
 ```
 
-## Middleware with service dependencies
+## Middleware with injected dependencies
 
-Middleware often need access to services like loggers or metrics collectors. Rather than creating these internally, we inject them:
+Middleware can declare dependencies using `Inject[]`. The dependencies are automatically resolved via the container:
 
 ```{literalinclude} ../../../examples/middleware/dependencies/middleware.py
-:start-at: class LoggingMiddleware
-:end-at: return props
+:start-after: Middleware can have container dependencies
+:end-at: logger: Inject[Logger]
+:emphasize-lines: 10
 ```
 
-The `logger` field is injected when the middleware is constructed via a factory function.
+The `logger` field is injected automatically when the middleware is resolved from the container.
+`self.logger` can then be used in the `__call__` method:
+
+```{literalinclude} ../../../examples/middleware/dependencies/middleware.py
+:start-at: class LoggingMiddleware:
+:end-at: return props
+:lines: 11-16
+:emphasize-lines: 5
+```
 
 ## Service definitions
 
-The Logger and MetricsCollector are simple dataclasses:
+Services are also marked with `@injectable` for automatic discovery. Here is the declaration of the `Logger` service
+used above:
 
 ```{literalinclude} ../../../examples/middleware/dependencies/services.py
-:start-at: class Logger
-:end-at: return self.messages.copy()
+:start-after: The Logger service is
+:end-at: class Logger:
 ```
+
+We also have a `MetricsCollector` service that is used by the `MetricsMiddleware`:
 
 ```{literalinclude} ../../../examples/middleware/dependencies/services.py
-:start-at: class MetricsCollector
-:end-at: return self._metrics.copy()
+:start-after: The MetricsCollector service is
+:end-at: class MetricsCollector:
 ```
 
-## Factory functions for DI
+## Scanning discovers everything
 
-To inject services into middleware, use factory functions:
+The `scan()` function discovers services, middleware, and their dependencies:
 
 ```{literalinclude} ../../../examples/middleware/dependencies/app.py
-:start-at: def create_logging_middleware
-:end-at: registry.register_factory(MetricsMiddleware
+:start-at: registry = HopscotchRegistry
+:end-at: scan(registry, services, middleware)
 ```
 
-Then register the middleware with the manager using `register_middleware_service`:
+## Verifying middleware behavior
+
+Putting the logger in the container means we can grab it from anywhere, including middleware, and write to it. No magic.
+Even better, it is automatically cleaned up after each "request".
+Get services from the container to verify they were used:
 
 ```{literalinclude} ../../../examples/middleware/dependencies/app.py
-:start-at: manager.register_middleware_service(LoggingMiddleware
-:end-at: manager.register_middleware_service(MetricsMiddleware
-```
-
-## Testing with fakes
-
-The site demonstrates how to replace services with fakes for testing:
-
-```{literalinclude} ../../../examples/middleware/dependencies/site/services.py
-:start-at: @dataclass
-:end-at: self.messages.clear()
-```
-
-The site's `svcs_registry()` is called automatically during `scan()` and registers the FakeLogger:
-
-```{literalinclude} ../../../examples/middleware/dependencies/site/__init__.py
+:start-at: logger = container.get(Logger)
+:end-at: assert metrics.get_count
+:emphasize-lines: 5-6
 ```
 
 ## Running the example
@@ -78,44 +82,26 @@ uv run python -m examples.middleware.dependencies.app
 ```
 
 Output:
-```
-==================================================
-Processing multiple components
-==================================================
 
-Logger type: FakeLogger
-Logger messages (3):
-  [TEST] INFO: Processing Button
-  [TEST] INFO: Processing Button
-  [TEST] INFO: Processing Button
-
-Metrics:
-  Button count: 3
 ```
+<div>Simple Component</div>
+```
+
+The example uses assertions to verify behavior. All middleware logic is tested silently.
 
 ## Full source code
 
-### app.py
+### `app.py`
 
 ```{literalinclude} ../../../examples/middleware/dependencies/app.py
 ```
 
-### middleware.py
+### `middleware.py`
 
 ```{literalinclude} ../../../examples/middleware/dependencies/middleware.py
 ```
 
-### services.py
+### `services.py`
 
 ```{literalinclude} ../../../examples/middleware/dependencies/services.py
-```
-
-### site/\_\_init\_\_.py
-
-```{literalinclude} ../../../examples/middleware/dependencies/site/__init__.py
-```
-
-### site/services.py
-
-```{literalinclude} ../../../examples/middleware/dependencies/site/services.py
 ```

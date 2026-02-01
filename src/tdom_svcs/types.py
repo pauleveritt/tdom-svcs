@@ -17,8 +17,10 @@ type PropsResult = Props | None
 type MiddlewareResult = PropsResult | Coroutine[Any, Any, PropsResult]
 """Full middleware return type - sync result or async coroutine returning result."""
 
-type MiddlewareMap = dict[str, list["Middleware"]]
-"""Mapping of lifecycle phases to middleware lists for per-component middleware."""
+type MiddlewareMap = dict[str, list[type["Middleware"]]]
+"""Mapping of lifecycle phases to middleware types for per-component middleware.
+
+Middleware types are resolved from the DI container at execution time."""
 
 T = TypeVar("T")
 
@@ -97,7 +99,9 @@ class Context(Protocol):
 @runtime_checkable
 class Middleware(Protocol):
     """
-    Protocol for middleware that wraps component lifecycle phases.
+    Protocol for synchronous middleware that wraps component lifecycle phases.
+
+    For async middleware, use AsyncMiddleware protocol instead.
     """
 
     priority: int
@@ -107,4 +111,27 @@ class Middleware(Protocol):
         component: Component,
         props: Props,
         context: Context,
-    ) -> MiddlewareResult: ...
+    ) -> PropsResult: ...
+
+
+@runtime_checkable
+class AsyncMiddleware(Protocol):
+    """
+    Protocol for asynchronous middleware that wraps component lifecycle phases.
+
+    Async middleware must be executed using execute_async() on the MiddlewareManager.
+    """
+
+    priority: int
+
+    async def __call__(
+        self,
+        component: Component,
+        props: Props,
+        context: Context,
+    ) -> PropsResult: ...
+
+
+# Union type for middleware registration
+type AnyMiddleware = Middleware | AsyncMiddleware
+"""Either sync or async middleware - use for registration functions."""

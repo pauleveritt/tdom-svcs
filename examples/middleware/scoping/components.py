@@ -1,21 +1,18 @@
 """Components for the scoping middleware example.
 
-Re-exports common Greeting and adds Button/Card with per-component middleware.
+Demonstrates per-component middleware via the @component decorator.
 """
 
 from dataclasses import dataclass, field
-from typing import Any
 
+from svcs_di.injectors import injectable
 from tdom import Node
 
-# Re-export common components
-from examples.common.components import Greeting
-from tdom_svcs import html
-from tdom_svcs.services.middleware import component
-
-__all__ = ["Button", "ButtonSpecificMiddleware", "button_mw", "Card", "Greeting"]
+from tdom_svcs import component, html
+from tdom_svcs.types import Component, Context, Props, PropsResult
 
 
+@injectable
 @dataclass
 class ButtonSpecificMiddleware:
     """Middleware that only applies to Button components.
@@ -27,24 +24,16 @@ class ButtonSpecificMiddleware:
     logged: list[str] = field(default_factory=list)
 
     def __call__(
-        self, component_type: type, props: dict[str, Any], context: Any
-    ) -> dict[str, Any]:
-        component_name = (
-            component_type.__name__
-            if hasattr(component_type, "__name__")
-            else str(component_type)
-        )
+        self, component: Component, props: Props, context: Context
+    ) -> PropsResult:
+        component_name = getattr(component, "__name__", type(component).__name__)
         self.logged.append(f"button:{component_name}")
         if "variant" not in props:
             props["variant"] = "primary"
         return props
 
 
-# Create instance for use in decorator
-button_mw = ButtonSpecificMiddleware()
-
-
-@component(middleware={"pre_resolution": [button_mw]})
+@component(middleware={"pre_resolution": [ButtonSpecificMiddleware]})
 @dataclass
 class Button:
     """Button component with per-component middleware.
@@ -67,7 +56,7 @@ class Card:
     Only global middleware applies to this component.
     """
 
-    title: str
+    title: str = ""
     content: str = ""
 
     def __call__(self) -> Node:

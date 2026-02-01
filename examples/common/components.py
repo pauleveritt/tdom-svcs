@@ -10,6 +10,14 @@ from tdom_svcs import html
 
 
 @dataclass
+class SimpleComponent:
+    """Simple component for middleware examples - no DI dependencies."""
+
+    def __call__(self) -> Node:
+        return html(t"<div>Simple Component</div>")
+
+
+@dataclass
 class Greeting:
     """Greeting component that displays welcome message for current user."""
 

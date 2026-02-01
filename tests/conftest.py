@@ -1,12 +1,11 @@
 """Shared test fixtures for tdom-svcs tests."""
 
 from dataclasses import dataclass
-from typing import Any, Callable
 
 import pytest
 from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
 
-from tdom_svcs.services.middleware import Context
+from tdom_svcs.types import Component, Context, Middleware, Props, PropsResult
 
 
 # =============================================================================
@@ -60,27 +59,28 @@ def create_tracking_middleware(
         name: Name to record in execution order tracking
         default_priority: Middleware priority (lower = earlier)
         halt: If True, middleware returns None to halt execution
-        is_async: If True, creates an async middleware
+        is_async: If True, creates an async middleware (structural typing only)
 
     Returns:
-        A middleware class
+        A middleware class (sync inherits from Middleware, async uses structural typing)
     """
     _halt = halt
     _name = name
     _default_priority = default_priority
 
     if is_async:
-
+        # Note: Async middleware uses structural typing rather than inheriting
+        # from Middleware, since async def __call__ has a different signature.
         @dataclass
         class AsyncTrackingMiddleware:
             priority: int = _default_priority
 
             async def __call__(
                 self,
-                component: type | Callable[..., Any],
-                props: dict[str, Any],
+                component: Component,
+                props: Props,
                 context: Context,
-            ) -> dict[str, Any] | None:
+            ) -> PropsResult:
                 if _halt:
                     return None
                 props[_name] = True
@@ -94,15 +94,15 @@ def create_tracking_middleware(
     else:
 
         @dataclass
-        class TrackingMiddleware:
+        class TrackingMiddleware(Middleware):
             priority: int = _default_priority
 
             def __call__(
                 self,
-                component: type | Callable[..., Any],
-                props: dict[str, Any],
+                component: Component,
+                props: Props,
                 context: Context,
-            ) -> dict[str, Any] | None:
+            ) -> PropsResult:
                 if _halt:
                     return None
                 props[_name] = True

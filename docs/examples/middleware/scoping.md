@@ -1,83 +1,102 @@
 # Middleware Scoping
 
-This example demonstrates different middleware scopes: global middleware that applies to all components, per-component middleware via decorators, and async middleware support.
+This example demonstrates the two middleware mechanisms: global middleware that applies to all components, and
+per-component middleware that components can opt into.
+
+```{note}
+This example uses Hopscotch patterns (`@middleware`, `@component`, `scan()`) for convenience.
+You can also use imperative registration with `register_middleware()` if preferred.
+```
 
 ## Project structure
 
 ```
 scoping/
 ├── app.py              # Main entry point
-├── components.py       # Greeting, Button (with per-component MW), Card
-├── services.py         # Database, Users services
-├── middleware.py       # Global and async middleware
-├── request.py          # Request dataclass
-└── site/
-    └── __init__.py     # Site configuration placeholder
+├── components.py       # Button (with per-component MW), Card
+└── middleware.py       # Global and async middleware
 ```
 
-## Global middleware
+## Global middleware (declared)
 
-Global middleware registered with MiddlewareManager applies to all components:
+Middleware marked with `@middleware` runs for **all components**—there is no way to exclude specific components:
 
 ```{literalinclude} ../../../examples/middleware/scoping/middleware.py
-:start-at: class GlobalLoggingMiddleware
+:start-at: The global logging middleware
+:end-at: return props
+:emphasize-lines: 18
+```
+
+## Per-component middleware (opt-in)
+
+Components can opt into **additional** middleware using `@component`. This middleware does **not** need the
+`@middleware` decorator, but must be `@injectable` for container resolution:
+
+```{literalinclude} ../../../examples/middleware/scoping/components.py
+:start-at: @injectable
 :end-at: return props
 ```
 
-Register global middleware with the manager:
-
-```{literalinclude} ../../../examples/middleware/scoping/app.py
-:start-at: global_logging = GlobalLoggingMiddleware
-:end-at: manager.register_middleware(GlobalValidationMiddleware())
-```
-
-## Per-component middleware
-
-For middleware that should only apply to specific components, use the `@component` decorator:
+Note that `ButtonSpecificMiddleware` has `@injectable` but no `@middleware` decorator. The **type** (not an instance)
+is passed to `@component`, and the container resolves it at execution time:
 
 ```{literalinclude} ../../../examples/middleware/scoping/components.py
-:start-at: class ButtonSpecificMiddleware
-:end-at: return props
+:start-at: @component(middleware=
+:end-at: class Button:
 ```
 
-Apply it to a component:
-
-```{literalinclude} ../../../examples/middleware/scoping/components.py
-:start-at: button_mw = ButtonSpecificMiddleware
-:end-at: variant: str = "default"
-```
-
-Retrieve and execute per-component middleware manually:
-
-```{literalinclude} ../../../examples/middleware/scoping/app.py
-:start-at: component_mw = get_component_middleware
-:end-at: result = mw_result
-```
+The `pre_resolution` key specifies when the middleware runs during component processing. Other lifecycle phases include `post_resolution` and `rendering`. See {ref}`middleware:lifecycle-phases` for details.
 
 ## Execution order
 
-1. **Global middleware** runs first, in priority order
-2. **Per-component middleware** runs after global middleware completes
+Per-component middleware is **additive**—it runs in addition to global middleware, not instead of it:
+
+1. **Global middleware** runs first via `execute_middleware()`
+2. **Per-component middleware** runs after via `execute_component_middleware()`, which resolves types from container
+
+```{literalinclude} ../../../examples/middleware/scoping/app.py
+:start-at: result = execute_middleware(Button
+:end-at: execute_component_middleware(Button
+```
 
 ## Async middleware
 
 Middleware can be async by defining an async `__call__` method:
 
 ```{literalinclude} ../../../examples/middleware/scoping/middleware.py
-:start-at: class AsyncDatabaseMiddleware
+:start-at: class AsyncDatabaseMiddleware:
 :end-at: return props
+:emphasize-lines: 10-14
+```
+
+Async middleware don't use `@middleware` decorator—they're registered manually when needed:
+
+```{literalinclude} ../../../examples/middleware/scoping/app.py
+:start-at: register_middleware(registry, AsyncDatabaseMiddleware)
+:end-at: register_middleware(registry, SyncTransformMiddleware)
 ```
 
 ## Mixed sync and async chains
 
-The middleware system automatically handles mixed chains. Use `execute_async()` when any middleware might be async:
+Use `execute_middleware_async()` when any middleware might be async:
 
 ```{literalinclude} ../../../examples/middleware/scoping/app.py
-:start-at: async_manager = MiddlewareManager
-:end-at: async_result = await async_manager.execute_async
+:start-at: async_result = await execute_middleware_async
+:end-at: async_result = await execute_middleware_async
+:emphasize-lines: 1
 ```
 
 Sync middleware in an async chain are called normally; async middleware are awaited.
+
+## Scanning discovers both decorators
+
+The `scan()` function finds both `@middleware` and `@component` decorated classes:
+
+```{literalinclude} ../../../examples/middleware/scoping/app.py
+:start-at: scan(registry, middleware
+:end-at: scan(registry, middleware
+:emphasize-lines: 1
+```
 
 ## Running the example
 
@@ -86,47 +105,24 @@ uv run python -m examples.middleware.scoping.app
 ```
 
 Output:
+
 ```
-==================================================
-Test 1: Button with per-component middleware
-==================================================
-[GLOBAL LOG] Processing Button
-[GLOBAL VALIDATION] Props valid
-After global middleware: {'title': 'Click Me'}
-[BUTTON MW] Added default variant=primary
-After per-component middleware: {'title': 'Click Me', 'variant': 'primary'}
-
-==================================================
-Test 2: Card without per-component middleware
-==================================================
-[GLOBAL LOG] Processing Card
-[GLOBAL VALIDATION] Props valid
-Card result: {'title': 'Welcome', 'content': 'Hello there!'}
-Card per-component middleware: {}
-
-==================================================
-Test 3: Async middleware chain
-==================================================
-[GLOBAL LOG] Processing Dashboard
-[ASYNC DB] Fetched user data for Dashboard
-[ASYNC VALIDATION] Props valid
-[SYNC TRANSFORM] Added _sync_processed flag
-Async result: {'title': 'Main Dashboard', '_db_user': {'id': 123, 'name': 'John Doe'}, '_sync_processed': True}
+<div>Simple Component</div>
 ```
 
 ## Full source code
 
-### app.py
+### `app.py`
 
 ```{literalinclude} ../../../examples/middleware/scoping/app.py
 ```
 
-### middleware.py
+### `middleware.py`
 
 ```{literalinclude} ../../../examples/middleware/scoping/middleware.py
 ```
 
-### components.py
+### `components.py`
 
 ```{literalinclude} ../../../examples/middleware/scoping/components.py
 ```

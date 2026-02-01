@@ -5,12 +5,18 @@ Demonstrates:
 - Priority ordering (lower numbers run first)
 - Halting execution by returning None
 - Prop transformation
+
+All middleware use the @middleware decorator for automatic discovery by scan().
 """
 
 from dataclasses import dataclass, field
-from typing import Any
+
+from tdom_svcs import middleware
+from tdom_svcs.types import Component, Context, Props, PropsResult
 
 
+# Define middleware with decorators or imperatively
+@middleware
 @dataclass
 class LoggingMiddleware:
     """Middleware that logs component processing.
@@ -22,15 +28,14 @@ class LoggingMiddleware:
     logged: list[str] = field(default_factory=list)
 
     def __call__(
-        self, component: type, props: dict[str, Any], context: Any
-    ) -> dict[str, Any]:
-        component_name = (
-            component.__name__ if hasattr(component, "__name__") else str(component)
-        )
+        self, component: Component, props: Props, context: Context
+    ) -> PropsResult:
+        component_name = getattr(component, "__name__", type(component).__name__)
         self.logged.append(component_name)
         return props
 
 
+@middleware
 @dataclass
 class ValidationMiddleware:
     """Middleware that validates props.
@@ -42,13 +47,14 @@ class ValidationMiddleware:
     priority: int = 0
 
     def __call__(
-        self, component: type, props: dict[str, Any], context: Any
-    ) -> dict[str, Any] | None:
+        self, component: Component, props: Props, context: Context
+    ) -> PropsResult:
         if "title" not in props:
             return None  # Halt execution
         return props
 
 
+@middleware
 @dataclass
 class TransformationMiddleware:
     """Middleware that transforms props.
@@ -59,7 +65,7 @@ class TransformationMiddleware:
     priority: int = 10
 
     def __call__(
-        self, component: type, props: dict[str, Any], context: Any
-    ) -> dict[str, Any]:
+        self, component: Component, props: Props, context: Context
+    ) -> PropsResult:
         props["transformed"] = True
         return props

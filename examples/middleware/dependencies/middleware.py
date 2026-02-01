@@ -2,37 +2,42 @@
 
 Demonstrates:
 - Middleware classes with injected service dependencies
-- Using factory functions for DI-constructed middleware
-- Service-based registration with register_middleware_service
+- Using Inject[] for automatic DI resolution
+- The @middleware decorator for discovery
 """
 
 from dataclasses import dataclass
-from typing import Any
+
+from svcs_di import Inject
+
+from tdom_svcs import middleware
+from tdom_svcs.types import Component, Context, Props, PropsResult
 
 from examples.middleware.dependencies.services import Logger, MetricsCollector
 
 
+# Middleware can have container dependencies
+@middleware
 @dataclass
 class LoggingMiddleware:
     """Middleware that depends on Logger service.
 
-    The Logger is injected via a factory function, allowing the
+    The Logger is injected automatically via Inject[], allowing the
     middleware to use the application's logging infrastructure.
     """
 
-    logger: Logger
+    logger: Inject[Logger]
     priority: int = -10
 
     def __call__(
-        self, component: type, props: dict[str, Any], context: Any
-    ) -> dict[str, Any]:
-        component_name = (
-            component.__name__ if hasattr(component, "__name__") else str(component)
-        )
+        self, component: Component, props: Props, context: Context
+    ) -> PropsResult:
+        component_name = getattr(component, "__name__", type(component).__name__)
         self.logger.info(f"Processing {component_name}")
         return props
 
 
+@middleware
 @dataclass
 class MetricsMiddleware:
     """Middleware that depends on MetricsCollector service.
@@ -40,14 +45,12 @@ class MetricsMiddleware:
     Records each component processed for usage analytics.
     """
 
-    metrics: MetricsCollector
+    metrics: Inject[MetricsCollector]
     priority: int = 0
 
     def __call__(
-        self, component: type, props: dict[str, Any], context: Any
-    ) -> dict[str, Any]:
-        component_name = (
-            component.__name__ if hasattr(component, "__name__") else str(component)
-        )
+        self, component: Component, props: Props, context: Context
+    ) -> PropsResult:
+        component_name = getattr(component, "__name__", type(component).__name__)
         self.metrics.record(component_name)
         return props

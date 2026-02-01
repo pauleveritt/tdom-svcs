@@ -8,12 +8,14 @@ global and per-component middleware work correctly with proper priority ordering
 from dataclasses import dataclass
 from typing import Any, Callable, cast
 
-from tdom_svcs.services.middleware import (
-    Context,
-    MiddlewareManager,
+from tdom_svcs import (
     component,
+    execute_middleware,
     get_component_middleware,
+    register_middleware,
+    scan,
 )
+from tdom_svcs.services.middleware import Context
 
 
 @dataclass
@@ -40,7 +42,7 @@ class MockMiddleware:
         return props
 
 
-def test_middleware_execution_order_with_priorities() -> None:
+def test_middleware_execution_order_with_priorities(registry, container) -> None:
     """Test that middleware executes in priority order (lower numbers first)."""
     execution_log: list[str] = []
 
@@ -49,11 +51,37 @@ def test_middleware_execution_order_with_priorities() -> None:
     mw2 = MockMiddleware(name="mw2", priority=0, execution_log=execution_log)
     mw3 = MockMiddleware(name="mw3", priority=10, execution_log=execution_log)
 
-    # Register middleware
-    manager = MiddlewareManager()
-    manager.register_middleware(mw3)  # Register out of order
-    manager.register_middleware(mw1)
-    manager.register_middleware(mw2)
+    # Use a wrapper class for each to register with DI
+    @dataclass
+    class Mw1Wrapper:
+        priority: int = -10
+
+        def __call__(self, comp, props, ctx):
+            return mw1(comp, props, ctx)
+
+    @dataclass
+    class Mw2Wrapper:
+        priority: int = 0
+
+        def __call__(self, comp, props, ctx):
+            return mw2(comp, props, ctx)
+
+    @dataclass
+    class Mw3Wrapper:
+        priority: int = 10
+
+        def __call__(self, comp, props, ctx):
+            return mw3(comp, props, ctx)
+
+    # Register middleware as values
+    registry.register_value(Mw1Wrapper, Mw1Wrapper())
+    registry.register_value(Mw2Wrapper, Mw2Wrapper())
+    registry.register_value(Mw3Wrapper, Mw3Wrapper())
+
+    # Register middleware (out of order)
+    register_middleware(registry, Mw3Wrapper)
+    register_middleware(registry, Mw1Wrapper)
+    register_middleware(registry, Mw2Wrapper)
 
     # Execute middleware
     @dataclass
@@ -63,9 +91,8 @@ def test_middleware_execution_order_with_priorities() -> None:
         value: str = "test"
 
     props = {"value": "test"}
-    context: Context = cast(Context, {})
 
-    result = manager.execute(TestComponent, props, context)
+    result = execute_middleware(TestComponent, props, container)
 
     # Verify execution order (lower priority first)
     assert execution_log == [
@@ -79,7 +106,9 @@ def test_middleware_execution_order_with_priorities() -> None:
     assert result["_middleware_mw3"] is True
 
 
-def test_global_middleware_executes_before_per_component_middleware() -> None:
+def test_global_middleware_executes_before_per_component_middleware(
+    registry, container
+) -> None:
     """Test that global middleware executes before per-component middleware."""
     execution_log: list[str] = []
 
@@ -91,9 +120,15 @@ def test_global_middleware_executes_before_per_component_middleware() -> None:
         name="component", priority=0, execution_log=execution_log
     )
 
-    # Register global middleware
-    manager = MiddlewareManager()
-    manager.register_middleware(global_mw)
+    @dataclass
+    class GlobalMwWrapper:
+        priority: int = 0
+
+        def __call__(self, comp, props, ctx):
+            return global_mw(comp, props, ctx)
+
+    registry.register_value(GlobalMwWrapper, GlobalMwWrapper())
+    register_middleware(registry, GlobalMwWrapper)
 
     @component(middleware={"pre_resolution": [component_mw]})
     @dataclass
@@ -102,18 +137,20 @@ def test_global_middleware_executes_before_per_component_middleware() -> None:
 
         value: str = "test"
 
+    # Scan to register component middleware
+    scan(registry, locals_dict={"TestComponent": TestComponent})
+
     # Execute global middleware
     props = {"value": "test"}
-    context: Context = cast(Context, {})
-    props_after_global = manager.execute(TestComponent, props, context)
+    props_after_global = execute_middleware(TestComponent, props, container)
 
     # Execute per-component middleware
-    component_middleware = get_component_middleware(TestComponent)
+    component_middleware = get_component_middleware(registry, TestComponent)
     pre_resolution_middleware = component_middleware.get("pre_resolution", [])
 
     assert props_after_global is not None
     for mw in sorted(pre_resolution_middleware, key=lambda m: m.priority):
-        result = mw(TestComponent, props_after_global, context)
+        result = mw(TestComponent, props_after_global, container)
         assert result is not None
         # In this test, all middleware is synchronous
         props_after_global = cast(dict[str, Any], result)
@@ -124,13 +161,21 @@ def test_global_middleware_executes_before_per_component_middleware() -> None:
     assert props_after_global["_middleware_component"] is True
 
 
-def test_middleware_works_with_class_components() -> None:
+def test_middleware_works_with_class_components(registry, container) -> None:
     """Test that middleware works correctly with class components."""
     execution_log: list[str] = []
 
     mw = MockMiddleware(name="test", priority=0, execution_log=execution_log)
-    manager = MiddlewareManager()
-    manager.register_middleware(mw)
+
+    @dataclass
+    class MwWrapper:
+        priority: int = 0
+
+        def __call__(self, comp, props, ctx):
+            return mw(comp, props, ctx)
+
+    registry.register_value(MwWrapper, MwWrapper())
+    register_middleware(registry, MwWrapper)
 
     @dataclass
     class ClassComponent:
@@ -139,9 +184,8 @@ def test_middleware_works_with_class_components() -> None:
         label: str = "Button"
 
     props = {"label": "Click"}
-    context: Context = cast(Context, {})
 
-    result = manager.execute(ClassComponent, props, context)
+    result = execute_middleware(ClassComponent, props, container)
 
     assert execution_log == ["test(ClassComponent)"]
     assert result is not None
@@ -150,22 +194,29 @@ def test_middleware_works_with_class_components() -> None:
     assert isinstance(ClassComponent, type)
 
 
-def test_middleware_works_with_function_components() -> None:
+def test_middleware_works_with_function_components(registry, container) -> None:
     """Test that middleware works correctly with function components."""
     execution_log: list[str] = []
 
     mw = MockMiddleware(name="test", priority=0, execution_log=execution_log)
-    manager = MiddlewareManager()
-    manager.register_middleware(mw)
+
+    @dataclass
+    class MwWrapper:
+        priority: int = 0
+
+        def __call__(self, comp, props, ctx):
+            return mw(comp, props, ctx)
+
+    registry.register_value(MwWrapper, MwWrapper())
+    register_middleware(registry, MwWrapper)
 
     def function_component(text: str = "Hello") -> str:
         """Function-based component."""
         return f"<div>{text}</div>"
 
     props = {"text": "World"}
-    context: Context = cast(Context, {})
 
-    result = manager.execute(function_component, props, context)
+    result = execute_middleware(function_component, props, container)
 
     assert execution_log == ["test(function_component)"]
     assert result is not None
@@ -174,7 +225,7 @@ def test_middleware_works_with_function_components() -> None:
     assert not isinstance(function_component, type)
 
 
-def test_per_component_middleware_respects_priority_ordering() -> None:
+def test_per_component_middleware_respects_priority_ordering(registry) -> None:
     """Test that per-component middleware respects priority ordering."""
     execution_log: list[str] = []
 
@@ -190,8 +241,11 @@ def test_per_component_middleware_respects_priority_ordering() -> None:
 
         value: str = "test"
 
+    # Scan to register component middleware
+    scan(registry, locals_dict={"TestComponent": TestComponent})
+
     # Execute per-component middleware in priority order
-    component_middleware = get_component_middleware(TestComponent)
+    component_middleware = get_component_middleware(registry, TestComponent)
     pre_resolution_middleware = component_middleware.get("pre_resolution", [])
 
     props = {"value": "test"}
@@ -210,7 +264,7 @@ def test_per_component_middleware_respects_priority_ordering() -> None:
     assert current_props is not None
 
 
-def test_middleware_halt_stops_execution() -> None:
+def test_middleware_halt_stops_execution(registry, container) -> None:
     """Test that returning None from middleware halts execution."""
     execution_log: list[str] = []
 
@@ -233,9 +287,17 @@ def test_middleware_halt_stops_execution() -> None:
         name="after_halt", priority=10, execution_log=execution_log
     )
 
-    manager = MiddlewareManager()
-    manager.register_middleware(HaltingMiddleware())
-    manager.register_middleware(mw_after_halt)
+    @dataclass
+    class MwAfterHaltWrapper:
+        priority: int = 10
+
+        def __call__(self, comp, props, ctx):
+            return mw_after_halt(comp, props, ctx)
+
+    registry.register_value(HaltingMiddleware, HaltingMiddleware())
+    registry.register_value(MwAfterHaltWrapper, MwAfterHaltWrapper())
+    register_middleware(registry, HaltingMiddleware)
+    register_middleware(registry, MwAfterHaltWrapper)
 
     @dataclass
     class TestComponent:
@@ -244,16 +306,15 @@ def test_middleware_halt_stops_execution() -> None:
         value: str = "test"
 
     props = {"value": "test"}
-    context: Context = cast(Context, {})
 
-    result = manager.execute(TestComponent, props, context)
+    result = execute_middleware(TestComponent, props, container)
 
     # Verify halting middleware executed but after_halt did not
     assert execution_log == ["halting_middleware"]
     assert result is None  # Execution halted
 
 
-def test_middleware_integration_with_multiple_lifecycle_phases() -> None:
+def test_middleware_integration_with_multiple_lifecycle_phases(registry) -> None:
     """Test middleware can be registered for multiple lifecycle phases."""
     pre_log: list[str] = []
     post_log: list[str] = []
@@ -273,8 +334,11 @@ def test_middleware_integration_with_multiple_lifecycle_phases() -> None:
 
         value: str = "test"
 
+    # Scan to register component middleware
+    scan(registry, locals_dict={"TestComponent": TestComponent})
+
     # Verify middleware is stored for both phases
-    component_middleware = get_component_middleware(TestComponent)
+    component_middleware = get_component_middleware(registry, TestComponent)
     assert "pre_resolution" in component_middleware
     assert "post_resolution" in component_middleware
     assert len(component_middleware["pre_resolution"]) == 1

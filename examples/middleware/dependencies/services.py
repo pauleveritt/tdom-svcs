@@ -1,36 +1,21 @@
 """Services for the dependencies middleware example.
 
-Re-exports common services and adds Logger and MetricsCollector
-for middleware dependency injection demonstration.
+Provides Logger and MetricsCollector services that can be
+injected into middleware via Inject[].
 """
 
 from dataclasses import dataclass, field
 
-# Re-export common services
-from examples.common.services import (
-    DEFAULT_USERS,
-    Database,
-    UserDict,
-    Users,
-    UsersDict,
-)
-
-__all__ = [
-    "Database",
-    "DEFAULT_USERS",
-    "Logger",
-    "MetricsCollector",
-    "UserDict",
-    "Users",
-    "UsersDict",
-]
+from svcs_di.injectors import injectable
 
 
+# The Logger service is used by the LoggerMiddleware to log messages.
+@injectable
 @dataclass
 class Logger:
     """Logger service for middleware to use."""
 
-    name: str
+    name: str = "APP"
     messages: list[str] = field(default_factory=list)
 
     def info(self, message: str) -> None:
@@ -42,6 +27,8 @@ class Logger:
         return self.messages.copy()
 
 
+# The MetricsCollector service is used by the MetricsMiddleware to track component usage.
+@injectable
 @dataclass
 class MetricsCollector:
     """Metrics service for tracking component usage."""

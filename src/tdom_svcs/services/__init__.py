@@ -7,24 +7,20 @@ from .middleware import (
     MiddlewareConfigurationError,
     MiddlewareError,
     MiddlewareExecutionError,
-    MiddlewareManager,
     component,
     get_component_middleware,
     register_component,
-    setup_container,
 )
 
 __all__ = [
-    # Middleware
+    # Middleware (per-component)
     "Context",
     "ContextNotSetupError",
     "Middleware",
     "MiddlewareConfigurationError",
     "MiddlewareError",
     "MiddlewareExecutionError",
-    "MiddlewareManager",
     "component",
     "get_component_middleware",
     "register_component",
-    "setup_container",
 ]

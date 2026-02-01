@@ -50,7 +50,7 @@ Cross-cutting concerns: intercepting and modifying component rendering for loggi
 
 | Example | Description |
 |---------|-------------|
-| [basic/](../../examples/middleware/basic/) | Chain execution, priority ordering, halting |
+| [basic/](middleware/basic_middleware) | Chain execution, priority ordering, halting |
 | [dependencies/](../../examples/middleware/dependencies/) | Middleware with injected services, testing with fakes |
 | [error_handling/](../../examples/middleware/error_handling/) | Exception handling, fallback rendering, circuit breaker |
 | [scoping/](../../examples/middleware/scoping/) | Global vs per-component middleware, async support |

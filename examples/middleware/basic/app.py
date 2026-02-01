@@ -5,67 +5,47 @@ Demonstrates the recommended pattern for using middleware:
 - Priority ordering (lower numbers run first)
 - Halting execution by returning None
 - Prop transformation
+
+This example uses Hopscotch patterns (decorators, scanning) for convenience.
+You can also use imperative registration with register_middleware() if preferred.
 """
 
-from typing import cast
-
 from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
-from svcs_di.injectors.scanning import scan
 
-from examples.common import Greeting, Request
-from examples.middleware.basic import components, services
-from examples.middleware.basic.middleware import (
-    LoggingMiddleware,
-    TransformationMiddleware,
-    ValidationMiddleware,
-)
-from tdom_svcs import html
-from tdom_svcs.services.middleware import Context, MiddlewareManager, setup_container
+from examples.common import SimpleComponent
+from examples.middleware.basic import middleware
+from examples.middleware.basic.middleware import LoggingMiddleware
+from tdom_svcs import execute_middleware, html, scan
 
 
 def main() -> str:
     """Execute middleware chain and demonstrate all patterns."""
+    # Create registry and scan for @injectable and @middleware
     registry = HopscotchRegistry()
-    scan(registry, services, components)
-
-    # Setup middleware manager
-    context: Context = cast(Context, {"config": {"debug": True}})
-    setup_container(context, registry)
+    scan(registry, middleware)
 
     with HopscotchContainer(registry) as container:
-        container.register_local_value(Request, Request(user_id="1"))
-
-        # Get the middleware manager
-        manager = container.get(MiddlewareManager)
-
-        # Register middleware instances directly
-        logging_mw = LoggingMiddleware()
-        manager.register_middleware(logging_mw)
-        manager.register_middleware(ValidationMiddleware())
-        manager.register_middleware(TransformationMiddleware())
+        # Get logging middleware for verification
+        logging_mw = container.get(LoggingMiddleware)
 
         # Test 1: Valid props (should pass all middleware)
         props = {"title": "Click Me", "variant": "primary"}
-        result = manager.execute(Greeting, props, context)
+        result = execute_middleware(SimpleComponent, props, container)
 
         assert result is not None
         assert result["title"] == "Click Me"
         assert result["transformed"] is True
-        assert "Greeting" in logging_mw.logged
+        assert "SimpleComponent" in logging_mw.logged
 
         # Test 2: Invalid props (should halt at validation)
         invalid_props = {"variant": "secondary"}  # Missing 'title'
-        halted_result = manager.execute(Greeting, invalid_props, context)
+        halted_result = execute_middleware(SimpleComponent, invalid_props, container)
 
         assert halted_result is None
 
-        # Test 3: Render Greeting component
-        response = html(t"<{Greeting} />", context=container)
-        result_html = str(response)
-
-        assert "Hello Alice!" in result_html
-
-        return result_html
+        # Render component
+        response = html(t"<{SimpleComponent} />", context=container)
+        return str(response)
 
 
 if __name__ == "__main__":

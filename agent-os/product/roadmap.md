@@ -25,8 +25,8 @@
    and simpler: you can register a service in the container that collects component paths and which assets are used and
    need copying. Keep this example simple. Explain the goal of using relative paths to actual things on disk during
    authoring, to let tooling help. To collect the path to the component, so you'll know where on disk it is relative
-   too. An emphasis on standard Python path types. A way later to render relative to the path of a future request.
- 
+   too. An emphasis on standard Python path types. A way later to render relative to the path of a future request. `L`
+
 7. [ ] Testing Utilities and Mock Injection — Create testing helpers for injecting mock services, implement test
    container fixtures, and provide examples of testing components in isolation with mocked dependencies. `S`
 

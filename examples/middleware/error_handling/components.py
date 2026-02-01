@@ -1,26 +1,23 @@
-"""Components for the error handling middleware example.
+"""Components for the error handling middleware example."""
 
-Re-exports common Greeting and adds FailingComponent for error demos.
-"""
+from dataclasses import dataclass
 
 from tdom import Node
 
-# Re-export common components
-from examples.common.components import Greeting
 from tdom_svcs import html
 
-__all__ = ["FailingComponent", "Greeting"]
 
-
+@dataclass
 class FailingComponent:
     """A component that intentionally fails for error handling demos.
 
     Used to demonstrate how middleware can catch and handle exceptions.
     """
 
-    def __init__(self, should_fail: bool = False, **kwargs):
-        self.should_fail = should_fail
-        if should_fail:
+    should_fail: bool = False
+
+    def __post_init__(self) -> None:
+        if self.should_fail:
             raise ValueError("FailingComponent was configured to fail!")
 
     def __call__(self) -> Node:

@@ -69,9 +69,39 @@ with HopscotchContainer(registry) as container:
 
 ## Key Concepts
 
+### Decorators
+
+tdom-svcs provides decorators that automatically include `@injectable` functionality:
+
+| Decorator | Purpose | Includes `@injectable` |
+|-----------|---------|------------------------|
+| `@middleware` | Mark class as global middleware | Yes |
+| `@component` | Mark class with per-component middleware | Yes |
+| `@injectable` | Basic DI registration (from svcs_di) | - |
+
+This means you don't need to stack `@injectable` with `@middleware` or `@component`:
+
+```python
+from tdom_svcs import middleware, component
+
+# Just @middleware - no need for @injectable
+@middleware
+@dataclass
+class LoggingMiddleware:
+    priority: int = -10
+    def __call__(self, component, props, context):
+        return props
+
+# Just @component - no need for @injectable
+@component(middleware={"pre_resolution": [my_middleware]})
+@dataclass
+class Button:
+    label: str = "Click"
+```
+
 ### Class vs Function Components
 
-- **Class components** use the `@injectable` decorator and can be registered for DI
+- **Class components** use `@injectable`, `@middleware`, or `@component` decorators for DI registration
 - **Function components** can use `Inject[]` but are best called directly with an injector
 
 ### Container and Registry
@@ -185,6 +215,51 @@ def Page(context=None, children=()):
 # Both Header and Page receive the same context
 result = html(t"<{Page}><p>Content</p></{Page}>", context={"user": "Alice"})
 ```
+
+## Middleware
+
+Middleware intercepts component processing for cross-cutting concerns like logging, validation, and authorization.
+
+### Global Middleware
+
+Use `@middleware` to create middleware that applies to all components:
+
+```python
+from dataclasses import dataclass
+from tdom_svcs import middleware, scan, execute_middleware
+
+@middleware
+@dataclass
+class LoggingMiddleware:
+    priority: int = -10  # Lower = runs first
+
+    def __call__(self, component, props, context):
+        print(f"Processing {component.__name__}")
+        return props  # Return props to continue, None to halt
+
+# Setup
+registry = HopscotchRegistry()
+scan(registry, my_middleware_module)  # Discovers @middleware classes
+
+# Execute
+with HopscotchContainer(registry) as container:
+    result = execute_middleware(MyComponent, {"title": "Hello"}, container)
+```
+
+### Per-Component Middleware
+
+Use `@component` to attach middleware to specific components:
+
+```python
+from tdom_svcs import component
+
+@component(middleware={"pre_resolution": [validation_mw]})
+@dataclass
+class Button:
+    label: str = "Click"
+```
+
+See the [middleware documentation](docs/services/middleware.md) for complete details.
 
 ## Type Aliases
 

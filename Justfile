@@ -62,7 +62,7 @@ docs-build:
 
 # Serve documentation with auto-reload
 docs-serve:
-    uv run sphinx-autobuild docs docs/_build/html --open-browser
+    uv run sphinx-autobuild docs docs/_build/html --open-browser --watch examples
 
 # Clean build artifacts
 clean:

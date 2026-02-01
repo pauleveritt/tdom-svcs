@@ -1,16 +1,24 @@
 """
-Tests for MiddlewareManager.
+Tests for middleware registration and execution module.
 
-This module tests the MiddlewareManager class which manages middleware
-registration and execution with priority-based ordering and async support.
+This module tests the module-level functions for middleware management:
+- register_middleware() - Register middleware types with registry
+- execute_middleware() - Execute middleware chain synchronously
+- execute_middleware_async() - Execute middleware chain with async support
 """
 
 from dataclasses import dataclass
-from typing import Any, Callable, cast
+from typing import Any, Callable
 
 import pytest
+import svcs
 
-from tdom_svcs.services.middleware import Context, MiddlewareManager
+from tdom_svcs import (
+    execute_middleware,
+    execute_middleware_async,
+    register_middleware,
+)
+from tdom_svcs.services.middleware import Context
 
 from ...conftest import (
     AsyncMiddleware,
@@ -33,270 +41,205 @@ def heading(text: str = "Heading") -> str:
     return f"<h1>{text}</h1>"
 
 
-def test_middleware_manager_register_and_execute():
-    """Test registering middleware and basic execution."""
-    manager = MiddlewareManager()
-    middleware = DefaultPriorityMiddleware()
-    manager.register_middleware(middleware)
+class TestRegisterAndExecute:
+    """Tests for basic middleware registration and execution."""
 
-    props = {"label": "Click"}
-    context: Context = cast(Context, {})
+    def test_register_and_execute(self, registry, container):
+        """Test registering middleware and basic execution."""
+        # Register middleware type
+        registry.register_factory(DefaultPriorityMiddleware, DefaultPriorityMiddleware)
+        register_middleware(registry, DefaultPriorityMiddleware)
 
-    result = manager.execute(Button, props, context)
+        props = {"label": "Click"}
 
-    assert result is not None
-    assert result["label"] == "Click"
-    assert result["default"] is True
+        result = execute_middleware(Button, props, container)
 
+        assert result is not None
+        assert result["label"] == "Click"
+        assert result["default"] is True
 
-def test_middleware_manager_priority_ordering():
-    """Test middleware executes in priority order (lower numbers first)."""
-    manager = MiddlewareManager()
+    def test_priority_ordering(self, registry, container):
+        """Test middleware executes in priority order (lower numbers first)."""
+        # Register middleware types
+        registry.register_factory(HighPriorityMiddleware, HighPriorityMiddleware)
+        registry.register_factory(LowPriorityMiddleware, LowPriorityMiddleware)
+        registry.register_factory(DefaultPriorityMiddleware, DefaultPriorityMiddleware)
 
-    # Register in random order
-    manager.register_middleware(HighPriorityMiddleware())
-    manager.register_middleware(LowPriorityMiddleware())
-    manager.register_middleware(DefaultPriorityMiddleware())
+        # Register in random order - should still execute in priority order
+        register_middleware(registry, HighPriorityMiddleware)
+        register_middleware(registry, LowPriorityMiddleware)
+        register_middleware(registry, DefaultPriorityMiddleware)
 
-    props = {}
-    context: Context = cast(Context, {})
+        props = {}
 
-    result = manager.execute(Button, props, context)
+        result = execute_middleware(Button, props, container)
 
-    # Should execute in priority order: low (-10), default (0), high (10)
-    assert result is not None
-    assert result["_execution_order"] == ["low", "default", "high"]
-    assert result["low"] is True
-    assert result["default"] is True
-    assert result["high"] is True
+        # Should execute in priority order: low (-10), default (0), high (10)
+        assert result is not None
+        assert result["_execution_order"] == ["low", "default", "high"]
+        assert result["low"] is True
+        assert result["default"] is True
+        assert result["high"] is True
 
+    def test_halt_on_none(self, registry, container):
+        """Test execution halts when middleware returns None."""
+        registry.register_factory(LowPriorityMiddleware, lambda: LowPriorityMiddleware(priority=-10))
+        registry.register_factory(HaltingMiddleware, lambda: HaltingMiddleware(priority=0))
+        registry.register_factory(HighPriorityMiddleware, lambda: HighPriorityMiddleware(priority=10))
 
-def test_middleware_manager_halt_on_none():
-    """Test execution halts when middleware returns None."""
-    manager = MiddlewareManager()
+        register_middleware(registry, LowPriorityMiddleware)
+        register_middleware(registry, HaltingMiddleware)
+        register_middleware(registry, HighPriorityMiddleware)
 
-    manager.register_middleware(LowPriorityMiddleware(priority=-10))
-    manager.register_middleware(HaltingMiddleware(priority=0))
-    manager.register_middleware(HighPriorityMiddleware(priority=10))
+        props = {}
 
-    props = {}
-    context: Context = cast(Context, {})
+        result = execute_middleware(Button, props, container)
 
-    result = manager.execute(Button, props, context)
+        # Execution should halt at halting middleware
+        # Low priority runs, halting runs and returns None, high never runs
+        assert result is None
+        assert "low" in props
+        assert props["_execution_order"] == ["low"]
+        assert "high" not in props
 
-    # Execution should halt at halting middleware
-    # Low priority runs, halting runs and returns None, high never runs
-    assert result is None
-    assert "low" in props
-    assert props["_execution_order"] == ["low"]
-    assert "high" not in props
 
+class TestComponentTypes:
+    """Tests for different component types."""
 
-def test_middleware_manager_with_function_component():
-    """Test middleware execution with function component."""
-    manager = MiddlewareManager()
-    middleware = DefaultPriorityMiddleware()
-    manager.register_middleware(middleware)
+    def test_with_function_component(self, registry, container):
+        """Test middleware execution with function component."""
+        registry.register_factory(DefaultPriorityMiddleware, DefaultPriorityMiddleware)
+        register_middleware(registry, DefaultPriorityMiddleware)
 
-    props = {"text": "Welcome"}
-    context: Context = cast(Context, {})
+        props = {"text": "Welcome"}
 
-    result = manager.execute(heading, props, context)
+        result = execute_middleware(heading, props, container)
 
-    assert result is not None
-    assert result["text"] == "Welcome"
-    assert result["default"] is True
-    # Verify it's a function component
-    assert not isinstance(heading, type)
+        assert result is not None
+        assert result["text"] == "Welcome"
+        assert result["default"] is True
+        # Verify it's a function component
+        assert not isinstance(heading, type)
 
+    def test_with_class_component(self, registry, container):
+        """Test middleware execution with class component."""
+        registry.register_factory(DefaultPriorityMiddleware, DefaultPriorityMiddleware)
+        register_middleware(registry, DefaultPriorityMiddleware)
 
-def test_middleware_manager_with_class_component():
-    """Test middleware execution with class component."""
-    manager = MiddlewareManager()
-    middleware = DefaultPriorityMiddleware()
-    manager.register_middleware(middleware)
+        props = {"label": "Submit"}
 
-    props = {"label": "Submit"}
-    context: Context = cast(Context, {})
+        result = execute_middleware(Button, props, container)
 
-    result = manager.execute(Button, props, context)
+        assert result is not None
+        assert result["label"] == "Submit"
+        assert result["default"] is True
+        # Verify it's a class component
+        assert isinstance(Button, type)
 
-    assert result is not None
-    assert result["label"] == "Submit"
-    assert result["default"] is True
-    # Verify it's a class component
-    assert isinstance(Button, type)
 
+class TestAsyncMiddleware:
+    """Tests for async middleware support."""
 
-@pytest.mark.anyio
-async def test_middleware_manager_async_middleware():
-    """Test execution with async middleware using anyio."""
-    manager = MiddlewareManager()
+    @pytest.mark.anyio
+    async def test_async_middleware(self, registry, container):
+        """Test execution with async middleware using anyio."""
+        registry.register_factory(LowPriorityMiddleware, lambda: LowPriorityMiddleware(priority=-10))
+        registry.register_factory(AsyncMiddleware, lambda: AsyncMiddleware(priority=5))
+        registry.register_factory(HighPriorityMiddleware, lambda: HighPriorityMiddleware(priority=10))
 
-    manager.register_middleware(LowPriorityMiddleware(priority=-10))
-    # Type checker can't detect async __call__ satisfies protocol at static analysis time
-    # Runtime detection via inspect.iscoroutinefunction() handles this correctly
-    manager.register_middleware(AsyncMiddleware(priority=5))  # type: ignore[arg-type]
-    manager.register_middleware(HighPriorityMiddleware(priority=10))
+        register_middleware(registry, LowPriorityMiddleware)
+        register_middleware(registry, AsyncMiddleware)
+        register_middleware(registry, HighPriorityMiddleware)
 
-    props = {}
-    context: Context = cast(Context, {})
+        props = {}
 
-    # execute_async() should handle async middleware automatically
-    result = await manager.execute_async(Button, props, context)
+        # execute_middleware_async() should handle async middleware automatically
+        result = await execute_middleware_async(Button, props, container)
 
-    # Should execute in priority order: low (-10), async (5), high (10)
-    assert result is not None
-    assert result["_execution_order"] == ["low", "async", "high"]
-    assert result["low"] is True
-    assert result["async"] is True
-    assert result["high"] is True
+        # Should execute in priority order: low (-10), async (5), high (10)
+        assert result is not None
+        assert result["_execution_order"] == ["low", "async", "high"]
+        assert result["low"] is True
+        assert result["async"] is True
+        assert result["high"] is True
 
 
-def test_middleware_manager_invalid_middleware():
-    """Test that invalid middleware raises TypeError."""
-    manager = MiddlewareManager()
+class TestDependencyInjection:
+    """Tests for middleware with DI dependencies."""
 
-    # Object that doesn't satisfy Middleware protocol
-    invalid_middleware = {"not": "middleware"}
+    def test_middleware_with_dependencies(self, registry, container):
+        """Test middleware with its own dependencies resolved via DI."""
+        # Create a middleware that has dependencies
+        @dataclass
+        class Logger:
+            """Simple logger dependency."""
 
-    with pytest.raises(TypeError, match="does not satisfy Middleware protocol"):
-        manager.register_middleware(invalid_middleware)  # type: ignore[arg-type]
+            name: str
 
+        @dataclass
+        class LoggingMiddleware:
+            """Middleware with logger dependency."""
 
-def test_middleware_manager_register_service():
-    """Test registering middleware as a service with DI."""
-    pytest.importorskip("svcs")
-    import svcs
+            logger: Logger
+            priority: int = 0
 
-    # Create registry and register middleware as service
-    registry = svcs.Registry()
-    registry.register_factory(DefaultPriorityMiddleware, DefaultPriorityMiddleware)
-    container = svcs.Container(registry)
+            def __call__(
+                self,
+                component: type | Callable[..., Any],
+                props: dict[str, Any],
+                context: Context,
+            ) -> dict[str, Any] | None:
+                """Log and pass through props."""
+                props["logged"] = self.logger.name
+                return props
 
-    # Register middleware service
-    manager = MiddlewareManager()
-    manager.register_middleware_service(DefaultPriorityMiddleware, container)
+        # Factory function that uses container to get dependencies
+        def create_logging_middleware(cont: svcs.Container) -> LoggingMiddleware:
+            logger = cont.get(Logger)
+            return LoggingMiddleware(logger=logger)
 
-    props = {"label": "Click"}
-    context: Context = cast(Context, {})
+        # Register logger and middleware as services
+        registry.register_value(Logger, Logger(name="test-logger"))
+        registry.register_factory(LoggingMiddleware, create_logging_middleware)
 
-    result = manager.execute(Button, props, context)
+        # Register middleware type
+        register_middleware(registry, LoggingMiddleware)
 
-    assert result is not None
-    assert result["label"] == "Click"
-    assert result["default"] is True
+        props = {}
 
+        result = execute_middleware(Button, props, container)
 
-def test_middleware_manager_service_with_dependencies():
-    """Test middleware service with its own dependencies resolved via DI."""
-    pytest.importorskip("svcs")
-    import svcs
+        assert result is not None
+        assert result["logged"] == "test-logger"
 
-    # Create a middleware that has dependencies
-    @dataclass
-    class Logger:
-        """Simple logger dependency."""
+    def test_mixed_registration(self, registry, container):
+        """Test mixing different middleware types."""
+        # Register middleware types
+        registry.register_factory(LowPriorityMiddleware, LowPriorityMiddleware)
+        registry.register_factory(HighPriorityMiddleware, HighPriorityMiddleware)
 
-        name: str
+        register_middleware(registry, LowPriorityMiddleware)
+        register_middleware(registry, HighPriorityMiddleware)
 
-    @dataclass
-    class LoggingMiddleware:
-        """Middleware with logger dependency."""
+        props = {}
 
-        logger: Logger
-        priority: int = 0
+        result = execute_middleware(Button, props, container)
 
-        def __call__(
-            self,
-            component: type | Callable[..., Any],
-            props: dict[str, Any],
-            context: Context,
-        ) -> dict[str, Any] | None:
-            """Log and pass through props."""
-            props["logged"] = self.logger.name
-            return props
+        assert result is not None
+        assert result["_execution_order"] == ["low", "high"]
+        assert result["low"] is True
+        assert result["high"] is True
 
-    # Factory function that uses container to get dependencies
-    def create_logging_middleware(container: svcs.Container) -> LoggingMiddleware:
-        logger = container.get(Logger)
-        return LoggingMiddleware(logger=logger)
 
-    # Register logger and middleware as services
-    registry = svcs.Registry()
-    registry.register_value(Logger, Logger(name="test-logger"))
-    # svcs auto-detects takes_container from factory signature
-    registry.register_factory(LoggingMiddleware, create_logging_middleware)
-    container = svcs.Container(registry)
+class TestErrorHandling:
+    """Tests for error handling."""
 
-    # Register middleware service
-    manager = MiddlewareManager()
-    manager.register_middleware_service(LoggingMiddleware, container)
+    def test_async_in_sync_raises_error(self, registry, container):
+        """Test that async middleware in sync execution raises RuntimeError."""
+        registry.register_factory(AsyncMiddleware, AsyncMiddleware)
+        register_middleware(registry, AsyncMiddleware)
 
-    props = {}
-    context: Context = cast(Context, {})
+        props = {}
 
-    result = manager.execute(Button, props, context)
-
-    assert result is not None
-    assert result["logged"] == "test-logger"
-
-
-def test_middleware_manager_mixed_instance_and_service():
-    """Test mixing direct instance registration with service registration."""
-    pytest.importorskip("svcs")
-    import svcs
-
-    # Create registry and register one middleware as service
-    registry = svcs.Registry()
-    registry.register_factory(HighPriorityMiddleware, HighPriorityMiddleware)
-    container = svcs.Container(registry)
-
-    # Register mix of direct instances and services
-    manager = MiddlewareManager()
-    manager.register_middleware(LowPriorityMiddleware())
-    manager.register_middleware_service(HighPriorityMiddleware, container)
-
-    props = {}
-    context: Context = cast(Context, {})
-
-    result = manager.execute(Button, props, context)
-
-    assert result is not None
-    assert result["_execution_order"] == ["low", "high"]
-    assert result["low"] is True
-    assert result["high"] is True
-
-
-def test_middleware_manager_service_invalid_container():
-    """Test that invalid container raises TypeError."""
-    manager = MiddlewareManager()
-
-    # Object that is a plain dict (not a service container)
-    invalid_container = {"not": "container"}
-
-    with pytest.raises(TypeError, match="not a valid DI container"):
-        manager.register_middleware_service(
-            DefaultPriorityMiddleware,
-            invalid_container,  # type: ignore[arg-type]
-        )
-
-
-def test_middleware_manager_service_resolution_failure():
-    """Test that service resolution failure is handled properly."""
-    pytest.importorskip("svcs")
-    import svcs
-
-    # Create container without registering the middleware
-    registry = svcs.Registry()
-    container = svcs.Container(registry)
-
-    manager = MiddlewareManager()
-    manager.register_middleware_service(DefaultPriorityMiddleware, container)
-
-    props = {}
-    context: Context = cast(Context, {})
-
-    # Should raise RuntimeError when trying to resolve unregistered service
-    with pytest.raises(RuntimeError, match="Failed to resolve middleware service"):
-        manager.execute(Button, props, context)
+        with pytest.raises(RuntimeError, match="Async middleware.*detected in synchronous execution"):
+            execute_middleware(Button, props, container)

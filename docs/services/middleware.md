@@ -1,10 +1,10 @@
-# MiddlewareManager Service
+# Middleware
 
-The **MiddlewareManager** service provides thread-safe middleware registration and execution for component lifecycle hooks. It enables cross-cutting concerns like logging, validation, transformation, and authorization across all components.
+The **middleware system** provides registration and execution of middleware for component lifecycle hooks. It enables cross-cutting concerns like logging, validation, transformation, and authorization across components.
 
 ## Overview
 
-Middleware are stateless callables that execute during component lifecycle phases. They can:
+Middleware are callables that execute during component lifecycle phases. They can:
 - Modify component props before resolution
 - Add contextual data (user info, permissions, etc.)
 - Validate props and halt execution
@@ -23,152 +23,289 @@ Middleware are stateless callables that execute during component lifecycle phase
 
 Middleware provides a clean separation between component logic and cross-cutting concerns.
 
+### Component Middleware for Node Trees
+
+Beyond simple prop transformation, middleware is particularly powerful for **operating on the component node tree**:
+
+- **Static path rewriting:** Transform asset paths (images, CSS, JS) based on deployment environment or CDN configuration
+- **Link validation:** Check that internal links point to valid routes
+- **i18n injection:** Add translation context or transform text nodes
+- **Security scanning:** Detect potentially unsafe content before rendering
+- **Tree optimization:** Remove unnecessary wrapper elements or flatten structures
+- **Accessibility enhancement:** Add ARIA attributes or validate accessibility requirements
+
+Component middleware receives the full container context, enabling rich transformations based on application state.
+
+### Container Access: Read and Write
+
+Middleware receives the DI container as the `context` parameter. This provides **both read and write access**:
+
+**Reading from container:**
+```python
+def __call__(self, component, props, context):
+    # Read services from container
+    config = context.get(AppConfig)
+    user = context.get(CurrentUser)
+    return props
+```
+
+**Writing to container:**
+```python
+def __call__(self, component, props, context):
+    # Write values for later middleware or components to use
+    context.register_local_value(ProcessedData, {"computed": True})
+    return props
+```
+
+This enables middleware to prepare data that subsequent middleware or components can consume, creating a powerful pipeline for request processing.
+
 ### Thread Safety
 
-MiddlewareManager uses `threading.Lock` for thread-safe registration, making it safe for concurrent use in free-threaded Python 3.14+.
+Middleware state is stored in `HopscotchRegistry.metadata()`, which uses thread-safe access patterns suitable for concurrent use in free-threaded Python 3.14+.
 
-## Setup
+## Hopscotch Integration
 
-### Creating an Instance
-
-The recommended approach is to use `setup_container()` which automatically registers MiddlewareManager as a service:
+The middleware system integrates seamlessly with Hopscotch's registry and container system. The `scan()` function automatically discovers and registers middleware:
 
 ```python
-import svcs
-from tdom_svcs.services.middleware import setup_container, MiddlewareManager
+from svcs_di.injectors import HopscotchRegistry, HopscotchContainer
+from tdom_svcs import scan, execute_middleware
 
-registry = svcs.Registry()
-context = {"config": {"debug": True}}
+# Create registry and scan packages
+registry = HopscotchRegistry()
+scan(registry, "myapp.services", "myapp.middleware", "myapp.components")
 
-# Registers MiddlewareManager as a service
-setup_container(context, registry)
-
-# Get manager via dependency injection
-container = svcs.Container(registry)
-manager = container.get(MiddlewareManager)
+# Use container for middleware execution
+with HopscotchContainer(registry) as container:
+    result = execute_middleware(MyComponent, props, container)
 ```
 
-### Manual Registration
+The `scan()` function:
+1. Calls `svcs_di`'s scan for `@injectable` services
+2. Discovers `@middleware` decorated classes (global middleware)
+3. Discovers `@component` decorated classes (per-component middleware)
+4. Registers all discovered items with the registry
 
-Alternatively, register MiddlewareManager manually:
+No manual `setup_container()` call is needed—`scan()` handles all registration automatically.
 
-```text
-registry = svcs.Registry()
-manager = MiddlewareManager()
-registry.register_value(MiddlewareManager, manager)
-```
+## Global vs Per-Component Middleware
 
-## Middleware Registration
+The middleware system provides two distinct mechanisms:
 
-### Direct Instance Registration
+### Global Middleware (Declared)
 
-Register middleware instances directly for simple cases:
+Middleware marked with `@middleware` are **global**—they run for **all components**:
 
 ```python
-from dataclasses import dataclass
-from tdom_svcs.services.middleware import MiddlewareManager
-
-manager = MiddlewareManager()
-
+@middleware
 @dataclass
 class LoggingMiddleware:
     priority: int = -10
 
     def __call__(self, component, props, context):
-        component_name = component.__name__ if hasattr(component, "__name__") else str(component)
-        print(f"[LOG] Processing {component_name}")
-        return props  # Continue execution
-
-# Register the middleware instance
-manager.register_middleware(LoggingMiddleware())
+        # Runs for EVERY component
+        return props
 ```
 
-### Service-Based Registration
+Key points:
+- The `@middleware` decorator registers the class for discovery by `scan()`
+- Global middleware cannot be filtered by component type
+- All global middleware runs via `execute_middleware()`, regardless of which component is being processed
 
-Register middleware as services for dependency injection:
+### Per-Component Middleware (Opt-in)
 
-```text
-# Define middleware with dependencies
+Components can opt-in to **additional** middleware using `@component`. This middleware does **not** need the `@middleware` decorator, but must be `@injectable` for container resolution:
+
+```python
+from svcs_di.injectors import injectable
+
+# No @middleware decorator needed, but @injectable is required
+@injectable
 @dataclass
-class DatabaseMiddleware:
-    db: DatabaseService  # Injected dependency
-    priority: int = -5
+class ButtonStyleMiddleware:
+    priority: int = 0
 
     def __call__(self, component, props, context):
-        # Use database service
-        data = self.db.query()
-        props["_db_data"] = data
+        props["styled"] = True
         return props
 
-# Register as service
-registry.register_factory(DatabaseService, create_database)
-registry.register_factory(DatabaseMiddleware, DatabaseMiddleware)
-
-# Register with MiddlewareManager
-manager.register_middleware_service(DatabaseMiddleware, container)
+# Pass the TYPE, not an instance - container resolves it
+@component(middleware={"pre_resolution": [ButtonStyleMiddleware]})
+@dataclass
+class Button:
+    ...
 ```
 
-## Execution Workflow
+Key points:
+- Per-component middleware is **additive**—it runs in addition to global middleware, not instead of it
+- The middleware class must be `@injectable` for container resolution
+- Pass middleware **types** (not instances) to `@component`—the container manages lifecycle
+- Per-component middleware is executed via `execute_component_middleware()`
+
+### Execution Order
+
+When processing a component:
+
+1. **Global middleware** runs first (via `execute_middleware()`)
+2. **Per-component middleware** runs after (via `execute_component_middleware()`)
+
+```python
+# Step 1: Global middleware
+result = execute_middleware(Button, props, container)
+
+# Step 2: Per-component middleware (resolves types from container)
+result = execute_component_middleware(Button, result, container, "pre_resolution")
+```
+
+## Defining Middleware
+
+### Using the @middleware Decorator
+
+Mark middleware classes with the `@middleware` decorator for automatic discovery:
+
+```python
+from dataclasses import dataclass
+from tdom_svcs import middleware
+
+@middleware
+@dataclass
+class LoggingMiddleware:
+    """Middleware that logs component processing."""
+
+    priority: int = -10
+
+    def __call__(self, component, props, context):
+        component_name = getattr(component, "__name__", str(component))
+        print(f"[LOG] Processing {component_name}")
+        return props
+```
+
+The `@middleware` decorator:
+- Marks the class for discovery by `scan()` as global middleware
+- Automatically applies `@injectable` so it can be resolved from the DI container
+
+Middleware must have:
+- A `priority` attribute (int) - lower numbers run first
+- A `__call__` method with signature `(component, props, context) -> props | None`
+
+### Imperative Registration
+
+For programmatic control, register middleware directly:
+
+```python
+from tdom_svcs import register_middleware
+
+# Register middleware type with registry
+register_middleware(registry, LoggingMiddleware)
+```
+
+This is useful when middleware needs to be registered conditionally or when not using scanning.
+
+## Per-Component Middleware
+
+### Using the @component Decorator
+
+Apply middleware to specific components using the `@component` decorator:
+
+```python
+from dataclasses import dataclass
+from svcs_di.injectors import injectable
+from tdom_svcs import component
+
+@injectable  # Required for container resolution
+@dataclass
+class ButtonStyleMiddleware:
+    priority: int = 0
+
+    def __call__(self, component, props, context):
+        if "variant" not in props:
+            props["variant"] = "primary"
+        return props
+
+# Pass the TYPE, not an instance
+@component(middleware={"pre_resolution": [ButtonStyleMiddleware]})
+@dataclass
+class Button:
+    label: str = "Click"
+    variant: str = "default"
+```
+
+The `@component` decorator:
+- Marks the class with per-component middleware configuration
+- Automatically applies `@injectable` so it can be resolved from the DI container
+- Middleware types are resolved from the container when executed
+
+(middleware:lifecycle-phases)=
+### Lifecycle Phases
+
+Per-component middleware can target specific lifecycle phases:
+
+- **`pre_resolution`**: Before component dependencies are resolved
+- **`post_resolution`**: After dependencies resolved, before rendering
+- **`rendering`**: During the rendering phase
+
+```python
+@component(middleware={
+    "pre_resolution": [validation_mw],
+    "post_resolution": [enrichment_mw],
+    "rendering": [transform_mw],
+})
+class MyComponent:
+    ...
+```
+
+### Retrieving Component Middleware
+
+Access registered per-component middleware programmatically:
+
+```python
+from tdom_svcs import get_component_middleware
+
+# Get middleware map for a component
+mw_map = get_component_middleware(registry, Button)
+pre_mw = mw_map.get("pre_resolution", [])
+
+# Execute manually if needed
+for mw in sorted(pre_mw, key=lambda m: m.priority):
+    props = mw(Button, props, context)
+```
+
+## Execution
 
 ### Priority Ordering
 
 Middleware execute in priority order (lower numbers first):
 
 ```python
-from dataclasses import dataclass
-from tdom_svcs.services.middleware import MiddlewareManager
-
-manager = MiddlewareManager()
-
-# Define a simple component for testing
-class MyComponent:
-    pass
-
+@middleware
 @dataclass
 class EarlyMiddleware:
     priority: int = -10  # Runs first
 
-    def __call__(self, component, props, context):
-        print("1. Early")
-        return props
-
+@middleware
 @dataclass
 class MiddleMiddleware:
-    priority: int = 0  # Runs second
+    priority: int = 0    # Runs second
 
-    def __call__(self, component, props, context):
-        print("2. Middle")
-        return props
-
+@middleware
 @dataclass
 class LateMiddleware:
-    priority: int = 10  # Runs third
-
-    def __call__(self, component, props, context):
-        print("3. Late")
-        return props
-
-manager.register_middleware(EarlyMiddleware())
-manager.register_middleware(MiddleMiddleware())
-manager.register_middleware(LateMiddleware())
-
-# Execution prints: "1. Early", "2. Middle", "3. Late"
-result = manager.execute(MyComponent, {}, {})
+    priority: int = 10   # Runs third
 ```
+
+Recommended priority ranges:
+- `-10`: Logging, metrics (observe but don't modify)
+- `-5`: Authentication, authorization (early checks)
+- `0`: Validation (check props are valid)
+- `5`: Data enrichment (add contextual data)
+- `10`: Transformation (final modifications)
 
 ### Halting Execution
 
 Middleware can halt the chain by returning `None`:
 
 ```python
-from dataclasses import dataclass
-from tdom_svcs.services.middleware import MiddlewareManager
-
-manager = MiddlewareManager()
-
-class MyComponent:
-    pass
-
+@middleware
 @dataclass
 class ValidationMiddleware:
     priority: int = 0
@@ -178,406 +315,182 @@ class ValidationMiddleware:
             print("[ERROR] Missing required field")
             return None  # Halt execution
         return props  # Continue
-
-manager.register_middleware(ValidationMiddleware())
-
-# Missing required field - execution halts
-result = manager.execute(MyComponent, {}, {})
-assert result is None  # Execution was halted
 ```
 
-### Prop Transformation
+### Executing Middleware
 
-Middleware can modify and pass props to the next middleware:
+Use `execute_middleware()` to run the middleware chain:
 
 ```python
-from dataclasses import dataclass
-from tdom_svcs.services.middleware import MiddlewareManager
+from tdom_svcs import execute_middleware
 
-manager = MiddlewareManager()
+with HopscotchContainer(registry) as container:
+    result = execute_middleware(MyComponent, {"title": "Hello"}, container)
 
-class MyComponent:
-    pass
-
-@dataclass
-class EnrichmentMiddleware:
-    priority: int = -10
-
-    def __call__(self, component, props, context):
-        # Add timestamp to props
-        from datetime import datetime
-        props["processed_at"] = datetime.now().isoformat()
-        print(f"[ENRICH] Added timestamp: {props['processed_at']}")
-        return props  # Pass modified props
-
-@dataclass
-class TransformMiddleware:
-    priority: int = 0
-
-    def __call__(self, component, props, context):
-        # Transform existing prop
-        if "title" in props:
-            props["title"] = props["title"].upper()
-            print(f"[TRANSFORM] Uppercased title: {props['title']}")
-        return props
-
-manager.register_middleware(EnrichmentMiddleware())
-manager.register_middleware(TransformMiddleware())
-
-# Execute with props
-result = manager.execute(MyComponent, {"title": "hello"}, {})
-assert result["title"] == "HELLO"
-assert "processed_at" in result
+    if result is None:
+        print("Middleware halted execution")
+    else:
+        print(f"Final props: {result}")
 ```
 
 ## Async Support
 
 ### Async Middleware
 
-Middleware with async `__call__` are automatically detected and awaited:
+Define async middleware with an async `__call__` method:
 
-Example pattern from `examples/middleware/07_async_middleware.py`:
-
-```text
+```python
+@middleware
 @dataclass
 class AsyncDatabaseMiddleware:
-    """Async middleware that fetches data from database."""
-
     priority: int = -5
 
     async def __call__(self, component, props, context):
-        """Fetch data from database asynchronously."""
-        # Simulate async database query
-        await asyncio.sleep(0.1)
-
-        # Add fetched data to props
-        props["_db_user"] = {"id": 123, "name": "John Doe"}
+        # Async database query
+        user = await fetch_user(props.get("user_id"))
+        props["_user"] = user
         return props
 ```
 
 ### Mixed Sync and Async
 
-The middleware system supports mixing sync and async middleware:
+Use `execute_middleware_async()` when any middleware might be async:
 
-```text
-# Sync middleware
-@dataclass
-class SyncLoggingMiddleware:
-    priority: int = -10
+```python
+from tdom_svcs import execute_middleware_async
 
-    def __call__(self, component, props, context):
-        print("[SYNC] Logging")
-        return props
-
-# Async middleware
-@dataclass
-class AsyncAuthMiddleware:
-    priority: int = 0
-
-    async def __call__(self, component, props, context):
-        # Async permission check
-        await check_permissions()
-        return props
-
-# Use execute_async() for async middleware
-result = await manager.execute_async(MyComponent, {}, {})
+async def render():
+    with HopscotchContainer(registry) as container:
+        # Handles both sync and async middleware
+        result = await execute_middleware_async(MyComponent, props, container)
 ```
 
-## Code Examples
+Sync middleware in an async chain are called normally; async middleware are awaited automatically.
 
-Here are tested patterns extracted from the middleware examples:
+## Middleware with Dependencies
 
-### Basic Logging Middleware
-
-From `examples/middleware/01_basic_middleware.py`:
+Middleware can have their own dependencies injected via factory functions:
 
 ```python
 from dataclasses import dataclass
-from tdom_svcs.services.middleware import MiddlewareManager
+import svcs
 
-manager = MiddlewareManager()
+@dataclass
+class Logger:
+    name: str
 
+@middleware
 @dataclass
 class LoggingMiddleware:
-    """Middleware that logs component processing."""
-
+    logger: Logger
     priority: int = -10
 
     def __call__(self, component, props, context):
-        component_name = component.__name__ if hasattr(component, "__name__") else str(component)
-        print(f"[LOG] Processing {component_name} with props: {props}")
+        self.logger.info(f"Processing {component.__name__}")
         return props
 
-# Register and use
-manager.register_middleware(LoggingMiddleware())
+# Register with factory function
+def create_logging_middleware(container: svcs.Container) -> LoggingMiddleware:
+    return LoggingMiddleware(logger=container.get(Logger))
 
-class Button:
-    pass
-
-result = manager.execute(Button, {"label": "Click"}, {})
-assert result == {"label": "Click"}
-```
-
-### Validation Middleware
-
-From `examples/middleware/01_basic_middleware.py`:
-
-```python
-from dataclasses import dataclass
-from tdom_svcs.services.middleware import MiddlewareManager
-
-manager = MiddlewareManager()
-
-@dataclass
-class ValidationMiddleware:
-    """Middleware that validates props."""
-
-    priority: int = 0
-
-    def __call__(self, component, props, context):
-        if "title" not in props:
-            print("[VALIDATION] Error: 'title' field is required")
-            return None  # Halt execution
-        print(f"[VALIDATION] Props validated successfully")
-        return props
-
-# Register and use
-manager.register_middleware(ValidationMiddleware())
-
-class Card:
-    pass
-
-# Invalid props - returns None
-result = manager.execute(Card, {"variant": "primary"}, {})
-assert result is None
-
-# Valid props - returns transformed props
-result = manager.execute(Card, {"title": "Hello", "variant": "primary"}, {})
-assert result == {"title": "Hello", "variant": "primary"}
-```
-
-### Transformation Middleware
-
-From `examples/middleware/01_basic_middleware.py`:
-
-```python
-from dataclasses import dataclass
-from datetime import datetime
-from tdom_svcs.services.middleware import MiddlewareManager
-
-manager = MiddlewareManager()
-
-@dataclass
-class TransformationMiddleware:
-    """Middleware that transforms props."""
-
-    priority: int = 10
-
-    def __call__(self, component, props, context):
-        props["processed_at"] = datetime.now().isoformat()
-        print(f"[TRANSFORM] Added timestamp: {props['processed_at']}")
-        return props
-
-# Register and use
-manager.register_middleware(TransformationMiddleware())
-
-class Alert:
-    pass
-
-result = manager.execute(Alert, {"message": "Warning"}, {})
-assert "processed_at" in result
-assert "message" in result
+registry.register_value(Logger, Logger(name="APP"))
+registry.register_factory(LoggingMiddleware, create_logging_middleware)
+register_middleware(registry, LoggingMiddleware)
 ```
 
 ## Complete Example
 
-Here's a complete example combining multiple middleware:
+Here's a complete example showing the recommended patterns:
 
-```text
+```python
 from dataclasses import dataclass
-from datetime import datetime
-import svcs
-from tdom_svcs.services.middleware import MiddlewareManager, setup_container, Context
-from typing import cast
+from svcs_di.injectors import HopscotchRegistry, HopscotchContainer, injectable
+from tdom_svcs import (
+    middleware,
+    component,
+    scan,
+    execute_middleware,
+    execute_component_middleware,
+)
 
-# Define middleware
+# Global middleware with @middleware decorator
+@middleware
 @dataclass
 class LoggingMiddleware:
     priority: int = -10
 
     def __call__(self, component, props, context):
-        name = component.__name__ if hasattr(component, "__name__") else str(component)
+        name = getattr(component, "__name__", str(component))
         print(f"[LOG] Processing {name}")
         return props
 
+@middleware
 @dataclass
 class ValidationMiddleware:
     priority: int = 0
 
     def __call__(self, component, props, context):
         if "title" not in props:
-            return None  # Halt if invalid
+            return None
         return props
 
+# Per-component middleware (must be @injectable for container resolution)
+@injectable
 @dataclass
-class EnrichmentMiddleware:
-    priority: int = 10
+class ButtonStyleMiddleware:
+    priority: int = 5
 
     def __call__(self, component, props, context):
-        props["processed_at"] = datetime.now().isoformat()
+        props["styled"] = True
         return props
 
-# Setup application
-registry = svcs.Registry()
-context: Context = cast(Context, {"config": {"debug": True}})
-setup_container(context, registry)
-
-# Get manager and register middleware
-container = svcs.Container(registry)
-manager = container.get(MiddlewareManager)
-manager.register_middleware(LoggingMiddleware())
-manager.register_middleware(ValidationMiddleware())
-manager.register_middleware(EnrichmentMiddleware())
-
-# Use middleware
+# Pass the TYPE, not an instance
+@component(middleware={"pre_resolution": [ButtonStyleMiddleware]})
+@dataclass
 class Button:
-    pass
+    title: str = ""
+    styled: bool = False
 
-# Valid execution
-result = manager.execute(Button, {"title": "Click"}, context)
-assert result is not None
-assert "title" in result
-assert "processed_at" in result
+# Application setup
+registry = HopscotchRegistry()
 
-# Invalid execution (missing title)
-result = manager.execute(Button, {}, context)
-assert result is None  # Halted by validation
-```
+# Register middleware as services
+registry.register_value(LoggingMiddleware, LoggingMiddleware())
+registry.register_value(ValidationMiddleware, ValidationMiddleware())
 
-## Full Example Links
+# Scan discovers @middleware and @component decorators
+scan(registry, locals_dict=locals())
 
-The `examples/middleware/` directory contains complete working examples:
+# Execute
+with HopscotchContainer(registry) as container:
+    # Global middleware runs first
+    result = execute_middleware(Button, {"title": "Click"}, container)
 
-| Example | Description | Key Concepts |
-|---------|-------------|--------------|
-| [basic/](../../examples/middleware/basic/) | Basic middleware usage | Chain execution, priority, halting |
-| [dependencies/](../../examples/middleware/dependencies/) | Middleware with injected services | Service-based registration, DI, testing with fakes |
-| [error_handling/](../../examples/middleware/error_handling/) | Error handling and recovery | Exception handling, fallbacks, circuit breaker |
-| [scoping/](../../examples/middleware/scoping/) | Global vs per-component middleware | Middleware scoping, async support |
+    if result:
+        # Then per-component middleware (resolves types from container)
+        result = execute_component_middleware(Button, result, container, "pre_resolution")
 
-## Best Practices
-
-### 1. Use Appropriate Priorities
-
-Organize middleware by priority based on dependencies:
-
-```text
--10: Logging, metrics (observe but don't modify)
--5:  Authentication, authorization (early checks)
-0:   Validation (check props are valid)
-5:   Data enrichment (add contextual data)
-10:  Transformation (final modifications)
-```
-
-### 2. Keep Middleware Stateless
-
-Middleware should not maintain state between executions:
-
-```python
-# ✅ Good - stateless
-@dataclass
-class LoggingMiddleware:
-    priority: int = -10
-
-    def __call__(self, component, props, context):
-        # Uses props and context, no instance state
-        print(f"Processing: {props}")
-        return props
-
-# ❌ Bad - stateful (use service dependency instead)
-@dataclass
-class CountingMiddleware:
-    priority: int = 0
-    count: int = 0  # State that persists
-
-    def __call__(self, component, props, context):
-        self.count += 1  # Mutating state
-        return props
-```
-
-### 3. Use Service-Based Registration for Dependencies
-
-When middleware need dependencies, register them as services:
-
-```text
-# Middleware with dependencies
-@dataclass
-class AuthMiddleware:
-    auth_service: AuthService  # Injected
-    priority: int = -5
-
-    def __call__(self, component, props, context):
-        if not self.auth_service.check_permission():
-            return None
-        return props
-
-# Register as service
-registry.register_factory(AuthService, create_auth_service)
-registry.register_factory(AuthMiddleware, AuthMiddleware)
-manager.register_middleware_service(AuthMiddleware, container)
-```
-
-### 4. Fail Fast with Clear Messages
-
-Provide helpful error messages when halting:
-
-```python
-@dataclass
-class ValidationMiddleware:
-    priority: int = 0
-
-    def __call__(self, component, props, context):
-        if "required_field" not in props:
-            component_name = component.__name__ if hasattr(component, "__name__") else str(component)
-            print(f"[ERROR] {component_name}: Missing required field 'required_field'")
-            return None
-        return props
+        print(f"Final: {result}")  # {'title': 'Click', 'styled': True}
 ```
 
 ## Error Handling
 
-### TypeError: does not satisfy Middleware protocol
-
-**Cause:** Object doesn't have required `priority` attribute or `__call__` method.
-
-**Solution:** Ensure middleware has both requirements:
-
-```python
-@dataclass
-class MyMiddleware:
-    priority: int = 0  # Required
-
-    def __call__(self, component, props, context):  # Required
-        return props
-```
-
 ### RuntimeError: Async middleware detected in synchronous execution
 
-**Cause:** Using `execute()` with async middleware.
+**Cause:** Using `execute_middleware()` with async middleware.
 
-**Solution:** Use `execute_async()` instead:
+**Solution:** Use `execute_middleware_async()` instead:
 
-```text
-# ❌ Wrong
-result = manager.execute(component, props, context)  # Fails if async middleware
+```python
+# Wrong - fails with async middleware
+result = execute_middleware(component, props, container)
 
-# ✅ Correct
-result = await manager.execute_async(component, props, context)
+# Correct
+result = await execute_middleware_async(component, props, container)
 ```
 
 ## See Also
 
 - {doc}`../core_concepts` - Understand middleware concepts
 - {doc}`../how_it_works` - Architecture and patterns
-- {doc}`../examples/index` - More usage examples
 - {doc}`../examples/middleware/index` - Complete middleware examples

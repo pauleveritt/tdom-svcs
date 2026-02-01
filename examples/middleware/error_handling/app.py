@@ -4,87 +4,77 @@ Demonstrates:
 - Catching and handling exceptions in middleware
 - Fallback rendering on error
 - Circuit breaker pattern for fail-fast behavior
+
+This example uses Hopscotch patterns (decorators, scanning) for convenience.
+You can also use imperative registration with register_middleware() if preferred.
 """
 
-from typing import cast
-
 from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
-from svcs_di.injectors.scanning import scan
 
-from examples.common import Greeting, Request
-from examples.middleware.error_handling import components, services
+from examples.common import SimpleComponent
+from examples.middleware.error_handling import middleware
 from examples.middleware.error_handling.middleware import (
     CircuitBreakerMiddleware,
     ErrorHandlingMiddleware,
     FallbackMiddleware,
 )
-from tdom_svcs import html
-from tdom_svcs.services.middleware import Context, MiddlewareManager, setup_container
+from tdom_svcs import execute_middleware, html, scan
 
 
 def main() -> str:
     """Demonstrate error handling middleware patterns."""
+    # Create registry and scan for @injectable services and @middleware
     registry = HopscotchRegistry()
-    scan(registry, services, components)
-
-    # Setup middleware manager
-    context: Context = cast(Context, {"config": {"debug": True}})
-    setup_container(context, registry)
+    scan(registry, middleware)
 
     with HopscotchContainer(registry) as container:
-        container.register_local_value(Request, Request(user_id="1"))
+        # Get middleware instances from container to assert later
+        circuit_breaker = container.get(CircuitBreakerMiddleware)
+        fallback = container.get(FallbackMiddleware)
+        error_handler = container.get(ErrorHandlingMiddleware)
 
-        manager = container.get(MiddlewareManager)
+        # Configure middleware with specific settings
+        fallback.defaults = {"variant": "secondary"}
+        error_handler.fallback_props = {"title": "Error", "variant": "danger"}
 
-        # Register middleware
-        circuit_breaker = CircuitBreakerMiddleware()
-        fallback = FallbackMiddleware(defaults={"variant": "secondary"})
-        error_handler = ErrorHandlingMiddleware(
-            fallback_props={"title": "Error", "variant": "danger"}
+        # Test 1: Valid props pass through all middleware
+        valid_result = execute_middleware(
+            SimpleComponent, {"title": "Click Me"}, container
         )
-
-        manager.register_middleware(circuit_breaker)
-        manager.register_middleware(fallback)
-        manager.register_middleware(error_handler)
-
-        # Test 1: Valid props
-        valid_result = manager.execute(Greeting, {"title": "Click Me"}, context)
         assert valid_result is not None
         assert valid_result["title"] == "Click Me"
-        # Fallback should have added default variant
-        assert valid_result["variant"] == "secondary"
+        assert valid_result["variant"] == "secondary"  # From FallbackMiddleware
 
-        # Test 2: Invalid props (triggers error handler)
-        invalid_result = manager.execute(Greeting, {"invalid": True}, context)
+        # Test 2: Invalid props trigger error handler
+        invalid_result = execute_middleware(
+            SimpleComponent, {"invalid": True}, container
+        )
         assert invalid_result is not None
-        # Error handler should have added fallback props
-        assert invalid_result["variant"] == "danger"
+        assert invalid_result["variant"] == "danger"  # From ErrorHandlingMiddleware
         assert len(error_handler.errors_handled) == 1
 
-        # Test 3: Trigger circuit breaker
-        # Send more invalid requests to trigger circuit breaker
+        # Test 3: Multiple failures trigger circuit breaker
         for _ in range(2):  # Already had one failure
-            manager.execute(Greeting, {"invalid": True}, context)
+            execute_middleware(SimpleComponent, {"invalid": True}, container)
 
-        # Circuit should now be open
         assert circuit_breaker.circuit_open is True
 
-        # Test 4: Valid request blocked by open circuit
-        blocked_result = manager.execute(Greeting, {"title": "Submit"}, context)
+        # Test 4: Open circuit blocks all requests
+        blocked_result = execute_middleware(
+            SimpleComponent, {"title": "Submit"}, container
+        )
         assert blocked_result is None
 
-        # Test 5: Reset circuit and try again
+        # Test 5: Reset circuit allows recovery
         circuit_breaker.reset()
-        recovered_result = manager.execute(Greeting, {"title": "Recovered"}, context)
+        recovered_result = execute_middleware(
+            SimpleComponent, {"title": "Recovered"}, container
+        )
         assert recovered_result is not None
 
-        # Render Greeting component
-        response = html(t"<{Greeting} />", context=container)
-        result_html = str(response)
-
-        assert "Hello Alice!" in result_html
-
-        return result_html
+        # Render component
+        response = html(t"<{SimpleComponent} />", context=container)
+        return str(response)
 
 
 if __name__ == "__main__":

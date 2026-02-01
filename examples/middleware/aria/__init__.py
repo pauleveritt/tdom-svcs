@@ -1,0 +1,1 @@
+"""Aria verifier middleware example."""

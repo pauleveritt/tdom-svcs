@@ -77,6 +77,28 @@ specifications/index
 - **Minimal Comments**: Add concise comments only for large sections of code logic
 - **Evergreen Comments**: Comments should be informational texts relevant far into the future
 
+## Literalinclude with Decorators
+
+When using `literalinclude` to show code starting at a decorator like `@middleware` or `@dataclass`, Sphinx interprets the `@` as a directive marker. The workaround:
+
+1. Add a unique comment above the decorator in the Python file:
+   ```python
+   # The aria verifier middleware
+   @middleware
+   @dataclass
+   class AriaVerifierMiddleware:
+   ```
+
+2. Use `start-after` (not `start-at`) pointing at the comment text **without the `#`**:
+   ```markdown
+   ```{literalinclude} ../../../examples/middleware/aria/middleware.py
+   :start-after: The aria verifier middleware
+   :end-at: return props
+   ```
+   ```
+
+The `#` character in `:start-at:` triggers a Sphinx/MyST bug that interprets it as a YAML comment.
+
 ## Anti-Patterns to Avoid
 
 - Linking directly to external files in Sphinx (causes warnings)

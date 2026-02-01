@@ -41,7 +41,7 @@ Note that `ButtonSpecificMiddleware` has `@injectable` but no `@middleware` deco
 is passed to `@component`, and the container resolves it at execution time:
 
 ```{literalinclude} ../../../examples/middleware/scoping/components.py
-:start-at: @component(middleware=
+:start-after: Button component with per-component middleware
 :end-at: class Button:
 ```
 

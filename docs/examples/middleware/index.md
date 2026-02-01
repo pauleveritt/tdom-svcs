@@ -12,6 +12,7 @@ These examples demonstrate the middleware system through progressive complexity:
 | [Dependencies](dependencies) | Middleware with injected services, testing with fakes |
 | [Error Handling](error_handling) | Exception handling, fallback rendering, circuit breaker |
 | [Scoping](scoping) | Global vs per-component middleware, async support |
+| [Aria](aria) | Accessibility validation, warning collection |
 | [Path](path) | Path-based middleware for asset collection |
 
 ## Key Concepts
@@ -34,6 +35,7 @@ uv run python -m examples.middleware.basic.app
 uv run python -m examples.middleware.dependencies.app
 uv run python -m examples.middleware.error_handling.app
 uv run python -m examples.middleware.scoping.app
+uv run python -m examples.middleware.aria.app
 uv run python -m examples.middleware.path.app
 ```
 
@@ -45,5 +47,6 @@ basic_middleware
 dependencies
 error_handling
 scoping
+aria
 path
 ```

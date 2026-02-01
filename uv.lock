@@ -36,6 +36,32 @@ wheels = [
 ]
 
 [[package]]
+name = "aria-testing"
+version = "0.1.2"
+source = { editable = "../aria-testing" }
+dependencies = [
+    { name = "tdom" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "tdom" }]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "coverage", specifier = ">=7.11.2" },
+    { name = "furo", specifier = ">=2024.8.6" },
+    { name = "myst-parser", specifier = ">=4.0.0" },
+    { name = "pytest", specifier = ">=8.4.2" },
+    { name = "pytest-freethreaded", specifier = ">=0.1.0" },
+    { name = "pytest-timeout", specifier = ">=2.4.0" },
+    { name = "pytest-xdist", specifier = ">=3.6.1" },
+    { name = "ruff", specifier = ">=0.13.2" },
+    { name = "sphinx", specifier = ">=8.0.0" },
+    { name = "sphinx-autobuild", specifier = ">=2024.9.3" },
+    { name = "ty", specifier = ">=0.0.1a25" },
+]
+
+[[package]]
 name = "attrs"
 version = "25.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -780,6 +806,7 @@ name = "tdom-svcs"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "aria-testing" },
     { name = "svcs" },
     { name = "svcs-di" },
     { name = "tdom" },
@@ -807,6 +834,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "aria-testing", editable = "../aria-testing" },
     { name = "svcs" },
     { name = "svcs-di", editable = "../svcs-di" },
     { name = "tdom", editable = "../tdom" },

@@ -33,6 +33,7 @@ class ButtonSpecificMiddleware:
         return props
 
 
+# Button component with per-component middleware
 @component(middleware={"pre_resolution": [ButtonSpecificMiddleware]})
 @dataclass
 class Button:

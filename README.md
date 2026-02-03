@@ -1,6 +1,6 @@
 # tdom-svcs
 
-TDOM integration with svcs dependency injection.
+Allow a `context` to be passed down the `tdom` call chain, with optional support for `svcs-di` dependency injection.
 
 ## Installation
 
@@ -20,15 +20,143 @@ $ pip install tdom-svcs
 - **tdom**
 - **svcs**
 
-## Overview
+## tdom and Context
 
-tdom-svcs bridges template-based component rendering (tdom) with dependency injection (svcs). It provides:
+Prop drilling—passing data through multiple component layers—is a common pain point in component-based architectures. A
+deeply nested component needs some value, so every component in the chain must accept and forward it.
 
-- **Type-safe component resolution** - Resolve components directly by type using `container.get(ComponentType)`
-- **Automatic dependency injection** - Use `Inject[]` for automatic service resolution in component parameters
-- **Component discovery** - Scan packages for `@injectable` components
-- **Type-safe** - Full type hints with `type[T]` generics
-- **Production-ready** - Resource and location-based resolution with HopscotchInjector
+This package is a fork of [tdom](https://github.com/pauleveritt/tdom) that adds an optional `context` argument to the
+`html()` function. The context flows automatically through the component tree. (The goal is to contribute this upstream
+to tdom.)
+
+Context is simply a mapping. Pass it at the top level:
+
+```python
+from tdom_svcs import html
+
+result = html(t"<{Page} />", context={"user": "Alice", "theme": "dark"})
+```
+
+Components can request `context` as a parameter, similar to how they request `children`:
+
+```python
+def Header(context=None):
+    user = context.get("user", "Guest") if context else "Guest"
+    return html(t"<header>Welcome, {user}!</header>")
+
+
+def Page(context=None):
+    # Header automatically receives the same context
+    return html(t"<main><{Header} /><p>Content here</p></main>", context=context)
+```
+
+The nested `Header` component gets the context without `Page` explicitly passing `user` as a prop.
+
+See the [pure_tdom](examples/basic/pure_tdom.py)
+and [function_dataclass_poco](examples/basic/function_dataclass_poco.py) examples for more.
+
+## Using with svcs
+
+When `context` is an `svcs.Container` (which has a mapping interface), special behavior is enabled. Component fields
+using `Inject[ServiceType]` are automatically resolved from the container:
+
+```python
+@dataclass
+class Dashboard:
+    db: Inject[DatabaseService]  # Automatically injected from context
+
+    def __call__(self) -> Node:
+        user = self.db.get_current_user()
+        return html(t"<div>Hello, {user}!</div>")
+```
+
+This is built on [svcs-di](https://github.com/pauleveritt/svcs-di), which adds conveniences like decorators and package
+scanning:
+
+```python
+from svcs_di import HopscotchRegistry, HopscotchContainer
+from svcs_di.injectors.decorators import injectable
+from svcs_di.injectors.locator import scan
+
+registry = HopscotchRegistry()
+scan(registry, "myapp.components")  # Discover @injectable classes
+
+with HopscotchContainer(registry) as container:
+    result = html(t"<{Dashboard} />", context=container)
+```
+
+Beyond basic DI, svcs-di enables:
+
+- **Component overrides** - Replace a component without changing templates:
+
+```python
+# Site overrides app's Greeting with a French version
+@injectable(for_=Greeting)
+class FrenchGreeting(Greeting):
+    def __call__(self) -> Node:
+        return html(t"<h1>Bonjour!</h1>")
+```
+
+- **Resource-based variation** - Different components based on content type:
+
+```python
+# Use a special heading for BlogPost resources
+@injectable(for_=Heading, resource=BlogPost)
+class BlogHeading(Heading):
+    ...
+```
+
+- **Location-based variation** - Different components based on URL path:
+
+```python
+# French version when URL starts with /fr/
+@injectable(for_=Greeting, location="/fr/")
+class FrenchGreeting(Greeting):
+    ...
+```
+
+See the [basic_container](examples/hopscotch/basic_container.py), [override](examples/hopscotch/override/),
+and [location](examples/hopscotch/location/) examples.
+
+## Middleware
+
+Middleware intercepts component processing for cross-cutting concerns. Each middleware receives the component, its
+props, and the context—then returns modified props (or `None` to halt rendering).
+
+Middleware can be **global** (runs for all components) or **per-component** (attached to specific components).
+Middleware can also inject services to help do their job.
+
+Use cases include validation, logging, and asset collection:
+
+```python
+@middleware
+@dataclass
+class HtmlValidator:
+    validator: Inject[ValidatorService]  # Injected service
+    priority: int = 100  # Runs late, after rendering
+
+    def __call__(self, component, props, context):
+        # Validate HTML output for accessibility
+        self.validator.check(props.get("result"))
+        return props
+```
+
+```python
+@middleware
+@dataclass
+class AssetRewriter:
+    assets: Inject[AssetService]
+    priority: int = 50
+
+    def __call__(self, component, props, context):
+        # Rewrite static asset paths for CDN
+        if "src" in props:
+            props["src"] = self.assets.cdn_url(props["src"])
+        return props
+```
+
+See the [aria](examples/middleware/aria/), [path](examples/middleware/path/),
+and [dependencies](examples/middleware/dependencies/) examples.
 
 ## Quick Start
 
@@ -67,224 +195,17 @@ with HopscotchContainer(registry) as container:
     output = button()  # <button>Click</button>
 ```
 
-## Key Concepts
-
-### Decorators
-
-tdom-svcs provides decorators that automatically include `@injectable` functionality:
-
-| Decorator | Purpose | Includes `@injectable` |
-|-----------|---------|------------------------|
-| `@middleware` | Mark class as global middleware | Yes |
-| `@component` | Mark class with per-component middleware | Yes |
-| `@injectable` | Basic DI registration (from svcs_di) | - |
-
-This means you don't need to stack `@injectable` with `@middleware` or `@component`:
-
-```python
-from tdom_svcs import middleware, component
-
-# Just @middleware - no need for @injectable
-@middleware
-@dataclass
-class LoggingMiddleware:
-    priority: int = -10
-    def __call__(self, component, props, context):
-        return props
-
-# Just @component - no need for @injectable
-@component(middleware={"pre_resolution": [my_middleware]})
-@dataclass
-class Button:
-    label: str = "Click"
-```
-
-### Class vs Function Components
-
-- **Class components** use `@injectable`, `@middleware`, or `@component` decorators for DI registration
-- **Function components** can use `Inject[]` but are best called directly with an injector
-
-### Container and Registry
-
-- **HopscotchRegistry** - Extended registry with `register_implementation()` for multi-implementation support
-- **HopscotchContainer** - Extended container with built-in `inject()` and `ainject()` methods
-
-### Component Overrides
-
-Use `register_implementation()` to override components in templates without changing the template code:
-
-```python
-@dataclass
-class FrenchGreeting(Greeting):
-    def __call__(self) -> Node:
-        return html(t"<h1>Bonjour {self.users.get_current_user()['name']}!</h1>")
-
-# Register override - templates using <{Greeting} /> will now use FrenchGreeting
-registry.register_implementation(Greeting, FrenchGreeting)
-```
-
-### Injector Selection
-
-- **HopscotchContainer.inject()** (production) - Built-in DI with resource/location resolution
-- **KeywordInjector** (educational) - Simple cases, function components only
-
-## Context and Config
-
-The `html()` function accepts optional `context` and `config` parameters that are automatically passed to components that declare them.
-
-### Passing Context and Config
-
-```python
-from tdom_svcs import html
-
-# Pass context (any value - dict, object, or DI container)
-result = html(t"<{MyComponent} />", context={"user": "Alice"})
-
-# Pass config (any value)
-result = html(t"<{MyComponent} />", config=app_settings)
-
-# Pass both
-result = html(t"<{MyComponent} />", context=ctx, config=cfg)
-```
-
-### What They Represent
-
-| Parameter | Purpose | Typical Values |
-|-----------|---------|----------------|
-| `context` | Runtime state passed through the component tree | Dict, request object, or `HopscotchContainer` for DI |
-| `config`  | Application configuration | Settings object, feature flags |
-
-### How Components Receive Them
-
-Components declare `context` and/or `config` parameters to receive them:
-
-**Function components:**
-```python
-from tdom import Node
-from tdom_svcs import html
-
-def Dashboard(context: dict | None = None) -> Node:
-    user = context.get("user", "Unknown") if context else "Unknown"
-    return html(t'<div class="dashboard">Hello {user}!</div>')
-
-# Usage
-result = html(t"<{Dashboard} />", context={"user": "Alice"})
-```
-
-**Class components:**
-```python
-@dataclass
-class Dashboard:
-    title: str = "Dashboard"
-
-    def __call__(self, context: dict | None = None) -> Node:
-        user = context.get("user", "Unknown") if context else "Unknown"
-        return html(t'<div>{self.title}: Hello {user}!</div>')
-```
-
-### Context with Dependency Injection
-
-When `context` is a `HopscotchContainer`, components with `Inject[]` fields automatically get dependencies injected:
-
-```python
-@dataclass
-class Dashboard:
-    db: Inject[DatabaseService]  # Automatically injected from context
-
-    def __call__(self) -> Node:
-        user = self.db.get_current_user()
-        return html(t'<div>Hello {user}!</div>')
-
-# Usage with DI container
-with HopscotchContainer(registry) as container:
-    result = html(t"<{Dashboard} />", context=container)
-```
-
-### Nested Components
-
-Context and config are passed through the entire component tree:
-
-```python
-def Header(context=None):
-    user = context.get("user") if context else "Guest"
-    return html(t"<header>Welcome {user}</header>")
-
-def Page(context=None, children=()):
-    return html(t"<main><{Header} />{children}</main>", context=context)
-
-# Both Header and Page receive the same context
-result = html(t"<{Page}><p>Content</p></{Page}>", context={"user": "Alice"})
-```
-
-## Middleware
-
-Middleware intercepts component processing for cross-cutting concerns like logging, validation, and authorization.
-
-### Global Middleware
-
-Use `@middleware` to create middleware that applies to all components:
-
-```python
-from dataclasses import dataclass
-from tdom_svcs import middleware, scan, execute_middleware
-
-@middleware
-@dataclass
-class LoggingMiddleware:
-    priority: int = -10  # Lower = runs first
-
-    def __call__(self, component, props, context):
-        print(f"Processing {component.__name__}")
-        return props  # Return props to continue, None to halt
-
-# Setup
-registry = HopscotchRegistry()
-scan(registry, my_middleware_module)  # Discovers @middleware classes
-
-# Execute
-with HopscotchContainer(registry) as container:
-    result = execute_middleware(MyComponent, {"title": "Hello"}, container)
-```
-
-### Per-Component Middleware
-
-Use `@component` to attach middleware to specific components:
-
-```python
-from tdom_svcs import component
-
-@component(middleware={"pre_resolution": [validation_mw]})
-@dataclass
-class Button:
-    label: str = "Click"
-```
-
-See the [middleware documentation](docs/services/middleware.md) for complete details.
-
-## Type Aliases
-
-For middleware developers and advanced type hinting, these aliases are available from `tdom_svcs.types`:
-
-```python
-from tdom_svcs.types import Props, PropsResult, MiddlewareResult, MiddlewareMap, Component
-
-# Props: dict[str, Any] - Component properties
-# PropsResult: Props | None - Sync middleware result
-# MiddlewareResult: PropsResult | Coroutine[Any, Any, PropsResult] - Full middleware return type
-# MiddlewareMap: dict[str, list[Middleware]] - Per-component middleware mapping
-# Component: type | Callable[..., Any] - Component callable
-```
-
 ## Documentation
 
-See [How It Works](docs/how_it_works.md) for comprehensive documentation covering:
+Full documentation is available at [docs/](docs/):
 
-- Component type policy and best practices
-- Injector usage and selection
-- Type hinting approach
-- Dependency injection with `Inject[]`
-- Resource and location-based resolution
-- Error handling and troubleshooting
+- [Getting Started](docs/getting_started.md) - Installation and first component
+- [Core Concepts](docs/core_concepts.md) - Components, DI, and registries
+- [The Node Standard](docs/node.md) - Ecosystem interoperability
+- [How It Works](docs/how_it_works.md) - Architecture and patterns
+- [Middleware](docs/services/middleware.md) - Lifecycle hooks
+- [Examples](docs/examples/index.md) - Working code examples
+- [API Reference](docs/api_reference.md) - API documentation
 
 ## Testing
 

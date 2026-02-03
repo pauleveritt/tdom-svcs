@@ -31,13 +31,16 @@
    authoring, to let tooling help. To collect the path to the component, so you'll know where on disk it is relative
    too. An emphasis on standard Python path types. A way later to render relative to the path of a future request. `L`
 
-8. [ ] Testing Utilities and Mock Injection — Create testing helpers for injecting mock services, implement test
+8. [ ] Reorganize Docs — Re-arrange README, delete the examples/node placeholder, and start a new page about the value
+   of a standard Node type for Python web ecosystem interoperability. `S`
+
+9. [ ] Testing Utilities and Mock Injection — Create testing helpers for injecting mock services, implement test
    container fixtures, and provide examples of testing components in isolation with mocked dependencies. `S`
 
-9. [ ] Performance Optimization and Caching — Add component resolution caching, optimize injector lookup performance,
-   and implement lazy loading for component dependencies to minimize overhead. `M`
+10. [ ] Performance Optimization and Caching — Add component resolution caching, optimize injector lookup performance,
+    and implement lazy loading for component dependencies to minimize overhead. `M`
 
-10. [ ] Developer Experience Tools — Build CLI tools for component discovery validation, dependency graph visualization,
+11. [ ] Developer Experience Tools — Build CLI tools for component discovery validation, dependency graph visualization,
     and misconfiguration detection to help developers debug DI issues. `M`
 
 > Notes

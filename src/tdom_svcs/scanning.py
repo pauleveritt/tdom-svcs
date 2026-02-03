@@ -98,7 +98,9 @@ def _scan_for_component_middleware(registry: Any, modules: list[ModuleType]) -> 
                 ):
                     middleware_config = getattr(obj, COMPONENT_MIDDLEWARE_ATTR)
                     register_component_middleware(registry, obj, middleware_config)
-                    log.debug(f"Registered component middleware: {getattr(obj, '__name__', obj)}")
+                    log.debug(
+                        f"Registered component middleware: {getattr(obj, '__name__', obj)}"
+                    )
             except (AttributeError, ImportError):
                 continue
 

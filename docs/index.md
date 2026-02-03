@@ -27,6 +27,7 @@ tdom-svcs provides core services:
 
 - {doc}`getting_started` - Install and create your first component
 - {doc}`core_concepts` - Understand components, DI, and registries
+- {doc}`node` - The Node standard for ecosystem interoperability
 - {doc}`how_it_works` - Deep dive into architecture and patterns
 - {doc}`examples/index` - Browse working examples
 - {doc}`api_reference` - API documentation
@@ -42,6 +43,7 @@ tdom-svcs provides core services:
 
 getting_started
 core_concepts
+node
 how_it_works
 services/middleware
 examples/index

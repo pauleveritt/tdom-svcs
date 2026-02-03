@@ -102,7 +102,9 @@ class ErrorHandlingMiddleware:
         try:
             # Simulate validation that could fail
             if props.get("invalid"):
-                component_name = getattr(component, "__name__", type(component).__name__)
+                component_name = getattr(
+                    component, "__name__", type(component).__name__
+                )
                 raise ValidationError(f"Invalid prop in {component_name}")
             return props
         except ValidationError as e:

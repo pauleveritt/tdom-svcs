@@ -56,7 +56,7 @@ Per-component middleware is **additive**—it runs in addition to global middlew
 
 ```{literalinclude} ../../../examples/middleware/scoping/app.py
 :start-at: result = execute_middleware(Button
-:end-at: execute_component_middleware(Button
+:end-at: "pre_resolution"
 ```
 
 ## Async middleware

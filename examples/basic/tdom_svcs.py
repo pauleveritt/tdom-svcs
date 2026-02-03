@@ -45,12 +45,14 @@ class Database:
         """List all users."""
         return list(self._users.values())
 
+
 @dataclass
 class Service:
     """A service that depends on a database."""
 
     db: Inject[Database]
     timeout: int = 30
+
 
 def Greeting(service: Inject[Service]) -> Node:
     """A function component that receives an injected Database service."""

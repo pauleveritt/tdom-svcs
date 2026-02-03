@@ -57,10 +57,6 @@ Cross-cutting concerns: intercepting and modifying component rendering for loggi
 
 [Browse Middleware Examples](middleware/index)
 
-## Node Examples
-
-Node ecosystem compatibility: testing tools like aria-testing. [Browse Node Examples](node/index)
-
 ## Common Patterns
 
 ### Setup Pattern
@@ -140,7 +136,6 @@ After exploring examples:
 - Replacement service
 - Protocols
 - scan inside a test and locals
-- Use of aria-testing
 - children, config, context
 
 ## Hopscotch
@@ -162,5 +157,4 @@ After exploring examples:
 basic/index
 hopscotch/index
 middleware/index
-node/index
 ```

@@ -1,4 +1,5 @@
 """A site that configures an app."""
+
 from dataclasses import dataclass
 
 from svcs_di.injectors import injectable

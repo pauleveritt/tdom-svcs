@@ -6,7 +6,6 @@ end-to-end integration scenarios across the entire middleware system.
 
 import asyncio
 import threading
-import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, cast
@@ -159,7 +158,9 @@ class AssetCollectionMiddleware:
     ) -> dict[str, Any] | None:
         """Collect assets from context."""
         comp_name = (
-            component.__name__ if hasattr(component, "__name__") else str(component)
+            cast(str, component.__name__)
+            if hasattr(component, "__name__")
+            else str(component)
         )
         self.tracker.record(f"asset_collection({comp_name})")
         self.asset_collector.collect(comp_name)
@@ -182,7 +183,9 @@ def test_end_to_end_workflow_with_setup_and_execution(registry, container) -> No
     # Create middleware instances with specific state
     logging_mw = LoggingMiddleware(priority=-10, tracker=tracker)
     validation_mw = ValidationMiddleware(priority=0, tracker=tracker)
-    asset_mw = AssetCollectionMiddleware(priority=10, tracker=tracker, asset_collector=asset_collector)
+    asset_mw = AssetCollectionMiddleware(
+        priority=10, tracker=tracker, asset_collector=asset_collector
+    )
 
     # Step 2: Register middleware as values in registry
     @dataclass

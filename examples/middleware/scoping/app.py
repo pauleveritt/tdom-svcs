@@ -16,7 +16,11 @@ from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
 
 from examples.common import SimpleComponent
 from examples.middleware.scoping import components, middleware
-from examples.middleware.scoping.components import Button, ButtonSpecificMiddleware, Card
+from examples.middleware.scoping.components import (
+    Button,
+    ButtonSpecificMiddleware,
+    Card,
+)
 from examples.middleware.scoping.middleware import (
     AsyncDatabaseMiddleware,
     AsyncValidationMiddleware,
@@ -52,7 +56,9 @@ async def main() -> str:
         assert result is not None
 
         # Execute per-component middleware (resolves types from container)
-        result = execute_component_middleware(Button, result, container, "pre_resolution")
+        result = execute_component_middleware(
+            Button, result, container, "pre_resolution"
+        )
         assert result is not None
 
         assert "global:Button" in global_logging.logged

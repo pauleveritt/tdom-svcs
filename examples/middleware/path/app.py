@@ -16,7 +16,9 @@ from tdom_svcs import html
 from tdom_svcs.services.path import PathCollector
 
 
-def rewrite_paths(html_string: str, collector: PathCollector, static_prefix: str) -> str:
+def rewrite_paths(
+    html_string: str, collector: PathCollector, static_prefix: str
+) -> str:
     """Rewrite relative asset paths to absolute paths.
 
     Takes rendered HTML with relative paths like `./static/styles.css` and
@@ -74,15 +76,25 @@ def main() -> str:
 
         # Verify module paths are correctly resolved
         module_paths = {str(ref.module_path) for ref in collector.assets}
-        assert "examples/middleware/path/components/head/static/styles.css" in module_paths
-        assert "examples/middleware/path/components/head/static/script.js" in module_paths
+        assert (
+            "examples/middleware/path/components/head/static/styles.css" in module_paths
+        )
+        assert (
+            "examples/middleware/path/components/head/static/script.js" in module_paths
+        )
 
         # Rewrite paths for browser consumption
         rewritten_html = rewrite_paths(original_html, collector, "/_static")
 
         # Verify the rewritten HTML has absolute paths
-        assert 'href="/_static/examples/middleware/path/components/head/static/styles.css"' in rewritten_html
-        assert 'src="/_static/examples/middleware/path/components/head/static/script.js"' in rewritten_html
+        assert (
+            'href="/_static/examples/middleware/path/components/head/static/styles.css"'
+            in rewritten_html
+        )
+        assert (
+            'src="/_static/examples/middleware/path/components/head/static/script.js"'
+            in rewritten_html
+        )
 
         return rewritten_html
 

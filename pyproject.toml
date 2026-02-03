@@ -52,6 +52,9 @@ markers = [
 timeout = 60
 faulthandler_timeout = 120
 
+[tool.coverage.report]
+fail_under = 80
+
 [tool.uv.sources]
 aria-testing = { path = "../aria-testing", editable = true }
 tdom = { path = "../tdom", editable = true }

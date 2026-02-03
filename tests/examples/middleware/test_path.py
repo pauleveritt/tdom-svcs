@@ -2,12 +2,11 @@
 
 from pathlib import Path, PurePosixPath
 
-import pytest
-from tdom import Element, Fragment, html
+from tdom import html
 
 from examples.middleware.path.components.head import Head
 from examples.middleware.path.components.body import Body
-from tdom_svcs.services.path import AssetReference, ComponentLocation, PathCollector
+from tdom_svcs.services.path import ComponentLocation, PathCollector
 
 
 # Use real components for testing instead of mocks with fake modules

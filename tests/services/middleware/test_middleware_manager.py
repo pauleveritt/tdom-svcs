@@ -83,9 +83,15 @@ class TestRegisterAndExecute:
 
     def test_halt_on_none(self, registry, container):
         """Test execution halts when middleware returns None."""
-        registry.register_factory(LowPriorityMiddleware, lambda: LowPriorityMiddleware(priority=-10))
-        registry.register_factory(HaltingMiddleware, lambda: HaltingMiddleware(priority=0))
-        registry.register_factory(HighPriorityMiddleware, lambda: HighPriorityMiddleware(priority=10))
+        registry.register_factory(
+            LowPriorityMiddleware, lambda: LowPriorityMiddleware(priority=-10)
+        )
+        registry.register_factory(
+            HaltingMiddleware, lambda: HaltingMiddleware(priority=0)
+        )
+        registry.register_factory(
+            HighPriorityMiddleware, lambda: HighPriorityMiddleware(priority=10)
+        )
 
         register_middleware(registry, LowPriorityMiddleware)
         register_middleware(registry, HaltingMiddleware)
@@ -143,9 +149,13 @@ class TestAsyncMiddleware:
     @pytest.mark.anyio
     async def test_async_middleware(self, registry, container):
         """Test execution with async middleware using anyio."""
-        registry.register_factory(LowPriorityMiddleware, lambda: LowPriorityMiddleware(priority=-10))
+        registry.register_factory(
+            LowPriorityMiddleware, lambda: LowPriorityMiddleware(priority=-10)
+        )
         registry.register_factory(AsyncMiddleware, lambda: AsyncMiddleware(priority=5))
-        registry.register_factory(HighPriorityMiddleware, lambda: HighPriorityMiddleware(priority=10))
+        registry.register_factory(
+            HighPriorityMiddleware, lambda: HighPriorityMiddleware(priority=10)
+        )
 
         register_middleware(registry, LowPriorityMiddleware)
         register_middleware(registry, AsyncMiddleware)
@@ -169,6 +179,7 @@ class TestDependencyInjection:
 
     def test_middleware_with_dependencies(self, registry, container):
         """Test middleware with its own dependencies resolved via DI."""
+
         # Create a middleware that has dependencies
         @dataclass
         class Logger:
@@ -241,5 +252,7 @@ class TestErrorHandling:
 
         props = {}
 
-        with pytest.raises(RuntimeError, match="Async middleware.*detected in synchronous execution"):
+        with pytest.raises(
+            RuntimeError, match="Async middleware.*detected in synchronous execution"
+        ):
             execute_middleware(Button, props, container)

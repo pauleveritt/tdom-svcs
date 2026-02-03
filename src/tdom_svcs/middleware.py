@@ -32,7 +32,7 @@ Example:
 
 import inspect
 from operator import attrgetter
-from typing import Any, Callable, cast
+from typing import Any, cast
 
 from svcs_di.injectors import injectable
 
@@ -51,7 +51,7 @@ MIDDLEWARE_METADATA_ATTR = "_tdom_middleware_"
 MIDDLEWARE_REGISTRY_KEY = "tdom.middleware_types"
 
 
-def middleware[T](cls: T) -> T:
+def middleware[T: type](cls: T) -> T:
     """Mark a class as middleware for scanning.
 
     This decorator marks a class to be discovered by scan() and registered
@@ -172,7 +172,9 @@ def execute_middleware(
             )
 
         # Cast to Context for type checking - middleware receives container as context
-        result = cast(PropsResult, mw(component, current_props, cast(Context, container)))
+        result = cast(
+            PropsResult, mw(component, current_props, cast(Context, container))
+        )
 
         if result is None:
             return None

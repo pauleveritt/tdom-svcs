@@ -1,4 +1,5 @@
 """Inject a service into a service with svcs_di.auto"""
+
 from dataclasses import dataclass, field
 from typing import TypedDict
 

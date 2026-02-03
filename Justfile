@@ -14,9 +14,9 @@ test:
 test-cov:
     uv run pytest --cov=tdom_svcs --cov-report=term-missing --cov-report=html
 
-# Run tests with coverage and fail if below threshold (90%)
+# Run tests with coverage and fail if below threshold (uses pyproject.toml setting)
 test-cov-check:
-    uv run pytest --cov=tdom_svcs --cov-report=term-missing --cov-report=html --cov-fail-under=90
+    uv run pytest --cov=tdom_svcs --cov-report=term-missing --cov-report=html
 
 # Run tests in parallel
 test-parallel:

@@ -25,4 +25,4 @@ runs:
 
     - name: Install dependencies
       shell: bash
-      run: uv sync --frozen --no-sources
+      run: uv sync --no-sources

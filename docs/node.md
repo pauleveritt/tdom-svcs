@@ -112,6 +112,51 @@ Bring Node-based components to existing frameworks:
 - **htpy interop** - Share components between tdom and htpy ecosystems
 - **SSG integration** - Static site generators that process Node trees
 
+#### Case Study: tdom-django
+
+[tdom-django](https://github.com/pauleveritt/tdom-django) demonstrates how the Node ecosystem integrates with established frameworks. It bridges Django's template system with type-safe, component-driven development:
+
+**Components as dataclasses** - Write components in Python with full type hints:
+
+```python
+@dataclass(kw_only=True)
+class Card:
+    title: str
+    variant: Literal["default", "highlighted"] = "default"
+    children: Any = None
+
+    def __call__(self) -> Node:
+        return html(t"""
+            <div class="card card-{self.variant}">
+                <h2>{self.title}</h2>
+                {self.children}
+            </div>
+        """)
+```
+
+**Use in Django templates** - Components become template tags automatically:
+
+```html
+{% card title="Welcome" variant="highlighted" %}
+    <p>This content becomes children.</p>
+    {% button variant="primary" %}Click Me{% endbutton %}
+{% endcard %}
+```
+
+**Dependency injection built-in** - Components can request Django services:
+
+```python
+@dataclass(kw_only=True)
+class UserGreeting:
+    _container: Any = None
+
+    def __call__(self) -> Node:
+        user = self._container.get(AbstractBaseUser)
+        return html(t"<p>Hello, {user.username}!</p>")
+```
+
+This pattern provides Django developers with type-safe components, IDE autocomplete, and testability while maintaining familiar template syntax. The same components work with aria-testing for accessibility validation and the full middleware pipeline.
+
 ### Developer Experience
 
 Tooling that understands your components:

@@ -67,7 +67,8 @@ See the {doc}`examples/middleware/aria` and {doc}`examples/middleware/path` exam
 
 ## The Ecosystem Vision
 
-A standard Node type enables a rich ecosystem of interoperable tools. When everything speaks the same language, components, middleware, and tooling can be mixed and matched freely.
+A standard Node type enables a rich ecosystem of interoperable tools. When everything speaks the same language,
+components, middleware, and tooling can be mixed and matched freely.
 
 ### Core Layer
 
@@ -98,6 +99,7 @@ Cross-cutting concerns handled declaratively:
 - **Listings** - Automatic collection of pages, posts, or other content
 
 See the middleware examples:
+
 - {doc}`examples/middleware/basic_middleware` - Chain execution, priority, and logging
 - {doc}`examples/middleware/aria` - ARIA validation that collects accessibility warnings
 - {doc}`examples/middleware/path` - Asset path collection during render
@@ -115,8 +117,10 @@ Bring Node-based components to existing frameworks:
 Tooling that understands your components:
 
 - **Linting** - Catch accessibility issues, validate props
-- **IDE support** - Autocomplete for component props and children
-- **Hot reload** - Fast feedback during development
+- **IDE support** - Autocomplete for component props and children, navigation
+- **Type checking** - Static analysis of component props and children
+- **Testing** - Query components by role
+- **Storybook integration** - Visualize component trees in Storybook
 
 ## How It Works Together
 
@@ -129,17 +133,21 @@ Consider a typical page render:
 5. **Post-processing** - Link checking, image optimization on the tree
 6. **Final render** - Convert Node tree to HTML string once, at the end
 
-Because every step works with Nodes, tools compose naturally. A component library works with any middleware. A linter works with any framework. An asset processor works with any theme.
+Because every step works with Nodes, tools compose naturally. A component library works with any middleware. A linter
+works with any framework. An asset processor works with any theme.
 
 ## Current Status
 
 Available now:
+
 - **Node type and templating** - Core foundation
 - **Context and middleware** - Cross-cutting concerns
 - **aria-testing** - Testing Library-style queries
 
 Coming soon:
+
 - **Layouts** - Reusable page structures
+- **Themester** - Portable view/theme layer across frameworks
 - **Storyville** - Component development environment
 
 The ecosystem is young, but the foundation is solid. Build on Node and your work interoperates with everything else.

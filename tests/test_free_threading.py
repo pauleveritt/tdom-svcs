@@ -29,7 +29,6 @@ from tdom_svcs import (
     execute_middleware,
     html,
     middleware,
-    register_middleware,
     scan,
 )
 from tdom_svcs.types import Component, Context, Props, PropsResult
@@ -214,7 +213,8 @@ def test_middleware_concurrent_registration():
                 ) -> PropsResult:
                     return props
 
-            register_middleware(registry, WorkerMiddleware)
+            # Use scan() to both register the service and add to middleware list
+            scan(registry, locals_dict={"WorkerMiddleware": WorkerMiddleware})
             registries.append(registry)
         except Exception as e:
             errors.append(e)
@@ -257,7 +257,8 @@ def test_middleware_concurrent_execution():
         """Worker thread that executes middleware."""
         try:
             registry = HopscotchRegistry()
-            register_middleware(registry, CountingMiddleware)
+            # Use scan() to both register the service and add to middleware list
+            scan(registry, locals_dict={"CountingMiddleware": CountingMiddleware})
 
             with HopscotchContainer(registry) as container:
                 for _ in range(30):

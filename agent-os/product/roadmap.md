@@ -31,7 +31,7 @@
    authoring, to let tooling help. To collect the path to the component, so you'll know where on disk it is relative
    too. An emphasis on standard Python path types. A way later to render relative to the path of a future request. `L`
 
-8. [ ] Reorganize Docs — Re-arrange README, delete the examples/node placeholder, and start a new page about the value
+8. [x] Reorganize Docs — Re-arrange README, delete the examples/node placeholder, and start a new page about the value
    of a standard Node type for Python web ecosystem interoperability. `S`
 
 9. [ ] Testing Utilities and Mock Injection — Create testing helpers for injecting mock services, implement test
@@ -42,6 +42,11 @@
 
 11. [ ] Developer Experience Tools — Build CLI tools for component discovery validation, dependency graph visualization,
     and misconfiguration detection to help developers debug DI issues. `M`
+
+12. [ ] Refactor Services to svcs-di Pattern — Break all services into svcs-di style modules. Each service should be its
+    own Python module using the @injectable decorator for registration. Set up HopscotchRegistry and HopscotchContainer
+    for scanning. Create `docs/services/` with narrative documentation for each service. Reference tdom-svcs examples
+    for structure patterns. `M`
 
 > Notes
 > - Order items by technical dependencies and product architecture

@@ -34,7 +34,9 @@ tdom-svcs provides core services:
 
 ### Services Documentation
 
+- {doc}`services/index` - Services overview and patterns
 - {doc}`services/middleware` - MiddlewareManager service
+- {doc}`services/path` - PathCollector and PathMiddleware
 
 ## Contents
 
@@ -45,7 +47,7 @@ getting_started
 core_concepts
 node
 how_it_works
-services/middleware
+services/index
 examples/index
 api_reference
 ```

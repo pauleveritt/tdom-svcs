@@ -3,9 +3,13 @@
 from dataclasses import dataclass
 from typing import Any
 
+from svcs_di import Inject
+from svcs_di.injectors import injectable
+
 from .collector import PathCollector
 
 
+@injectable
 @dataclass
 class PathMiddleware:
     """Middleware that registers components with PathCollector.
@@ -35,7 +39,7 @@ class PathMiddleware:
         'myapp.components.my_component'
     """
 
-    collector: PathCollector
+    collector: Inject[PathCollector]
     priority: int = 100
 
     def __call__(

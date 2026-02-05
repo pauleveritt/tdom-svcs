@@ -2,11 +2,17 @@
 
 from pathlib import Path, PurePosixPath
 
+from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
+from svcs_di.injectors.scanning import scan
 from tdom import html
 
-from examples.middleware.path.components.head import Head
 from examples.middleware.path.components.body import Body
-from tdom_svcs.services.path import ComponentLocation, PathCollector
+from examples.middleware.path.components.head import Head
+from tdom_svcs.services.path import (
+    ComponentLocation,
+    PathCollector,
+    PathMiddleware,
+)
 
 
 # Use real components for testing instead of mocks with fake modules
@@ -295,3 +301,66 @@ class TestPathExampleIntegration:
 
         assert styles_path.is_file(), "styles.css should exist"
         assert script_path.is_file(), "script.js should exist"
+
+
+class TestPathServicesDI:
+    """Tests for PathCollector and PathMiddleware dependency injection."""
+
+    def test_path_collector_injectable(self):
+        """Test PathCollector can be discovered and resolved via scan()."""
+        from tdom_svcs.services import path
+
+        registry = HopscotchRegistry()
+        scan(registry, path)
+
+        with HopscotchContainer(registry) as container:
+            collector = container.get(PathCollector)
+            assert isinstance(collector, PathCollector)
+            assert len(collector.components) == 0
+            assert len(collector.assets) == 0
+
+    def test_path_middleware_injectable_with_injection(self):
+        """Test PathMiddleware resolves PathCollector via Inject[PathCollector]."""
+        from tdom_svcs.services import path
+
+        registry = HopscotchRegistry()
+        scan(registry, path)
+
+        with HopscotchContainer(registry) as container:
+            middleware = container.get(PathMiddleware)
+            assert isinstance(middleware, PathMiddleware)
+            assert isinstance(middleware.collector, PathCollector)
+
+    def test_path_middleware_uses_injected_collector(self):
+        """Test PathMiddleware registers components on the injected collector."""
+        from tdom_svcs.services import path
+
+        registry = HopscotchRegistry()
+        scan(registry, path)
+
+        with HopscotchContainer(registry) as container:
+            middleware = container.get(PathMiddleware)
+            collector = container.get(PathCollector)
+
+            # Use middleware to register a component
+            props = middleware(Head, {}, container)
+
+            # Verify the component was registered on the shared collector
+            assert len(collector.components) == 1
+            assert "_component_location" in props
+
+    def test_path_collector_shared_instance(self):
+        """Test PathCollector is shared across multiple gets in same container."""
+        from tdom_svcs.services import path
+
+        registry = HopscotchRegistry()
+        scan(registry, path)
+
+        with HopscotchContainer(registry) as container:
+            collector1 = container.get(PathCollector)
+            collector2 = container.get(PathCollector)
+            middleware = container.get(PathMiddleware)
+
+            # All should share the same instance
+            assert collector1 is collector2
+            assert middleware.collector is collector1

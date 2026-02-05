@@ -8,6 +8,7 @@ from importlib.resources.abc import Traversable
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+from svcs_di.injectors import injectable
 from tdom import Element, Fragment, Node
 
 from .types import AssetReference, ComponentLocation
@@ -68,6 +69,7 @@ def _get_component_file_path(component: type) -> Path:
         return Path("<unknown>")
 
 
+@injectable
 @dataclass
 class PathCollector:
     """Service for collecting component locations and asset references.

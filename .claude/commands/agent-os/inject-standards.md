@@ -1,6 +1,6 @@
 # Inject Standards
 
-Inject relevant standards into the current context, formatted appropriately for the situation. Can also inject skills from `agent-os/skills/`.
+Inject relevant standards into the current context, formatted appropriately for the situation.
 
 ## Usage Modes
 
@@ -19,14 +19,10 @@ Analyzes context and suggests relevant standards.
 /inject-standards api/response-format api/auth  # Multiple files
 /inject-standards root                          # All standards in the root folder
 /inject-standards root/naming                   # Single file from root folder
-/inject-standards skills/python                 # Single skill file
-/inject-standards skills                        # All skills
 ```
-Directly injects specified standards or skills without suggestions.
+Directly injects specified standards without suggestions.
 
 **Note:** `root` is a reserved keyword — it refers to `.md` files directly in `agent-os/standards/` (not in a subfolder).
-
-**Note:** `skills` refers to files in `agent-os/skills/` — these are procedural workflows synced from global installations.
 
 ## Process
 
@@ -46,7 +42,7 @@ Before injecting standards, determine which scenario we're in. Read the current 
 - If conversation clearly mentions creating a skill, editing `.claude/skills/`, or building a reusable procedure → **Creating a Skill**
 - Otherwise → **Ask to confirm** (do not assume)
 
-**If neither skill nor plan is clearly detected**, use `ask_followup_question` to confirm:
+**If neither skill nor plan is clearly detected**, use AskUserQuestion to confirm:
 
 ```
 I'll inject the relevant standards. How should I format them?
@@ -79,7 +75,7 @@ Look at the current conversation to understand what the user is working on:
 
 ### Step 4: Match and Suggest
 
-Match index descriptions against the context. Use `ask_followup_question` to present suggestions:
+Match index descriptions against the context. Use AskUserQuestion to present suggestions:
 
 ```
 Based on your task, these standards may be relevant:
@@ -127,7 +123,7 @@ I've read the following standards as they are relevant to what we're working on:
 
 #### Scenario: Creating a Skill
 
-First, use `ask_followup_question` to determine how to include the standards:
+First, use AskUserQuestion to determine how to include the standards:
 
 ```
 How should these standards be included in your skill?
@@ -146,13 +142,11 @@ Be sure to include references to the following standards files in the appropriat
 @agent-os/standards/api/response-format.md
 @agent-os/standards/api/error-handling.md
 @agent-os/standards/global/naming.md
-@agent-os/skills/python.md
 
 These standards cover:
 - API response envelope structure, status codes
 - Error codes, exception handling, error responses
 - File naming, variable naming conventions
-- Python development procedures (from skills)
 ```
 
 **If Copy content (option 2):**
@@ -182,7 +176,7 @@ These standards cover:
 
 #### Scenario: Shaping/Planning
 
-First, use `ask_followup_question` to determine how to include the standards:
+First, use AskUserQuestion to determine how to include the standards:
 
 ```
 How should these standards be included in your plan?
@@ -261,14 +255,8 @@ Arguments can be:
 - **Folder/file** — `api/response-format` → inject `agent-os/standards/api/response-format.md`
 - **Root folder** — `root` → inject all `.md` files directly in `agent-os/standards/` (not in subfolders)
 - **Root file** — `root/naming` → inject `agent-os/standards/naming.md`
-- **Skills folder** — `skills` → inject all `.md` files in `agent-os/skills/`
-- **Skills file** — `skills/python` → inject `agent-os/skills/python.md`
 
-Multiple arguments inject multiple standards and/or skills.
-
-**Standards vs Skills:**
-- Standards (`@agent-os/standards/...`) = declarative project conventions
-- Skills (`@agent-os/skills/...`) = procedural workflows (e.g., how to use tools like uv, ruff, pytest)
+Multiple arguments inject multiple standards.
 
 ### Step 3: Validate
 
@@ -297,7 +285,6 @@ Same formatting as auto-suggest mode, based on detected scenario.
 - **Be specific** — If you know which standards apply, use explicit mode
 - **Check the index** — If suggestions seem wrong, run `/index-standards` to rebuild
 - **Keep standards concise** — Injected standards consume tokens; shorter is better
-- **Combine standards and skills** — Use `/inject-standards api skills/python` to inject both API standards and Python skill procedures
 
 ## Integration
 

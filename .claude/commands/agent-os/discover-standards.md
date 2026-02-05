@@ -4,7 +4,7 @@ Extract tribal knowledge from your codebase into concise, documented standards.
 
 ## Important Guidelines
 
-- **Always use `ask_followup_question` tool** when asking the user anything
+- **Always use AskUserQuestion tool** when asking the user anything
 - **Write concise standards** — Use minimal words. Standards must be scannable by AI agents without bloating context windows.
 - **Offer suggestions** — Present options the user can confirm, choose between, or correct. Don't make them think harder than necessary.
 
@@ -21,7 +21,7 @@ If no area was specified:
    - **Frontend areas:** UI components, styling/CSS, state management, forms, routing
    - **Backend areas:** API routes, database/models, authentication, background jobs
    - **Cross-cutting:** Error handling, validation, testing, naming conventions, file structure
-3. Use `ask_followup_question` to present the areas:
+3. Use AskUserQuestion to present the areas:
 
 ```
 I've identified these areas in your codebase:
@@ -47,7 +47,7 @@ Once an area is determined:
    - **Tribal** — Things a new developer wouldn't know without being told
    - **Consistent** — Patterns repeated across multiple files
 
-3. Use `ask_followup_question` to present findings and let user select:
+3. Use AskUserQuestion to present findings and let user select:
 
 ```
 I analyzed [area] and found these potential standards worth documenting:
@@ -71,7 +71,7 @@ Wait for user selection before proceeding.
 
 **IMPORTANT:** For each selected standard, you MUST complete this full loop before moving to the next standard:
 
-1. **Ask 1-2 clarifying questions** about the "why" behind the pattern. Use your `ask_followup_question` tool for this.
+1. **Ask 1-2 clarifying questions** about the "why" behind the pattern. Use your AskUserQuestion tool for this.
 2. **Wait for user response**
 3. **Draft the standard** incorporating their answer
 4. **Confirm with user** before creating the file
@@ -94,7 +94,7 @@ For each standard (after completing Step 3's Q&A):
 
 2. Check if a related standard file already exists — append to it if so
 
-3. Draft the content and use `ask_followup_question` to confirm:
+3. Draft the content and use AskUserQuestion to confirm:
 
 ```
 Here's the draft for api/response-format.md:
@@ -125,7 +125,7 @@ Create this file? (yes / edit: [your changes] / skip)
 After all standards are created:
 
 1. Scan `agent-os/standards/` for all `.md` files
-2. For each new file without an index entry, use `ask_followup_question`:
+2. For each new file without an index entry, use AskUserQuestion:
 
 ```
 New standard needs an index entry:
@@ -148,7 +148,7 @@ Alphabetize by folder, then by filename.
 
 ### Step 6: Offer to Continue
 
-Use `ask_followup_question`:
+Use AskUserQuestion:
 
 ```
 Standards created for [area]:
@@ -200,8 +200,6 @@ When an error occurs in our application, we have established a consistent patter
 Here's how to process a single standard through the complete workflow:
 
 **1. Present findings (Step 2):**
-
-Use `ask_followup_question`:
 ```
 I found these patterns in your API code:
 1. **Response Envelope** — All responses use { success, data, error }
@@ -213,8 +211,6 @@ Which would you like to document?
 User: "Both"
 
 **2. Ask why for first standard (Step 3):**
-
-Use `ask_followup_question`:
 ```
 For the Response Envelope pattern:
 - What problem does this solve? Why not return raw data?
@@ -224,8 +220,6 @@ For the Response Envelope pattern:
 User: "We use it so the frontend always knows where to find the data. All endpoints use it, no exceptions."
 
 **3. Draft first standard (Step 3 continued):**
-
-Use `ask_followup_question`:
 ```
 Here's the draft for api/response-envelope.md:
 

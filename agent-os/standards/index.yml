@@ -1,2 +1,17 @@
 # Agent OS Standards Index
 
+services:
+  frozen-dataclass-services:
+    description: Services are immutable frozen dataclasses by default for thread-safety
+  protocol-first-design:
+    description: Define service interfaces as runtime_checkable Protocols before implementations
+
+testing:
+  fakes-over-mocks:
+    description: Use simple dataclass fakes instead of mock frameworks for testing
+  function-based-tests:
+    description: Write tests as functions, never classes
+  protocol-satisfaction-test:
+    description: First test for every service verifies implementation satisfies its protocol
+  sybil-doctest:
+    description: Use Sybil to test code examples in docs and docstrings

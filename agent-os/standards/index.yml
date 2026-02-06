@@ -1,5 +1,9 @@
 # Agent OS Standards Index
 
+root:
+  agent-verification:
+    description: How agents should verify code using Astral skills instead of justfile recipes
+
 services:
   frozen-dataclass-services:
     description: Services are immutable frozen dataclasses by default for thread-safety

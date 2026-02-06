@@ -91,21 +91,27 @@ If no product folder exists, skip this step.
 
 ### Step 5: Surface Relevant Standards
 
-Read `agent-os/standards/index.yml` to identify relevant standards based on the feature being built.
+First, **automatically include** the `agent-verification` standard — this applies to ALL plans since every plan includes verification steps.
+
+Then read `agent-os/standards/index.yml` to identify additional relevant standards based on the feature being built.
 
 Use AskUserQuestion to confirm:
 
 ```
-Based on what we're building, these standards may apply:
+Based on what we're building, these standards will be included in the spec:
 
+**Always included:**
+- **agent-verification** — How agents should verify code (using Astral skills, not justfile)
+
+**Suggested for this feature:**
 1. **api/response-format** — API response envelope structure
 2. **api/error-handling** — Error codes and exception handling
 3. **database/migrations** — Migration patterns
 
-Should I include these in the spec? (yes / adjust: remove 3, add frontend/forms)
+Should I include the suggested standards? (yes / adjust: remove 3, add frontend/forms)
 ```
 
-Read the confirmed standards files to include their content in the plan context.
+Read all confirmed standards files (including agent-verification) to include their content in the plan context.
 
 ### Step 6: Generate Spec Folder Name
 
@@ -215,18 +221,25 @@ The shape.md file should capture:
 
 ## Standards Applied
 
+- agent-verification — Always included to ensure proper verification using Astral skills
 - api/response-format — [why it applies]
 - api/error-handling — [why it applies]
 ```
 
 ## standards.md Content
 
-Include the full content of each relevant standard:
+Include the full content of each relevant standard. **Always include agent-verification first**:
 
 ```markdown
 # Standards for {Feature Name}
 
 The following standards apply to this work.
+
+---
+
+## agent-verification (ALWAYS INCLUDED)
+
+[Full content of agent-os/standards/agent-verification.md]
 
 ---
 

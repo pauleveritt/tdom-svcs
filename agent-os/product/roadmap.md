@@ -63,17 +63,6 @@
     tdom-svcs's `@middleware` decorator. Use `__post_init__` to extract Django-specific data (request, response) into
     the standard middleware interface. Follow patterns from tdom-svcs middleware examples. `M`
 
-12. [ ] Injectable Middleware and Services — Refactor middleware to use `@middleware` decorator with container injection.
-    Use `__post_init__` style to extract specific information needed with `field(init=False)` for those values. Use
-    `scan()` to discover the middleware and services. Remove the `Middleware` suffix from symbol names for cleaner
-    naming conventions (e.g., `LoggingMiddleware` → `Logging`). This establishes a consistent pattern for middleware
-    as injectable services. `M`
-
-13. [ ] Register Values for Django Objects — Refactor `TdomContainerMiddleware` to use `register_value` and
-    `register_local_value` for Django objects instead of `get_response` and `get_registry` methods. This simplifies
-    the middleware by making Django request/response objects available through standard DI patterns rather than
-    custom getter methods. `S`
-
 ## Phase 5: Performance & Developer Experience
 
 14. [ ] Testing Utilities and Mock Injection — Create testing helpers for injecting mock services, implement test

@@ -1,5 +1,12 @@
 """tdom-svcs: Dependency injection for tdom templates."""
 
+from tdom_svcs.introspection import (
+    ComponentInfo,
+    ComponentVariation,
+    MiddlewareInfo,
+    list_components,
+    list_middlewares,
+)
 from tdom_svcs.middleware import (
     execute_middleware,
     execute_middleware_async,
@@ -20,12 +27,17 @@ from tdom_svcs.types import Component
 
 __all__ = [
     "Component",
+    "ComponentInfo",
+    "ComponentVariation",
+    "MiddlewareInfo",
     "component",
     "execute_component_middleware",
     "execute_middleware",
     "execute_middleware_async",
     "get_component_middleware",
     "html",
+    "list_components",
+    "list_middlewares",
     "middleware",
     "register_middleware",
     "scan",

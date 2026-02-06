@@ -63,16 +63,33 @@
     tdom-svcs's `@middleware` decorator. Use `__post_init__` to extract Django-specific data (request, response) into
     the standard middleware interface. Follow patterns from tdom-svcs middleware examples. `M`
 
+12. [ ] Injectable Middleware and Services — Refactor middleware to use `@middleware` decorator with container injection.
+    Use `__post_init__` style to extract specific information needed with `field(init=False)` for those values. Use
+    `scan()` to discover the middleware and services. Remove the `Middleware` suffix from symbol names for cleaner
+    naming conventions (e.g., `LoggingMiddleware` → `Logging`). This establishes a consistent pattern for middleware
+    as injectable services. `M`
+
+13. [ ] Register Values for Django Objects — Refactor `TdomContainerMiddleware` to use `register_value` and
+    `register_local_value` for Django objects instead of `get_response` and `get_registry` methods. This simplifies
+    the middleware by making Django request/response objects available through standard DI patterns rather than
+    custom getter methods. `S`
+
 ## Phase 5: Performance & Developer Experience
 
-12. [ ] Testing Utilities and Mock Injection — Create testing helpers for injecting mock services, implement test
+14. [ ] Testing Utilities and Mock Injection — Create testing helpers for injecting mock services, implement test
     container fixtures, and provide examples of testing components in isolation with mocked dependencies. `S`
 
-13. [ ] Performance Optimization and Caching — Add component resolution caching, optimize injector lookup performance,
+15. [ ] Performance Optimization and Caching — Add component resolution caching, optimize injector lookup performance,
     and implement lazy loading for component dependencies to minimize overhead. `M`
 
-14. [ ] Developer Experience Tools — Build CLI tools for component discovery validation, dependency graph visualization,
+16. [ ] Developer Experience Tools — Build CLI tools for component discovery validation, dependency graph visualization,
     and misconfiguration detection to help developers debug DI issues. `M`
+
+17. [x] Registry Introspection Helpers — Create `list_components()` and `list_middlewares()` helper functions for
+    inspecting registered items. `list_components()` should return a dictionary mapping base component symbols to their
+    variations (including target implementation, resource, and location for each `for_=` registration).
+    `list_middlewares()` should return the registered middleware factories. These helpers enable runtime inspection
+    and debugging of the registry state. `S`
 
 > Notes
 > - Order items by technical dependencies and product architecture

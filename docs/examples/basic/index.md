@@ -6,9 +6,9 @@ These examples cover the foundational concepts of `tdom-svcs`: the `context` arg
 
 JSX and component-driven development have a well-known problem: prop-drilling. `tdom` solves this problem by providing a `context` keyword argument to the `html()` function, passed down to the call chain. [Read More](pure_tdom)
 
-## Basic tdom with svcs
+## Basic Injection with svcs.Container
 
-This `tdom` fork is largely about components so let's focus our examples there. While these are implemented with `svcs` containers, many ideas could work with anything dict-like. [Read More](tdom_svcs)
+Learn how to pass an `svcs.Container` as context to enable automatic dependency injection in your components. [Read More](svcs_container)
 
 ## Functions, dataclasses, and POCOs
 
@@ -27,7 +27,7 @@ How can our component clearly project exactly what it needs, minimum surface are
 :maxdepth: 1
 
 pure_tdom
-tdom_svcs
+svcs_container
 function_dataclass_poco
 inject_service
 props_priority

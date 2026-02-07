@@ -29,7 +29,6 @@ class AuthenticationMiddleware:
     priority: int = -20
 
     def __call__(self, component, props, context):
-        print("  [Auth] Checking authentication")
         props["authenticated"] = True
         return props
 
@@ -42,7 +41,6 @@ class ValidationMiddleware:
     priority: int = -10
 
     def __call__(self, component, props, context):
-        print("  [Validation] Validating props")
         props["validated"] = True
         return props
 
@@ -55,7 +53,6 @@ class LoggingMiddleware:
     priority: int = 0
 
     def __call__(self, component, props, context):
-        print(f"  [Logging] Processing {component.__name__}")
         props["logged"] = True
         return props
 
@@ -102,87 +99,86 @@ class Label:
 # =============================================================================
 
 
-def main():
+def main() -> list[str]:
     """Demonstrate category-based organization and querying."""
     registry = HopscotchRegistry()
+    results = []
 
     # Scan all decorated classes from this module
-    import __main__
-
-    scan(registry, __main__)
-
-    print("=" * 70)
-    print("Category-Based Organization Example")
-    print("=" * 70)
+    scan(registry, locals_dict=globals())
 
     # List all categories
-    all_categories = registry.list_categories()
-    print(f"\nAll categories in registry: {sorted(all_categories)}")
+    all_categories = sorted(registry.list_categories())
+    results.append(f"All categories: {all_categories}")
+    assert len(all_categories) >= 8  # middleware, component, security, auth, validation, logging, analytics, page, admin, public, widget, interactive, display
 
     # Query middleware by category
-    print("\n--- Middleware by Category ---")
+    all_middleware = list(registry.get_by_category("middleware"))
+    results.append(f"All middleware count: {len(all_middleware)}")
+    assert len(all_middleware) == 3
 
-    print("\n1. All middleware:")
-    for mw in registry.get_by_category("middleware"):
-        print(f"   - {mw.__name__}")
+    security_middleware = list(registry.get_by_category("security"))
+    results.append(f"Security middleware: {[m.__name__ for m in security_middleware]}")
+    assert len(security_middleware) == 2
 
-    print("\n2. Security-related middleware:")
-    for mw in registry.get_by_category("security"):
-        print(f"   - {mw.__name__}")
-
-    print("\n3. Logging-related middleware:")
-    for mw in registry.get_by_category("logging"):
-        print(f"   - {mw.__name__}")
+    logging_middleware = list(registry.get_by_category("logging"))
+    results.append(f"Logging middleware: {[m.__name__ for m in logging_middleware]}")
+    assert len(logging_middleware) == 1
 
     # Query components by category
-    print("\n--- Components by Category ---")
+    all_components = list(registry.get_by_category("component"))
+    results.append(f"All components count: {len(all_components)}")
+    assert len(all_components) == 4
 
-    print("\n1. All components:")
-    for comp in registry.get_by_category("component"):
-        print(f"   - {comp.__name__}")
+    page_components = list(registry.get_by_category("page"))
+    results.append(f"Page components: {[c.__name__ for c in page_components]}")
+    assert len(page_components) == 2
 
-    print("\n2. Page components:")
-    for comp in registry.get_by_category("page"):
-        print(f"   - {comp.__name__}")
+    widget_components = list(registry.get_by_category("widget"))
+    results.append(f"Widget components: {[c.__name__ for c in widget_components]}")
+    assert len(widget_components) == 2
 
-    print("\n3. Widget components:")
-    for comp in registry.get_by_category("widget"):
-        print(f"   - {comp.__name__}")
-
-    print("\n4. Interactive components:")
-    for comp in registry.get_by_category("interactive"):
-        print(f"   - {comp.__name__}")
+    interactive_components = list(registry.get_by_category("interactive"))
+    results.append(f"Interactive components: {[c.__name__ for c in interactive_components]}")
+    assert len(interactive_components) == 1
 
     # Check categories for specific items
-    print("\n--- Categories for Specific Items ---")
+    auth_categories = sorted(registry.get_categories(AuthenticationMiddleware))
+    results.append(f"AuthenticationMiddleware categories: {auth_categories}")
+    assert "middleware" in auth_categories
+    assert "security" in auth_categories
+    assert "auth" in auth_categories
 
-    print("\nAuthenticationMiddleware categories:")
-    auth_categories = registry.get_categories(AuthenticationMiddleware)
-    print(f"   {sorted(auth_categories)}")
-
-    print("\nButton component categories:")
-    button_categories = registry.get_categories(Button)
-    print(f"   {sorted(button_categories)}")
+    button_categories = sorted(registry.get_categories(Button))
+    results.append(f"Button categories: {button_categories}")
+    assert "component" in button_categories
+    assert "widget" in button_categories
+    assert "interactive" in button_categories
 
     # Demonstrate execution with filtered middleware
-    print("\n--- Executing with Filtered Middleware ---")
-
     with HopscotchContainer(registry) as container:
         # Execute only security middleware
-        print("\nExecuting security middleware only:")
         security_middleware = list(registry.get_by_category("security"))
-
         props = {"component": "TestComponent"}
+
         # Resolve from container and sort by priority
         resolved = [container.get(mw_type) for mw_type in security_middleware]
         resolved.sort(key=lambda m: m.priority)
         for mw in resolved:
             props = mw(Button, props, container)
 
-        print(f"   Result: {props}")
+        results.append(f"Security middleware execution result: authenticated={props.get('authenticated')}, validated={props.get('validated')}")
+        assert props["authenticated"] is True
+        assert props["validated"] is True
 
-    print("\n" + "=" * 70)
+    return results
 
 
 if __name__ == "__main__":
-    main()
+    results = main()
+    print("=" * 70)
+    print("Category-Based Organization Example")
+    print("=" * 70)
+    for result in results:
+        print(f"  {result}")
+    print("=" * 70)

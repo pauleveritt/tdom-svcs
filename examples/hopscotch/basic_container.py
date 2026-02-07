@@ -1,4 +1,12 @@
-"""Inject a service into a service with svcs_di.auto"""
+"""Basic Hopscotch container with automatic service discovery.
+
+This example demonstrates:
+
+- Using @injectable decorator for automatic DI registration
+- Service-to-service injection with Inject[]
+- Scanning with scan() to auto-discover decorated classes
+- Component injection using the container context
+"""
 
 from dataclasses import dataclass, field
 from typing import TypedDict

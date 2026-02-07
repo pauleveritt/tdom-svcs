@@ -1,4 +1,12 @@
-"""Customize the app by replacing the component."""
+"""Resource-based component resolution.
+
+This example demonstrates:
+
+- Varying component implementations based on resource type
+- Using HopscotchContainer with resource= parameter
+- Site-level component overrides for specific resources
+- Multi-resource testing (DefaultCustomer vs FrenchCustomer)
+"""
 
 from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
 

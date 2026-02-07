@@ -1,4 +1,12 @@
-"""Inject a service into a service with svcs_di.auto"""
+"""Service-to-service injection with imperative registration.
+
+This example demonstrates:
+
+- Imperative service registration without decorators
+- Using auto() wrapper for service-to-service injection
+- Service dependencies resolved through the container
+- Component injection with Inject[] markers
+"""
 
 from dataclasses import dataclass, field
 from typing import TypedDict

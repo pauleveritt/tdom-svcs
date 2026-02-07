@@ -1,4 +1,12 @@
-"""Inject a service into a service with svcs_di.auto"""
+"""Props priority and InitVar pattern.
+
+This example demonstrates:
+
+- Using InitVar to receive props from context
+- Props explicitly passed override context values
+- Dataclass fields with init=False and __post_init__
+- How props take priority over injected dependencies
+"""
 
 from dataclasses import InitVar, dataclass, field
 from typing import TypedDict

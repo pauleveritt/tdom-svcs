@@ -1,4 +1,12 @@
-"""Vary components based on URL location."""
+"""Location-based component resolution.
+
+This example demonstrates:
+
+- Varying component implementations based on URL path location
+- Using HopscotchContainer with location= parameter
+- Site-level component overrides for specific paths (e.g., /fr/)
+- Multi-location testing in a single application
+"""
 
 from pathlib import PurePath
 

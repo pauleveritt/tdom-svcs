@@ -22,7 +22,7 @@ Foundational concepts: the `context` argument, component flavors (functions, dat
 | Example | Description |
 |---------|-------------|
 | [pure_tdom.py](../../examples/basic/pure_tdom.py) | Context argument fundamentals with no DI framework |
-| [tdom_svcs.py](../../examples/basic/tdom_svcs.py) | Basic tdom with svcs container |
+| [svcs_container.py](../../examples/basic/svcs_container.py) | Basic injection with svcs.Container |
 | [function_dataclass_poco.py](../../examples/basic/function_dataclass_poco.py) | Component flavors: functions, dataclasses, POCOs |
 | [inject_service.py](../../examples/basic/inject_service.py) | Service-to-service injection |
 | [props_priority.py](../../examples/basic/props_priority.py) | Props override patterns with InitVar |
@@ -43,6 +43,17 @@ Advanced features: automatic scanning with `@injectable`, component overrides, a
 | [location/](../../examples/hopscotch/location/) | URL path-based component resolution |
 
 [Browse Hopscotch Examples](hopscotch/index)
+
+## Categories Examples
+
+Organize and filter middleware and components using additional categories for better structure and dynamic configuration.
+
+| Example | Description |
+|---------|-------------|
+| [organizing_with_categories.py](../../examples/categories/organizing_with_categories.py) | Decorator approach with @middleware and @component |
+| [imperative_categories.py](../../examples/categories/imperative_categories.py) | Imperative registration with register_middleware/register_component |
+
+[Browse Categories Examples](categories/index)
 
 ## Middleware Examples
 
@@ -156,5 +167,6 @@ After exploring examples:
 
 basic/index
 hopscotch/index
+categories/index
 middleware/index
 ```

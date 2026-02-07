@@ -1,3 +1,13 @@
+"""Pure tdom with context parameter fundamentals.
+
+This example demonstrates:
+
+- Basic context parameter passing without DI framework
+- Function components receiving context as a parameter
+- Accessing context data in component rendering
+- Foundation pattern used throughout tdom-svcs
+"""
+
 from tdom import Node
 
 from tdom_svcs import html

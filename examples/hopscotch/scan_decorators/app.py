@@ -1,4 +1,12 @@
-"""Customize the app by replacing the component."""
+"""Component override with @injectable decorator.
+
+This example demonstrates:
+
+- Automatic override discovery using @injectable(for_=...)
+- Declarative component replacement with decorators
+- Scan discovering both original and override implementations
+- Site-level overrides registered automatically
+"""
 
 from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
 

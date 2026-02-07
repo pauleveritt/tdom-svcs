@@ -1,4 +1,12 @@
-"""Customize the app by replacing the component."""
+"""Component override with imperative registration.
+
+This example demonstrates:
+
+- Overriding default components with site-specific implementations
+- Using register_implementation() for explicit overrides
+- App/site separation pattern
+- Component replacement without changing app code
+"""
 
 from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
 

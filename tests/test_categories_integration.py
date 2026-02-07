@@ -6,7 +6,6 @@ use svcs-di's injectable categories system instead of custom metadata attributes
 
 from dataclasses import dataclass
 
-import pytest
 from svcs_di.injectors import HopscotchRegistry
 
 from tdom_svcs import component, middleware, scan

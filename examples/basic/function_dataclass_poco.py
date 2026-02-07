@@ -1,3 +1,13 @@
+"""Component flavors: functions, dataclasses, and POCOs.
+
+This example demonstrates:
+
+- Function components with explicit context parameter
+- Dataclass components using InitVar for context
+- POCO (Plain Old Class Object) components with __init__
+- Props priority: explicit props override context values
+"""
+
 from dataclasses import InitVar, dataclass, field
 from typing import TypedDict
 

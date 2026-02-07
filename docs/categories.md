@@ -237,6 +237,7 @@ See `examples/categories/` for complete working examples:
 
 ## See Also
 
-- [Middleware Documentation](middleware.md)
-- [Component Documentation](components.md)
+- {doc}`services/middleware` - Middleware system documentation
+- {doc}`core_concepts` - Component concepts and patterns
+- {doc}`examples/categories/index` - Category examples
 - [svcs-di Categories](https://github.com/hynek/svcs-di) - Upstream category system

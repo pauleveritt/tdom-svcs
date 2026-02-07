@@ -8,7 +8,7 @@ Let's switch the [inject service](../basic/inject_service) example to use Hopsco
 ## Registry and container
 
 The most notable first point: we use `HopscotchRegistry` instead of `svcs.Registry`. This gives some helper functions
-that you'll see in a moment, as well as using `HopscotchInject` instead of `DefaultInject`.
+that you'll see in a moment, as well as using `HopscotchInjector` instead of `DefaultInjector`.
 
 ```{literalinclude} ../../../examples/hopscotch/basic_container.py
 :start-at: registry = HopscotchRegistry

@@ -139,28 +139,6 @@ After exploring examples:
 - Read {doc}`../how_it_works` for architectural deep dive
 - Study {doc}`../services/middleware` for middleware system details
 
-## TODO
-
-- Registered component factories in config, function that requests `context`
-- @injectable without scanning
-- scan
-- Replacement service
-- Protocols
-- scan inside a test and locals
-- children, config, context
-
-## Hopscotch
-
-- app/site
-- HC context manager
-- Vary the service
-- Vary the component
-    - Subtype that just replaces the render
-- svcs_registry/svcs_container conventions
-- Location
-- Resource
-
-
 ```{toctree}
 :hidden:
 :maxdepth: 2

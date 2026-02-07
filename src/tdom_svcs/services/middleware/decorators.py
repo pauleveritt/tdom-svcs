@@ -46,7 +46,13 @@ from typing import Any
 
 from svcs_di.injectors import injectable
 
-from tdom_svcs.types import Component, MiddlewareMap, Props, PropsResult
+from tdom_svcs.types import (
+    COMPONENT_CATEGORY,
+    Component,
+    MiddlewareMap,
+    Props,
+    PropsResult,
+)
 
 __all__ = [
     "COMPONENT_MIDDLEWARE_ATTR",
@@ -99,18 +105,18 @@ class component(injectable):
         ...     # Categories: ("component", "page", "admin")
     """
 
-    categories = ("component",)
+    categories = (COMPONENT_CATEGORY,)
     _middleware_config: MiddlewareMap | None = None
 
     def __new__(cls, target=None, *, middleware=None, categories=None, **kwargs):
         """Create component with merged categories and middleware config."""
         # Merge default category with additional ones
         if categories:
-            merged_categories = ("component",) + tuple(categories)
+            merged_categories = (COMPONENT_CATEGORY,) + tuple(categories)
         else:
-            merged_categories = ("component",)
+            merged_categories = (COMPONENT_CATEGORY,)
 
-        result = super().__new__(cls, target, categories=merged_categories, **kwargs)
+        result = super().__new__(cls, target=target, categories=merged_categories, **kwargs)
         if isinstance(result, cls):
             result._middleware_config = middleware
         return result

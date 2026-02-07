@@ -400,7 +400,7 @@ Middleware are stateless callables that execute during component resolution. The
 
 ### Basic Middleware Pattern
 
-```text
+```python
 from dataclasses import dataclass
 from tdom_svcs.services.middleware import MiddlewareManager
 
@@ -434,7 +434,7 @@ Middleware execute in priority order:
 
 Middleware can halt the chain by returning `None`:
 
-```text
+```python
 @dataclass
 class ValidationMiddleware:
     priority: int = 0
@@ -450,7 +450,7 @@ class ValidationMiddleware:
 
 Middleware with async `__call__` are automatically detected:
 
-```text
+```python
 @dataclass
 class AsyncAuthMiddleware:
     priority: int = -5
@@ -504,7 +504,7 @@ See {doc}`examples/hopscotch/override` for a complete working example showing ho
 
 Use different implementations based on the current resource context (e.g., customer type, tenant):
 
-```text
+```python
 # Base implementation
 @injectable
 @dataclass
@@ -546,7 +546,7 @@ See {doc}`examples/hopscotch/resource` for a complete working example of multi-t
 
 Use different implementations based on URL path or location:
 
-```text
+```python
 # Base page component
 @injectable
 @dataclass
@@ -587,7 +587,7 @@ tdom-svcs follows svcs best practices for testing with fake/mock services.
 
 Use `registry.register_value()` to provide test doubles:
 
-```text
+```python
 from svcs_di import HopscotchContainer, HopscotchRegistry
 from svcs_di.injectors.locator import scan
 
@@ -618,7 +618,7 @@ def test_button_with_fake_database():
 
 Test middleware in isolation by calling it directly:
 
-```text
+```python
 def test_validation_middleware():
     """Test validation middleware in isolation."""
 
@@ -647,7 +647,7 @@ def test_validation_middleware():
 
 Test components with injected dependencies using fakes:
 
-```text
+```python
 from svcs_di import HopscotchContainer, HopscotchRegistry
 from svcs_di.injectors.locator import scan
 
@@ -681,7 +681,7 @@ def test_user_profile_component():
 
 Test end-to-end component resolution:
 
-```text
+```python
 from svcs_di import HopscotchContainer, HopscotchRegistry
 from svcs_di.injectors.locator import scan
 

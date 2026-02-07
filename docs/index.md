@@ -48,6 +48,7 @@ core_concepts
 node
 how_it_works
 services/index
+categories
 examples/index
 api_reference
 ```

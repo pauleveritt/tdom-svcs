@@ -2,6 +2,19 @@ from collections.abc import Coroutine
 from typing import Any, Callable, Protocol, TypeGuard, TypeVar, runtime_checkable
 
 # -------------------------------------------------------------------------
+# Constants
+# -------------------------------------------------------------------------
+
+MIDDLEWARE_CATEGORY = "middleware"
+"""Default category automatically assigned to all middleware."""
+
+COMPONENT_CATEGORY = "component"
+"""Default category automatically assigned to all components."""
+
+COMPONENT_LOCATION_PROP = "_component_location"
+"""Internal prop key for storing component location during rendering."""
+
+# -------------------------------------------------------------------------
 # Type Aliases
 # -------------------------------------------------------------------------
 

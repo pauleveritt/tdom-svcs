@@ -6,11 +6,13 @@ from typing import Any
 from svcs_di import Inject
 from svcs_di.injectors import injectable
 
+from tdom_svcs.types import COMPONENT_LOCATION_PROP
+
 from .collector import PathCollector
 
 
 @injectable
-@dataclass
+@dataclass(frozen=True, kw_only=True, slots=True)
 class PathMiddleware:
     """Middleware that registers components with PathCollector.
 
@@ -35,7 +37,7 @@ class PathMiddleware:
         >>> collector = PathCollector()
         >>> middleware = PathMiddleware(collector=collector)
         >>> props = middleware(MyComponent, {}, context)
-        >>> props["_component_location"].module_name
+        >>> props[COMPONENT_LOCATION_PROP].module_name
         'myapp.components.my_component'
     """
 
@@ -62,6 +64,6 @@ class PathMiddleware:
         location = self.collector.register_component(component)
 
         # Store location in props so post-render code can access it
-        props["_component_location"] = location
+        props[COMPONENT_LOCATION_PROP] = location
 
         return props

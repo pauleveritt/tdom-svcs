@@ -270,6 +270,6 @@ class TestErrorHandling:
         props = {}
 
         with pytest.raises(
-            RuntimeError, match="Async middleware.*detected in synchronous execution"
+            RuntimeError, match="Async middleware.*detected.*in synchronous execution"
         ):
             execute_middleware(Button, props, container)

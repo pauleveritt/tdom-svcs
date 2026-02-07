@@ -387,6 +387,7 @@ if issues:
 
 ## See Also
 
-- [ServiceLocator documentation](https://github.com/pauleveritt/svcs-di) — For understanding multi-implementation resolution
-- [Middleware documentation](middleware.md) — For global middleware registration
-- [Component middleware documentation](component-middleware.md) — For per-component middleware
+- {doc}`middleware` — Middleware system and registration patterns
+- {doc}`../core_concepts` — Component concepts and architecture
+- {doc}`../categories` — Category system for organizing services
+- [svcs-di documentation](https://github.com/hynek/svcs-di) — Upstream dependency injection library

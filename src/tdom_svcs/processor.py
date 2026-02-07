@@ -154,7 +154,7 @@ def _call_instance_with_extras(
 
     # Use __call__ method for get_callable_info to avoid hashability issues.
     # Dataclass instances aren't hashable by default, but bound methods are.
-    call_method = cast(Callable[..., object], instance.__call__)  # type: ignore[union-attr]
+    call_method = cast(Callable[..., object], instance.__call__)
     callable_info = get_callable_info(call_method)
     kwargs: dict[str, object] = {}
     _add_extras_to_kwargs(callable_info, kwargs, context, config, children)

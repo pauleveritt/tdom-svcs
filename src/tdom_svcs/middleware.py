@@ -37,6 +37,7 @@ from typing import Any, cast
 from svcs_di.injectors import injectable
 
 from tdom_svcs.types import (
+    MIDDLEWARE_CATEGORY,
     AnyMiddleware,
     Component,
     Context,
@@ -83,7 +84,7 @@ class middleware(injectable):
         ...         return props
     """
 
-    categories = ("middleware",)
+    categories = (MIDDLEWARE_CATEGORY,)
 
     def __new__(cls, target=None, *, categories=None, **kwargs):
         """Create middleware with merged categories.
@@ -92,11 +93,11 @@ class middleware(injectable):
         """
         # Merge default category with additional ones
         if categories:
-            merged_categories = ("middleware",) + tuple(categories)
+            merged_categories = (MIDDLEWARE_CATEGORY,) + tuple(categories)
         else:
-            merged_categories = ("middleware",)
+            merged_categories = (MIDDLEWARE_CATEGORY,)
 
-        return super().__new__(cls, target, categories=merged_categories, **kwargs)
+        return super().__new__(cls, target=target, categories=merged_categories, **kwargs)
 
     def __init__(self, target=None, *, categories=None, **kwargs):
         """No-op init - categories already handled in __new__."""
@@ -209,9 +210,11 @@ def execute_middleware(
     for mw in sorted_middleware:
         # Check if middleware is async
         if inspect.iscoroutinefunction(mw.__call__):
+            component_name = getattr(component, "__name__", repr(component))
             raise RuntimeError(
-                f"Async middleware {type(mw).__name__} detected in "
-                f"synchronous execution. Use execute_middleware_async() instead."
+                f"Async middleware {type(mw).__name__} detected while processing "
+                f"{component_name} in synchronous execution. "
+                f"Use execute_middleware_async() instead."
             )
 
         # Cast to Context for type checking - middleware receives container as context

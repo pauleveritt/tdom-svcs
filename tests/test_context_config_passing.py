@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 
+import pytest
 from markupsafe import Markup
 from svcs_di import Inject
 from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
@@ -14,20 +15,20 @@ from .conftest import DatabaseService
 # Test is_di_container helper
 
 
-def testis_di_container_rejects_plain_dict():
+def test_is_di_container_rejects_plain_dict():
     """Plain dict should not be considered a DI container."""
     d = {"foo": "bar"}
     assert not is_di_container(d)
 
 
-def testis_di_container_accepts_hopscotch_container():
+def test_is_di_container_accepts_hopscotch_container():
     """HopscotchContainer should be recognized as a DI container."""
     registry = HopscotchRegistry()
     with HopscotchContainer(registry) as container:
         assert is_di_container(container)
 
 
-def testis_di_container_accepts_custom_container():
+def test_is_di_container_accepts_custom_container():
     """Custom class implementing DIContainer protocol should be recognized."""
 
     class MyContainer:
@@ -38,7 +39,7 @@ def testis_di_container_accepts_custom_container():
     assert is_di_container(container)
 
 
-def testis_di_container_rejects_none():
+def test_is_di_container_rejects_none():
     """None should not be a DI container."""
     assert not is_di_container(None)
 
@@ -144,11 +145,8 @@ def test_dict_context_passed_but_no_di():
     # With a plain dict, DI should NOT be triggered, so this should fail
     # because db is not injected
     ctx = {"user": "Alice"}
-    try:
+    with pytest.raises(TypeError, match="db"):
         html(t"<{ComponentWithInject} />", context=ctx)
-        assert False, "Should have raised TypeError for missing db"
-    except TypeError as e:
-        assert "db" in str(e).lower()
 
 
 def test_di_still_works_with_proper_container():
@@ -291,11 +289,8 @@ def test_function_component_inject_without_container_fails():
         return Markup(f"<p>{db.get_user()}</p>")
 
     # Without a container, should fail because db is not injected
-    try:
+    with pytest.raises(TypeError, match="db"):
         html(t"<{Greeting} />")
-        assert False, "Should have raised TypeError for missing db"
-    except TypeError as e:
-        assert "db" in str(e).lower()
 
 
 def test_function_component_inject_with_dict_context_fails():
@@ -305,8 +300,5 @@ def test_function_component_inject_with_dict_context_fails():
         return Markup(f"<p>{db.get_user()}</p>")
 
     # Plain dict doesn't trigger DI
-    try:
+    with pytest.raises(TypeError, match="db"):
         html(t"<{Greeting} />", context={"user": "Alice"})
-        assert False, "Should have raised TypeError for missing db"
-    except TypeError as e:
-        assert "db" in str(e).lower()

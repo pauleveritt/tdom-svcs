@@ -1,11 +1,10 @@
 """Customize the app by replacing the component."""
 
 from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
-from svcs_di.injectors.scanning import scan
 
 from examples.hopscotch.override import app_common, site
 from examples.hopscotch.override.app_common import Greeting, Request
-from tdom_svcs import html
+from tdom_svcs import html, scan
 
 
 def main() -> str:

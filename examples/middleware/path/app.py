@@ -7,12 +7,11 @@ Demonstrates:
 """
 
 from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
-from svcs_di.injectors.scanning import scan
 
 from examples.common import Request
 from examples.middleware.path import components, services
 from examples.middleware.path.components import Head, HTMLPage
-from tdom_svcs import html
+from tdom_svcs import html, scan
 from tdom_svcs.services.path import PathCollector
 
 

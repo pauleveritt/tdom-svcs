@@ -1,14 +1,13 @@
 """Customize the app by replacing the component."""
 
 from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
-from svcs_di.injectors.scanning import scan
 
 from examples.hopscotch.resource import components, services, site
 from examples.hopscotch.resource.components import Greeting
 from examples.hopscotch.resource.request import Request
 from examples.hopscotch.resource.resources import DefaultCustomer
 from examples.hopscotch.resource.site.resources import FrenchCustomer
-from tdom_svcs import html
+from tdom_svcs import html, scan
 
 
 def main() -> list[str]:

@@ -156,11 +156,11 @@ def main():
     # Check categories for specific items
     print("\n--- Categories for Specific Items ---")
 
-    print(f"\nAuthenticationMiddleware categories:")
+    print("\nAuthenticationMiddleware categories:")
     auth_categories = registry.get_categories(AuthenticationMiddleware)
     print(f"   {sorted(auth_categories)}")
 
-    print(f"\nButton component categories:")
+    print("\nButton component categories:")
     button_categories = registry.get_categories(Button)
     print(f"   {sorted(button_categories)}")
 
@@ -173,8 +173,10 @@ def main():
         security_middleware = list(registry.get_by_category("security"))
 
         props = {"component": "TestComponent"}
-        for mw_type in sorted(security_middleware, key=lambda m: m().priority):
-            mw = container.get(mw_type)
+        # Resolve from container and sort by priority
+        resolved = [container.get(mw_type) for mw_type in security_middleware]
+        resolved.sort(key=lambda m: m.priority)
+        for mw in resolved:
             props = mw(Button, props, container)
 
         print(f"   Result: {props}")

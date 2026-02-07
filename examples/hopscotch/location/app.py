@@ -3,12 +3,11 @@
 from pathlib import PurePath
 
 from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
-from svcs_di.injectors.scanning import scan
 
 from examples.hopscotch.location import components, services, site
 from examples.hopscotch.location.components import Greeting
 from examples.hopscotch.location.request import Request
-from tdom_svcs import html
+from tdom_svcs import html, scan
 
 
 def main() -> list[str]:

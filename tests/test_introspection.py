@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from pathlib import PurePath
 
+import pytest
 from markupsafe import Markup
 from svcs_di.injectors import HopscotchRegistry
 
@@ -214,19 +215,13 @@ def test_list_components_returns_frozen_dataclasses():
     info = result[TestService]
 
     # Test that ComponentInfo is frozen
-    try:
+    with pytest.raises(AttributeError):
         info.service_type = object  # type: ignore
-        assert False, "Should not be able to modify frozen dataclass"
-    except AttributeError:
-        pass  # Expected
 
     # Test that ComponentVariation is frozen
     variation = info.variations[0]
-    try:
+    with pytest.raises(AttributeError):
         variation.implementation = object  # type: ignore
-        assert False, "Should not be able to modify frozen dataclass"
-    except AttributeError:
-        pass  # Expected
 
 
 def test_list_components_variations_is_tuple():
@@ -367,17 +362,11 @@ def test_list_middlewares_returns_frozen_dataclasses():
     info = result[0]
 
     # Test that MiddlewareInfo is frozen
-    try:
+    with pytest.raises(AttributeError):
         info.middleware_type = object  # type: ignore
-        assert False, "Should not be able to modify frozen dataclass"
-    except AttributeError:
-        pass  # Expected
 
-    try:
+    with pytest.raises(AttributeError):
         info.priority = 999  # type: ignore
-        assert False, "Should not be able to modify frozen dataclass"
-    except AttributeError:
-        pass  # Expected
 
 
 def test_list_middlewares_returns_tuple():

@@ -44,10 +44,38 @@ def heading(text: str = "Heading") -> str:
 class TestRegisterAndExecute:
     """Tests for basic middleware registration and execution."""
 
+    def test_register_middleware_auto_registers_factory(self, registry, container):
+        """Test that register_middleware auto-registers factory."""
+        # Only call register_middleware - should auto-register factory
+        register_middleware(registry, DefaultPriorityMiddleware)
+
+        props = {"label": "Click"}
+
+        # Middleware should resolve from container via auto-registered factory
+        result = execute_middleware(Button, props, container)
+
+        assert result is not None
+        assert result["label"] == "Click"
+        assert result["default"] is True
+
+    def test_register_middleware_preserves_existing_factory(self, registry, container):
+        """Test that register_middleware preserves custom factory if already registered."""
+        # Register custom factory first
+        registry.register_factory(
+            DefaultPriorityMiddleware,
+            lambda: DefaultPriorityMiddleware(priority=99),
+        )
+
+        # Call register_middleware - should NOT overwrite the custom factory
+        register_middleware(registry, DefaultPriorityMiddleware)
+
+        # Verify custom factory is still used
+        instance = container.get(DefaultPriorityMiddleware)
+        assert instance.priority == 99
+
     def test_register_and_execute(self, registry, container):
         """Test registering middleware and basic execution."""
         # Register middleware type
-        registry.register_factory(DefaultPriorityMiddleware, DefaultPriorityMiddleware)
         register_middleware(registry, DefaultPriorityMiddleware)
 
         props = {"label": "Click"}
@@ -60,11 +88,6 @@ class TestRegisterAndExecute:
 
     def test_priority_ordering(self, registry, container):
         """Test middleware executes in priority order (lower numbers first)."""
-        # Register middleware types
-        registry.register_factory(HighPriorityMiddleware, HighPriorityMiddleware)
-        registry.register_factory(LowPriorityMiddleware, LowPriorityMiddleware)
-        registry.register_factory(DefaultPriorityMiddleware, DefaultPriorityMiddleware)
-
         # Register in random order - should still execute in priority order
         register_middleware(registry, HighPriorityMiddleware)
         register_middleware(registry, LowPriorityMiddleware)
@@ -114,7 +137,6 @@ class TestComponentTypes:
 
     def test_with_function_component(self, registry, container):
         """Test middleware execution with function component."""
-        registry.register_factory(DefaultPriorityMiddleware, DefaultPriorityMiddleware)
         register_middleware(registry, DefaultPriorityMiddleware)
 
         props = {"text": "Welcome"}
@@ -129,7 +151,6 @@ class TestComponentTypes:
 
     def test_with_class_component(self, registry, container):
         """Test middleware execution with class component."""
-        registry.register_factory(DefaultPriorityMiddleware, DefaultPriorityMiddleware)
         register_middleware(registry, DefaultPriorityMiddleware)
 
         props = {"label": "Submit"}
@@ -225,10 +246,6 @@ class TestDependencyInjection:
 
     def test_mixed_registration(self, registry, container):
         """Test mixing different middleware types."""
-        # Register middleware types
-        registry.register_factory(LowPriorityMiddleware, LowPriorityMiddleware)
-        registry.register_factory(HighPriorityMiddleware, HighPriorityMiddleware)
-
         register_middleware(registry, LowPriorityMiddleware)
         register_middleware(registry, HighPriorityMiddleware)
 

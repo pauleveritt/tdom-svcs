@@ -3,6 +3,7 @@
 import threading
 from dataclasses import dataclass
 
+import pytest
 from markupsafe import Markup
 from svcs_di import Inject
 from svcs_di.injectors import HopscotchContainer, HopscotchRegistry, KeywordInjector
@@ -216,12 +217,9 @@ def test_component_without_di_context_works():
     """Test that DI components fail gracefully without context."""
 
     # Without context, component should fail because required param is missing
-    try:
+    # Should raise TypeError about missing 'db' parameter
+    with pytest.raises(TypeError, match="db"):
         html(t"<{ButtonWithDI} label='Test' />")
-        # Should raise TypeError about missing 'db' parameter
-        assert False, "Should have raised TypeError"
-    except TypeError as e:
-        assert "db" in str(e).lower()
 
 
 def test_component_with_default_di_value():

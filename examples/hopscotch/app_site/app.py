@@ -1,11 +1,10 @@
 """Inject a service into a service with svcs_di.auto"""
 
 from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
-from svcs_di.injectors.scanning import scan
 
 from examples.hopscotch.app_site import app_common, site
 from examples.hopscotch.app_site.app_common import Greeting, Request
-from tdom_svcs import html
+from tdom_svcs import html, scan
 
 
 def main() -> str:

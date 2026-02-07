@@ -5,10 +5,9 @@ from typing import TypedDict
 
 from svcs_di import Inject
 from svcs_di.injectors import injectable, HopscotchRegistry, HopscotchContainer
-from svcs_di.injectors.scanning import scan
 from tdom import Node
 
-from tdom_svcs import html
+from tdom_svcs import html, scan
 
 
 @dataclass
@@ -66,7 +65,7 @@ class Users:
             user_id, {"id": user_id, "name": "Unknown", "role": "guest"}
         )
 
-    def list_user(self) -> list[UserDict]:
+    def list_users(self) -> list[UserDict]:
         """List all users."""
         return list(self.db.users.values())
 

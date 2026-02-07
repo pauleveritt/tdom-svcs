@@ -169,3 +169,30 @@ def test_imperative_registration_uses_class_attribute():
             ImperativeComponent, props, container, "pre_resolution"
         )
     assert result["middleware_executed"] is True
+
+
+def test_register_component_auto_registers_factory():
+    """Test that register_component auto-registers factory for the component."""
+    from tdom_svcs import register_middleware
+    from tdom_svcs.services.middleware import register_component
+
+    @dataclass
+    class AutoFactoryComponent:
+        value: str = "test"
+
+    registry = HopscotchRegistry()
+    # Register middleware type for DI resolution
+    register_middleware(registry, StorageTestMiddleware)
+
+    # Only call register_component - should auto-register factory
+    register_component(
+        registry,
+        AutoFactoryComponent,
+        middleware={"pre_resolution": [StorageTestMiddleware]},
+    )
+
+    # Component should resolve from container via auto-registered factory
+    with HopscotchContainer(registry) as container:
+        instance = container.get(AutoFactoryComponent)
+        assert isinstance(instance, AutoFactoryComponent)
+        assert instance.value == "test"

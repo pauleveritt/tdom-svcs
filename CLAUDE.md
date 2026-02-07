@@ -1,5 +1,17 @@
 # Claude Code Instructions
 
+## Backwards Compatibility Policy
+
+**DO NOT maintain backwards compatibility.** This is an experimental/research project:
+
+- Make breaking changes freely when they improve the API
+- Refactor aggressively without concern for existing code
+- Don't add compatibility layers or shims
+- Don't preserve deprecated APIs
+- Focus on the best design, not compatibility
+
+If a better approach emerges, implement it immediately. The goal is to explore good patterns, not maintain stable APIs.
+
 ## Python Tooling
 
 Always use the Astral tools for Python development:

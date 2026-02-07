@@ -42,7 +42,7 @@ See spec documentation for complete examples and lifecycle phase definitions.
 """
 
 from operator import attrgetter
-from typing import Any, Callable, overload
+from typing import Any
 
 from svcs_di.injectors import injectable
 
@@ -53,63 +53,22 @@ __all__ = [
     "component",
     "execute_component_middleware",
     "register_component",
-    "register_component_middleware",
-    "get_component_middleware",
 ]
 
 # Metadata attribute set by @component decorator
 COMPONENT_MIDDLEWARE_ATTR = "_tdom_component_middleware_"
 
-# Registry metadata key for storing component middleware
-COMPONENT_MW_REGISTRY_KEY = "tdom.component_middleware"
 
-
-def _mark_component(
-    target: Component,
-    middleware: MiddlewareMap | None = None,
-) -> Component:
-    """
-    Mark a component with middleware metadata attribute.
-
-    This stores the middleware config on the class itself. The scan()
-    function will find this and register it with the registry.
-    Also applies @injectable so the component can be resolved from DI.
-
-    Args:
-        target: Component class or function to mark.
-        middleware: Dict mapping lifecycle phases to middleware lists.
-
-    Returns:
-        The target component with metadata attribute set and injectable marker.
-    """
-    middleware_dict = middleware if middleware is not None else {}
-    setattr(target, COMPONENT_MIDDLEWARE_ATTR, middleware_dict)
-    # Also make it injectable so it can be resolved from container
-    return injectable(target)
-
-
-@overload
-def component(target: Component) -> Component:
-    """Bare decorator usage: @component"""
-    ...
-
-
-@overload
-def component(
-    *,
-    middleware: MiddlewareMap | None = None,
-) -> Callable[[Component], Component]:
-    """Parametrized decorator usage: @component(middleware={...})"""
-    ...
-
-
-def component(
-    target: Component | None = None,
-    *,
-    middleware: MiddlewareMap | None = None,
-) -> Component | Callable[[Component], Component]:
+class component(injectable):
     """
     Decorator for marking components with per-component middleware.
+
+    This decorator marks a class to be discovered by scan() and registered
+    as a component using the "component" category. Supports optional per-component
+    middleware configuration.
+
+    Additional categories can be specified to tag components for filtering
+    and organization purposes (e.g., "page", "widget", "layout").
 
     Supports both @component (bare) and @component(middleware={...}) syntax.
     The component is marked with metadata that scan() will discover and
@@ -119,90 +78,103 @@ def component(
         target: Component class or function to decorate (when used bare).
         middleware: Dict mapping lifecycle phases to middleware lists.
                    Phases: "pre_resolution", "post_resolution", "rendering"
+        categories: Additional categories to tag this component with.
+                   The "component" category is always included.
 
     Returns:
         Decorated component with middleware metadata attribute.
 
     Example:
+        >>> # Basic usage
         >>> @component(middleware={"pre_resolution": [LoggingMiddleware]})
         ... @dataclass
         ... class Button:
         ...     label: str = "Click"
+        >>>
+        >>> # With additional categories
+        >>> @component(categories=["page", "admin"])
+        ... @dataclass
+        ... class AdminPage:
+        ...     title: str = "Admin"
+        ...     # Categories: ("component", "page", "admin")
     """
-    if target is not None:
-        return _mark_component(target, middleware=None)
 
-    def decorator(comp: Component) -> Component:
-        return _mark_component(comp, middleware=middleware)
+    categories = ("component",)
+    _middleware_config: MiddlewareMap | None = None
 
-    return decorator
+    def __new__(cls, target=None, *, middleware=None, categories=None, **kwargs):
+        """Create component with merged categories and middleware config."""
+        # Merge default category with additional ones
+        if categories:
+            merged_categories = ("component",) + tuple(categories)
+        else:
+            merged_categories = ("component",)
+
+        result = super().__new__(cls, target, categories=merged_categories, **kwargs)
+        if isinstance(result, cls):
+            result._middleware_config = middleware
+        return result
+
+    def __init__(self, target=None, *, middleware=None, categories=None, **kwargs):
+        """No-op init - parameters already handled in __new__.
+
+        This override is required to accept middleware and categories parameters
+        in parameterized usage: @component(middleware={...}, categories=[...])
+        """
+        pass
+
+    def post_decorate(self, target, metadata):
+        """Store middleware config after decoration."""
+        setattr(target, COMPONENT_MIDDLEWARE_ATTR, self._middleware_config or {})
 
 
 def register_component(
-    target: Component,
-    middleware: MiddlewareMap | None = None,
-) -> None:
-    """
-    Mark a component with per-component middleware imperatively.
-
-    This function provides a non-decorator alternative to @component.
-    The component is marked with metadata that scan() will discover.
-
-    Args:
-        target: Component class or function to mark.
-        middleware: Dict mapping lifecycle phases to middleware lists.
-
-    Example:
-        >>> register_component(Button, middleware={"pre_resolution": [LoggingMiddleware]})
-    """
-    _mark_component(target, middleware=middleware)
-
-
-def register_component_middleware(
     registry: Any,
     target: Component,
-    middleware: MiddlewareMap,
+    middleware: MiddlewareMap | None = None,
+    *,
+    categories: list[str] | None = None,
 ) -> None:
-    """
-    Register component middleware with the registry.
+    """Register a component imperatively with optional middleware and categories.
 
-    This is called by scan() for each @component decorated class found.
-    Can also be called manually for programmatic registration.
+    This provides an imperative alternative to the @component decorator for
+    cases where decoration isn't possible (dynamic registration, testing, etc.).
+
+    Additional categories can be specified to tag components for filtering
+    and organization purposes. The "component" category is always included.
+
+    The recommended approach is to use @component decorator + scan(). Use this
+    function only when you need programmatic registration.
 
     Args:
         registry: HopscotchRegistry to register with.
-        target: Component class or function.
+        target: Component class or function to register.
         middleware: Dict mapping lifecycle phases to middleware lists.
-    """
-    component_mw: dict[Component, MiddlewareMap] = registry.metadata(
-        COMPONENT_MW_REGISTRY_KEY, dict
-    )
-    component_mw[target] = middleware
-
-
-def get_component_middleware(
-    registry: Any,
-    comp: Component,
-) -> MiddlewareMap:
-    """
-    Retrieve per-component middleware from registry.
-
-    Args:
-        registry: HopscotchRegistry to get middleware from.
-        comp: Component class or function to retrieve middleware for.
-
-    Returns:
-        Dict mapping lifecycle phases to middleware lists.
-        Empty dict if no middleware registered.
+        categories: Additional categories to tag this component with.
 
     Example:
-        >>> mw = get_component_middleware(registry, Button)
-        >>> pre_mw = mw.get("pre_resolution", [])
+        >>> # Basic registration
+        >>> register_component(registry, Button, middleware={"pre_resolution": [LogMw]})
+        >>>
+        >>> # With additional categories
+        >>> register_component(registry, AdminPage, categories=["page", "admin"])
+        >>>
+        >>> # Recommended: decorator + scan
+        >>> @component(middleware={"pre_resolution": [LogMw]}, categories=["page"])
+        ... class Button: pass
+        >>> scan(registry, my_module)
     """
-    component_mw: dict[Component, MiddlewareMap] = registry.metadata(
-        COMPONENT_MW_REGISTRY_KEY, dict
-    )
-    return component_mw.get(comp, {})
+    # Merge default category with additional ones
+    all_categories = ["component"]
+    if categories:
+        all_categories.extend(categories)
+    registry._register_categories(target, all_categories)
+    # Register as injectable service if not already registered (allows custom factories)
+    if target not in registry._services:
+        registry.register_factory(target, target)
+    setattr(target, COMPONENT_MIDDLEWARE_ATTR, middleware or {})
+
+
 
 
 def execute_component_middleware(
@@ -229,8 +201,8 @@ def execute_component_middleware(
         >>> result = execute_middleware(Button, props, container)
         >>> result = execute_component_middleware(Button, result, container, "pre_resolution")
     """
-    registry = container.registry
-    mw_map = get_component_middleware(registry, comp)
+    # Read middleware config directly from component class attribute
+    mw_map = getattr(comp, COMPONENT_MIDDLEWARE_ATTR, {})
     middleware_types = mw_map.get(phase, [])
 
     # Resolve all types from container

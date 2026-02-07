@@ -31,11 +31,11 @@ from tdom_svcs import (
     execute_component_middleware,
     execute_middleware,
     execute_middleware_async,
-    get_component_middleware,
     html,
     register_middleware,
     scan,
 )
+from tdom_svcs.services.middleware.decorators import COMPONENT_MIDDLEWARE_ATTR
 
 
 async def main() -> str:
@@ -72,7 +72,7 @@ async def main() -> str:
         assert "global:Card" in global_logging.logged
 
         # Card has no per-component middleware
-        card_mw = get_component_middleware(registry, Card)
+        card_mw = getattr(Card, COMPONENT_MIDDLEWARE_ATTR, {})
         assert not card_mw.get("pre_resolution", [])
 
         # Test 3: Async middleware chain

@@ -63,6 +63,10 @@
     tdom-svcs's `@middleware` decorator. Use `__post_init__` to extract Django-specific data (request, response) into
     the standard middleware interface. Follow patterns from tdom-svcs middleware examples. `M`
 
+12. [ ] Refactor For Inject Categories — In svcs-di there is an analysis file `FEATURE_CATEGORIES.md`. This project had
+    a recent commit `Add registry introspection helpers`. See how the work in `svcs-di` injectable categories could
+    change that commit and any other part of this project. `M`
+
 ## Phase 5: Performance & Developer Experience
 
 14. [ ] Testing Utilities and Mock Injection — Create testing helpers for injecting mock services, implement test

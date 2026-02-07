@@ -11,10 +11,10 @@ from typing import Any, Callable, cast
 from tdom_svcs import (
     component,
     execute_middleware,
-    get_component_middleware,
     register_middleware,
     scan,
 )
+from tdom_svcs.services.middleware.decorators import COMPONENT_MIDDLEWARE_ATTR
 from tdom_svcs.services.middleware import Context
 
 
@@ -145,7 +145,7 @@ def test_global_middleware_executes_before_per_component_middleware(
     props_after_global = execute_middleware(TestComponent, props, container)
 
     # Execute per-component middleware
-    component_middleware = get_component_middleware(registry, TestComponent)
+    component_middleware = getattr(TestComponent, COMPONENT_MIDDLEWARE_ATTR, {})
     pre_resolution_middleware = component_middleware.get("pre_resolution", [])
 
     assert props_after_global is not None
@@ -245,7 +245,7 @@ def test_per_component_middleware_respects_priority_ordering(registry) -> None:
     scan(registry, locals_dict={"TestComponent": TestComponent})
 
     # Execute per-component middleware in priority order
-    component_middleware = get_component_middleware(registry, TestComponent)
+    component_middleware = getattr(TestComponent, COMPONENT_MIDDLEWARE_ATTR, {})
     pre_resolution_middleware = component_middleware.get("pre_resolution", [])
 
     props = {"value": "test"}
@@ -338,7 +338,7 @@ def test_middleware_integration_with_multiple_lifecycle_phases(registry) -> None
     scan(registry, locals_dict={"TestComponent": TestComponent})
 
     # Verify middleware is stored for both phases
-    component_middleware = get_component_middleware(registry, TestComponent)
+    component_middleware = getattr(TestComponent, COMPONENT_MIDDLEWARE_ATTR, {})
     assert "pre_resolution" in component_middleware
     assert "post_resolution" in component_middleware
     assert len(component_middleware["pre_resolution"]) == 1

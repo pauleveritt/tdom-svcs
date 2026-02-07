@@ -8,7 +8,6 @@ from .middleware import (
     MiddlewareError,
     MiddlewareExecutionError,
     component,
-    get_component_middleware,
     register_component,
 )
 
@@ -21,6 +20,5 @@ __all__ = [
     "MiddlewareError",
     "MiddlewareExecutionError",
     "component",
-    "get_component_middleware",
     "register_component",
 ]

@@ -44,30 +44,27 @@ from tdom_svcs.types import (
     PropsResult,
 )
 
-# Metadata attribute set by @middleware decorator
-MIDDLEWARE_METADATA_ATTR = "_tdom_middleware_"
 
-# Registry metadata key for storing middleware types
-MIDDLEWARE_REGISTRY_KEY = "tdom.middleware_types"
-
-
-def middleware[T: type](cls: T) -> T:
+class middleware(injectable):
     """Mark a class as middleware for scanning.
 
     This decorator marks a class to be discovered by scan() and registered
-    as global middleware. It also applies @injectable so the middleware
+    as global middleware using the "middleware" category. The decorated class
     can be resolved from the DI container.
+
+    Additional categories can be specified to tag middleware for filtering
+    and organization purposes.
 
     The class must have a 'priority' attribute and be callable with
     (component, props, context) signature.
 
     Args:
-        cls: The middleware class to mark.
-
-    Returns:
-        The class with middleware metadata and injectable marker.
+        target: The class to decorate (when used bare).
+        categories: Additional categories to tag this middleware with.
+                   The "middleware" category is always included.
 
     Example:
+        >>> # Basic usage
         >>> @middleware
         ... @dataclass
         ... class LoggingMiddleware:
@@ -75,33 +72,79 @@ def middleware[T: type](cls: T) -> T:
         ...     def __call__(self, component, props, context):
         ...         print(f"Processing {component.__name__}")
         ...         return props
+        >>>
+        >>> # With additional categories
+        >>> @middleware(categories=["security", "auth"])
+        ... @dataclass
+        ... class AuthMiddleware:
+        ...     priority: int = -5
+        ...     def __call__(self, component, props, context):
+        ...         # Categories: ("middleware", "security", "auth")
+        ...         return props
     """
-    setattr(cls, MIDDLEWARE_METADATA_ATTR, True)
-    # Also make it injectable so it can be resolved from container
-    return injectable(cls)
+
+    categories = ("middleware",)
+
+    def __new__(cls, target=None, *, categories=None, **kwargs):
+        """Create middleware with merged categories.
+
+        Merges default "middleware" category with any additional categories.
+        """
+        # Merge default category with additional ones
+        if categories:
+            merged_categories = ("middleware",) + tuple(categories)
+        else:
+            merged_categories = ("middleware",)
+
+        return super().__new__(cls, target, categories=merged_categories, **kwargs)
+
+    def __init__(self, target=None, *, categories=None, **kwargs):
+        """No-op init - categories already handled in __new__."""
+        pass
 
 
 def register_middleware(
     registry: Any,
     middleware_type: type[AnyMiddleware],
+    *,
+    categories: list[str] | None = None,
 ) -> None:
-    """Register a middleware type with the registry.
+    """Register a middleware type imperatively.
 
-    This is called by scan() for each @middleware decorated class found.
-    Can also be called manually for programmatic registration.
+    This provides an imperative alternative to the @middleware decorator for
+    cases where decoration isn't possible (dynamic registration, testing, etc.).
+
+    Additional categories can be specified to tag middleware for filtering
+    and organization purposes. The "middleware" category is always included.
+
+    The recommended approach is to use @middleware decorator + scan(). Use this
+    function only when you need programmatic registration.
 
     Args:
         registry: HopscotchRegistry to register with.
         middleware_type: The middleware class to register.
+        categories: Additional categories to tag this middleware with.
 
     Example:
+        >>> # Basic registration
         >>> register_middleware(registry, LoggingMiddleware)
+        >>>
+        >>> # With additional categories
+        >>> register_middleware(registry, AuthMiddleware, categories=["security", "auth"])
+        >>>
+        >>> # Recommended: decorator + scan
+        >>> @middleware(categories=["security"])
+        ... class LoggingMiddleware: pass
+        >>> scan(registry, my_module)
     """
-    middleware_types: list[type[AnyMiddleware]] = registry.metadata(
-        MIDDLEWARE_REGISTRY_KEY, list
-    )
-    if middleware_type not in middleware_types:
-        middleware_types.append(middleware_type)
+    # Merge default category with additional ones
+    all_categories = ["middleware"]
+    if categories:
+        all_categories.extend(categories)
+    registry._register_categories(middleware_type, all_categories)
+    # Register as injectable service if not already registered (allows custom factories)
+    if middleware_type not in registry._services:
+        registry.register_factory(middleware_type, middleware_type)
 
 
 def get_middleware_types(registry: Any) -> list[type[AnyMiddleware]]:
@@ -113,7 +156,7 @@ def get_middleware_types(registry: Any) -> list[type[AnyMiddleware]]:
     Returns:
         List of registered middleware types.
     """
-    return registry.metadata(MIDDLEWARE_REGISTRY_KEY, list)
+    return list(registry.get_by_category("middleware"))
 
 
 def _resolve_middleware(

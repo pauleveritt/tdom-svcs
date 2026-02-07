@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import pytest
 from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
 
+from tdom_svcs import middleware
 from tdom_svcs.types import Component, Context, Middleware, Props, PropsResult
 
 
@@ -116,8 +117,14 @@ def create_tracking_middleware(
 
 
 # Pre-built middleware classes for common test patterns
-LowPriorityMiddleware = create_tracking_middleware("low", default_priority=-10)
-DefaultPriorityMiddleware = create_tracking_middleware("default", default_priority=0)
-HighPriorityMiddleware = create_tracking_middleware("high", default_priority=10)
-HaltingMiddleware = create_tracking_middleware("halt", default_priority=0, halt=True)
-AsyncMiddleware = create_tracking_middleware("async", default_priority=5, is_async=True)
+LowPriorityMiddleware = middleware(create_tracking_middleware("low", default_priority=-10))
+DefaultPriorityMiddleware = middleware(
+    create_tracking_middleware("default", default_priority=0)
+)
+HighPriorityMiddleware = middleware(create_tracking_middleware("high", default_priority=10))
+HaltingMiddleware = middleware(
+    create_tracking_middleware("halt", default_priority=0, halt=True)
+)
+AsyncMiddleware = middleware(
+    create_tracking_middleware("async", default_priority=5, is_async=True)
+)

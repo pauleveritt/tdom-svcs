@@ -16,11 +16,12 @@ from tdom_svcs import (
     component,
     execute_middleware,
     execute_middleware_async,
-    get_component_middleware,
+    middleware,
     register_middleware,
     scan,
 )
 from tdom_svcs.services.middleware import Context
+from tdom_svcs.services.middleware.decorators import COMPONENT_MIDDLEWARE_ATTR
 
 
 # Test fixtures
@@ -37,6 +38,7 @@ class ExecutionTracker:
         self.executions.append(event)
 
 
+@middleware
 @dataclass
 class LoggingMiddleware:
     """Global logging middleware for integration testing."""
@@ -59,6 +61,7 @@ class LoggingMiddleware:
         return props
 
 
+@middleware
 @dataclass
 class ValidationMiddleware:
     """Global validation middleware."""
@@ -84,6 +87,7 @@ class ValidationMiddleware:
         return props
 
 
+@middleware
 @dataclass
 class TransformationMiddleware:
     """Per-component transformation middleware."""
@@ -107,6 +111,7 @@ class TransformationMiddleware:
         return props
 
 
+@middleware
 @dataclass
 class AsyncMiddleware:
     """Async middleware for testing mixed chains."""
@@ -142,6 +147,7 @@ class StatefulAssetCollector:
         self.assets.append(asset)
 
 
+@middleware
 @dataclass
 class AssetCollectionMiddleware:
     """Middleware that uses stateful service from context."""
@@ -242,7 +248,7 @@ def test_end_to_end_workflow_with_setup_and_execution(registry, container) -> No
 
     # Execute per-component middleware
     assert result_button is not None
-    component_mw = get_component_middleware(registry, Button)
+    component_mw = getattr(Button, COMPONENT_MIDDLEWARE_ATTR, {})
     for mw in sorted(component_mw.get("pre_resolution", []), key=lambda m: m.priority):
         result = mw(Button, result_button, container)
         assert result is not None
@@ -483,7 +489,7 @@ def test_multiple_components_with_different_middleware(registry, container) -> N
     props_button = {"label": "Submit"}
     result_button = execute_middleware(Button, props_button, container)
     assert result_button is not None
-    button_mw = get_component_middleware(registry, Button)
+    button_mw = getattr(Button, COMPONENT_MIDDLEWARE_ATTR, {})
     for mw in sorted(button_mw.get("pre_resolution", []), key=lambda m: m.priority):
         result = mw(Button, result_button, container)
         assert result is not None
@@ -493,7 +499,7 @@ def test_multiple_components_with_different_middleware(registry, container) -> N
     props_heading = {"text": "Welcome"}
     result_heading = execute_middleware(Heading, props_heading, container)
     assert result_heading is not None
-    heading_mw = get_component_middleware(registry, Heading)
+    heading_mw = getattr(Heading, COMPONENT_MIDDLEWARE_ATTR, {})
     for mw in sorted(heading_mw.get("pre_resolution", []), key=lambda m: m.priority):
         result = mw(Heading, result_heading, container)
         assert result is not None
@@ -607,7 +613,7 @@ def test_lifecycle_phase_transitions(registry) -> None:
     # Scan to register component middleware
     scan(registry, locals_dict={"TestComponent": TestComponent})
 
-    component_mw = get_component_middleware(registry, TestComponent)
+    component_mw = getattr(TestComponent, COMPONENT_MIDDLEWARE_ATTR, {})
 
     # Execute pre-resolution phase
     props = {"value": "test"}

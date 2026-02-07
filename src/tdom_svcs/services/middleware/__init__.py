@@ -6,7 +6,7 @@ For global middleware, use the top-level tdom_svcs.middleware module instead.
 
 from tdom_svcs.types import Context, Middleware
 
-from .decorators import component, get_component_middleware, register_component
+from .decorators import component, register_component
 from .exceptions import (
     ContextNotSetupError,
     MiddlewareConfigurationError,
@@ -21,7 +21,6 @@ __all__ = [
     # Decorators (per-component middleware)
     "component",
     "register_component",
-    "get_component_middleware",
     # Exceptions
     "MiddlewareError",
     "MiddlewareExecutionError",

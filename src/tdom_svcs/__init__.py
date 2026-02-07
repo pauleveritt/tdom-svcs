@@ -18,7 +18,6 @@ from tdom_svcs.scanning import scan
 from tdom_svcs.services.middleware.decorators import (
     component,
     execute_component_middleware,
-    get_component_middleware,
 )
 from tdom_svcs.types import Component
 
@@ -34,7 +33,6 @@ __all__ = [
     "execute_component_middleware",
     "execute_middleware",
     "execute_middleware_async",
-    "get_component_middleware",
     "html",
     "list_components",
     "list_middlewares",

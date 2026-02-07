@@ -94,6 +94,7 @@ def test_runtime_modification_of_class_attribute():
         result = execute_component_middleware(
             DynamicComponent, props, container, "pre_resolution"
         )
+    assert result is not None
     assert "middleware_executed" not in result
 
     # Add middleware at runtime by modifying class attribute
@@ -109,6 +110,7 @@ def test_runtime_modification_of_class_attribute():
         result = execute_component_middleware(
             DynamicComponent, props, container, "pre_resolution"
         )
+    assert result is not None
     assert result["middleware_executed"] is True
 
 
@@ -123,12 +125,16 @@ def test_no_registry_pollution():
     registry = HopscotchRegistry()
 
     # Check registry metadata before scan
-    initial_metadata_keys = set(registry._metadata.keys()) if hasattr(registry, '_metadata') else set()
+    initial_metadata_keys = (
+        set(registry._metadata.keys()) if hasattr(registry, "_metadata") else set()
+    )
 
     scan(registry, locals_dict=locals())
 
     # Check registry metadata after scan
-    final_metadata_keys = set(registry._metadata.keys()) if hasattr(registry, '_metadata') else set()
+    final_metadata_keys = (
+        set(registry._metadata.keys()) if hasattr(registry, "_metadata") else set()
+    )
 
     # Component middleware should not add any metadata keys
     # (The component itself gets registered, but not its middleware config)
@@ -168,6 +174,7 @@ def test_imperative_registration_uses_class_attribute():
         result = execute_component_middleware(
             ImperativeComponent, props, container, "pre_resolution"
         )
+    assert result is not None
     assert result["middleware_executed"] is True
 
 

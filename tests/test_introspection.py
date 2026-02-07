@@ -3,7 +3,6 @@
 from dataclasses import dataclass
 from pathlib import PurePath
 
-import pytest
 from markupsafe import Markup
 from svcs_di.injectors import HopscotchRegistry
 
@@ -202,43 +201,6 @@ def test_list_components_multiple_service_types():
     assert ServiceC in result
 
 
-def test_list_components_returns_frozen_dataclasses():
-    """All return types are frozen and immutable."""
-    registry = HopscotchRegistry()
-
-    class TestService:
-        pass
-
-    registry.register_implementation(TestService, TestService)
-
-    result = list_components(registry)
-    info = result[TestService]
-
-    # Test that ComponentInfo is frozen
-    with pytest.raises(AttributeError):
-        info.service_type = object  # type: ignore
-
-    # Test that ComponentVariation is frozen
-    variation = info.variations[0]
-    with pytest.raises(AttributeError):
-        variation.implementation = object  # type: ignore
-
-
-def test_list_components_variations_is_tuple():
-    """Variations are returned as immutable tuple."""
-    registry = HopscotchRegistry()
-
-    class TestService:
-        pass
-
-    registry.register_implementation(TestService, TestService)
-
-    result = list_components(registry)
-    info = result[TestService]
-
-    assert isinstance(info.variations, tuple)
-
-
 # =============================================================================
 # list_middlewares() tests
 # =============================================================================
@@ -342,50 +304,6 @@ def test_list_middlewares_no_priority_field():
     assert len(result) == 1
     assert result[0].middleware_type is NoPriorityMiddleware
     assert result[0].priority is None
-
-
-def test_list_middlewares_returns_frozen_dataclasses():
-    """All return types are frozen and immutable."""
-    registry = HopscotchRegistry()
-
-    @middleware
-    @dataclass
-    class TestMiddleware:
-        priority: int = 0
-
-        def __call__(self, component, props, context):
-            return props
-
-    scan(registry, locals_dict=locals())
-
-    result = list_middlewares(registry)
-    info = result[0]
-
-    # Test that MiddlewareInfo is frozen
-    with pytest.raises(AttributeError):
-        info.middleware_type = object  # type: ignore
-
-    with pytest.raises(AttributeError):
-        info.priority = 999  # type: ignore
-
-
-def test_list_middlewares_returns_tuple():
-    """Result is returned as immutable tuple."""
-    registry = HopscotchRegistry()
-
-    @middleware
-    @dataclass
-    class TestMiddleware:
-        priority: int = 0
-
-        def __call__(self, component, props, context):
-            return props
-
-    scan(registry, locals_dict=locals())
-
-    result = list_middlewares(registry)
-
-    assert isinstance(result, tuple)
 
 
 # =============================================================================

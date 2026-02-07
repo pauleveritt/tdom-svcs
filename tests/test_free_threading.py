@@ -51,19 +51,6 @@ def is_free_threaded_build() -> bool:
 
 
 @pytest.mark.freethreaded
-def test_free_threaded_build_detection():
-    """Test that free-threaded build detection works correctly."""
-    result = is_free_threaded_build()
-    assert isinstance(result, bool)
-
-
-@pytest.mark.freethreaded
-def test_pytest_run_parallel_available():
-    """Test that pytest-run-parallel plugin is available."""
-    assert True
-
-
-@pytest.mark.freethreaded
 @pytest.mark.skipif(
     not is_free_threaded_build(),
     reason="Requires free-threaded Python build (python3.14t or later)",

@@ -1,41 +1,7 @@
-"""
-tdom-svcs processor module.
+"""Dependency injection processor for tdom templates.
 
-This module provides dependency injection capabilities for tdom templates
-by forking several functions from tdom.processor. The forked functions add
-`config` and `context` parameters that are threaded through the call chain.
-
-FORKED FROM TDOM (../tdom/src/tdom/processor.py):
-==================================================
-The following functions are forks of tdom originals:
-
-1. html() - Public API, adds config/context parameters
-   - Original: tdom.processor.html() (lines 448-452)
-   - Fast path delegates to tdom when no DI needed
-
-2. _resolve_t_node() - Resolves TNode tree to Node tree
-   - Original: tdom.processor._resolve_t_node() (lines 391-440)
-   - Adds config/context threading through recursion
-
-3. _substitute_and_flatten_children() - Processes child nodes
-   - Original: tdom.processor._substitute_and_flatten_children() (lines 249-255)
-   - Adds config/context threading
-
-4. _invoke_component() - Invokes component callables
-   - Original: tdom.processor._invoke_component() (lines 295-360)
-   - Major changes: DI injection logic, class/function handling
-
-5. _resolve_t_text_ref() - Resolves text references
-   - Original: tdom.processor._resolve_t_text_ref() (lines 370-388)
-   - Copied verbatim (no changes needed)
-
-REUSED FROM TDOM (no changes):
-==============================
-These functions/classes are imported directly from tdom.processor:
-- _flatten_nodes, _node_from_value, _parse_and_cache
-- _resolve_attrs, _resolve_ref, _resolve_t_attrs
-- _kebab_to_snake, format_interpolation, format_template
-- AttributesDict, CachableTemplate
+Forks several functions from tdom.processor to add config/context threading
+for DI capabilities. Delegates to tdom when no DI needed.
 """
 
 from collections.abc import Callable, Sequence

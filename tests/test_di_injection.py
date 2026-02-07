@@ -52,16 +52,13 @@ class ComplexComponent:
         return Markup(f"<div>{self.title}: User={user}, Auth={authenticated}</div>")
 
 
-def test_needs_dependency_injection_detects_inject_fields():
+def test_needs_dependency_injection():
     """Test that needs_dependency_injection correctly identifies DI components."""
     assert not needs_dependency_injection(SimpleComponent)
     assert needs_dependency_injection(ButtonWithDI)
     assert needs_dependency_injection(ComplexComponent)
 
-
-def test_needs_dependency_injection_returns_false_for_functions():
-    """Test that functions return False (they can't have Inject fields)."""
-
+    # Functions can't have Inject fields
     def some_function():
         return "test"
 

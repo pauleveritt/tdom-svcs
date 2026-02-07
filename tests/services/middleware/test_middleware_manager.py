@@ -16,16 +16,97 @@ import svcs
 from tdom_svcs import (
     execute_middleware,
     execute_middleware_async,
+    middleware,
     register_middleware,
 )
 from tdom_svcs.services.middleware import Context
+from tdom_svcs.types import Component, Middleware, Props, PropsResult
 
-from ...conftest import (
-    AsyncMiddleware,
-    DefaultPriorityMiddleware,
-    HaltingMiddleware,
-    HighPriorityMiddleware,
-    LowPriorityMiddleware,
+
+# =============================================================================
+# Tracking Middleware Factory
+# =============================================================================
+
+
+def create_tracking_middleware(
+    name: str, default_priority: int = 0, *, halt: bool = False, is_async: bool = False
+) -> type:
+    """Factory for creating middleware classes that track execution order.
+
+    Args:
+        name: Name to record in execution order tracking
+        default_priority: Middleware priority (lower = earlier)
+        halt: If True, middleware returns None to halt execution
+        is_async: If True, creates an async middleware
+
+    Returns:
+        A middleware class
+    """
+    _halt = halt
+    _name = name
+    _default_priority = default_priority
+
+    if is_async:
+
+        @dataclass
+        class AsyncTrackingMiddleware:
+            priority: int = _default_priority
+
+            async def __call__(
+                self,
+                component: Component,
+                props: Props,
+                context: Context,
+            ) -> PropsResult:
+                if _halt:
+                    return None
+                props[_name] = True
+                if "_execution_order" not in props:
+                    props["_execution_order"] = []
+                props["_execution_order"].append(_name)
+                return props
+
+        AsyncTrackingMiddleware.__name__ = f"{_name.title()}Middleware"
+        return AsyncTrackingMiddleware
+    else:
+
+        @dataclass
+        class TrackingMiddleware(Middleware):
+            priority: int = _default_priority
+
+            def __call__(
+                self,
+                component: Component,
+                props: Props,
+                context: Context,
+            ) -> PropsResult:
+                if _halt:
+                    return None
+                props[_name] = True
+                if "_execution_order" not in props:
+                    props["_execution_order"] = []
+                props["_execution_order"].append(_name)
+                return props
+
+        TrackingMiddleware.__name__ = f"{_name.title()}Middleware"
+        return TrackingMiddleware
+
+
+# Pre-built middleware classes for tests
+LowPriorityMiddleware = middleware(
+    create_tracking_middleware("low", default_priority=-10)
+)
+DefaultPriorityMiddleware = middleware(
+    create_tracking_middleware("default", default_priority=0)
+)
+HighPriorityMiddleware = middleware(
+    create_tracking_middleware("high", default_priority=10)
+)
+HaltingMiddleware = middleware(
+    create_tracking_middleware("halt", default_priority=0, halt=True)
+)
+AsyncMiddleware = middleware(
+    create_tracking_middleware("async", default_priority=5, is_async=True)
 )
 
 
@@ -63,7 +144,7 @@ class TestRegisterAndExecute:
         # Register custom factory first
         registry.register_factory(
             DefaultPriorityMiddleware,
-            lambda: DefaultPriorityMiddleware(priority=99),
+            lambda: DefaultPriorityMiddleware(priority=99),  # ty: ignore[missing-argument, unknown-argument]
         )
 
         # Call register_middleware - should NOT overwrite the custom factory
@@ -107,13 +188,13 @@ class TestRegisterAndExecute:
     def test_halt_on_none(self, registry, container):
         """Test execution halts when middleware returns None."""
         registry.register_factory(
-            LowPriorityMiddleware, lambda: LowPriorityMiddleware(priority=-10)
+            LowPriorityMiddleware, lambda: LowPriorityMiddleware(priority=-10)  # ty: ignore[missing-argument, unknown-argument]
         )
         registry.register_factory(
-            HaltingMiddleware, lambda: HaltingMiddleware(priority=0)
+            HaltingMiddleware, lambda: HaltingMiddleware(priority=0)  # ty: ignore[missing-argument, unknown-argument]
         )
         registry.register_factory(
-            HighPriorityMiddleware, lambda: HighPriorityMiddleware(priority=10)
+            HighPriorityMiddleware, lambda: HighPriorityMiddleware(priority=10)  # ty: ignore[missing-argument, unknown-argument]
         )
 
         register_middleware(registry, LowPriorityMiddleware)
@@ -171,11 +252,11 @@ class TestAsyncMiddleware:
     async def test_async_middleware(self, registry, container):
         """Test execution with async middleware using anyio."""
         registry.register_factory(
-            LowPriorityMiddleware, lambda: LowPriorityMiddleware(priority=-10)
+            LowPriorityMiddleware, lambda: LowPriorityMiddleware(priority=-10)  # ty: ignore[missing-argument, unknown-argument]
         )
-        registry.register_factory(AsyncMiddleware, lambda: AsyncMiddleware(priority=5))
+        registry.register_factory(AsyncMiddleware, lambda: AsyncMiddleware(priority=5))  # ty: ignore[missing-argument, unknown-argument]
         registry.register_factory(
-            HighPriorityMiddleware, lambda: HighPriorityMiddleware(priority=10)
+            HighPriorityMiddleware, lambda: HighPriorityMiddleware(priority=10)  # ty: ignore[missing-argument, unknown-argument]
         )
 
         register_middleware(registry, LowPriorityMiddleware)

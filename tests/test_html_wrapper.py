@@ -5,82 +5,61 @@ These tests verify that html() accepts optional config and context parameters
 while maintaining backward compatibility.
 """
 
-from collections.abc import Mapping
 from dataclasses import dataclass
 
+import pytest
 
 from tdom_svcs import html
 
 
-def test_html_without_parameters():
-    """Test that html() works without config and context parameters (backward compatibility)."""
-    node = html(t"<div>Hello</div>")
-    assert str(node) == "<div>Hello</div>"
+@dataclass
+class MockConfig:
+    """Mock config for testing."""
 
-    # Also test with more complex template
+    pass
+
+
+@pytest.mark.parametrize(
+    ("template", "expected", "config", "context"),
+    [
+        # Basic backward compatibility
+        (t"<div>Hello</div>", "<div>Hello</div>", None, None),
+        # With config only
+        (t"<div>Hello</div>", "<div>Hello</div>", MockConfig(), None),
+        # With context only
+        (t"<div>Hello</div>", "<div>Hello</div>", None, {"key": "value"}),
+        # With both config and context
+        (
+            t"<div>Hello</div>",
+            "<div>Hello</div>",
+            MockConfig(),
+            {"key": "value"},
+        ),
+        # Nested elements
+        (
+            t"<div><p>Nested</p><span>Content</span></div>",
+            "<div><p>Nested</p><span>Content</span></div>",
+            MockConfig(),
+            {"key": "value"},
+        ),
+    ],
+)
+def test_html_with_config_and_context(template, expected, config, context):
+    """Test html() with various combinations of config and context parameters."""
+    if config is None and context is None:
+        node = html(template)
+    elif config is not None and context is None:
+        node = html(template, config=config)
+    elif config is None and context is not None:
+        node = html(template, context=context)
+    else:
+        node = html(template, config=config, context=context)
+
+    assert str(node) == expected
+
+
+def test_html_with_interpolation():
+    """Test that html() works with template interpolation."""
     name = "World"
     node = html(t"<p>Hello, {name}!</p>")
     assert str(node) == "<p>Hello, World!</p>"
-
-
-def test_html_accepts_config_parameter():
-    """Test that html() accepts config parameter."""
-
-    @dataclass
-    class MockConfig:
-        pass  # Config can have custom attributes
-
-    mock_config = MockConfig()
-
-    # Should accept config without error
-    node = html(t"<div>Hello</div>", config=mock_config)
-    assert str(node) == "<div>Hello</div>"
-
-
-def test_html_accepts_context_parameter():
-    """Test that html() accepts context parameter."""
-    mock_context: Mapping[str, object] = {"key": "value"}
-
-    # Should accept context without error
-    node = html(t"<div>Hello</div>", context=mock_context)
-    assert str(node) == "<div>Hello</div>"
-
-
-def test_html_accepts_both_config_and_context():
-    """Test that html() accepts both config and context parameters."""
-
-    @dataclass
-    class MockConfig:
-        pass  # Config can have custom attributes
-
-    mock_config = MockConfig()
-    mock_context: Mapping[str, object] = {"key": "value"}
-
-    # Should accept both parameters without error
-    node = html(t"<div>Hello</div>", config=mock_config, context=mock_context)
-    assert str(node) == "<div>Hello</div>"
-
-
-def test_html_with_explicit_none():
-    """Test that html() accepts explicit None for config and context."""
-    node = html(t"<div>Test</div>", config=None, context=None)
-    assert str(node) == "<div>Test</div>"
-
-
-def test_html_with_nested_elements():
-    """Test that html() works with nested elements."""
-
-    @dataclass
-    class MockConfig:
-        pass  # Config can have custom attributes
-
-    mock_config = MockConfig()
-    mock_context: Mapping[str, object] = {"key": "value"}
-
-    # Nested elements should process without error
-    node = html(
-        t"<div><p>Nested</p><span>Content</span></div>",
-        config=mock_config,
-        context=mock_context,
-    )
-    assert str(node) == "<div><p>Nested</p><span>Content</span></div>"

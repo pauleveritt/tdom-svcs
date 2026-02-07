@@ -97,7 +97,9 @@ class middleware(injectable):
         else:
             merged_categories = (MIDDLEWARE_CATEGORY,)
 
-        return super().__new__(cls, target=target, categories=merged_categories, **kwargs)
+        return super().__new__(
+            cls, target=target, categories=merged_categories, **kwargs
+        )
 
     def __init__(self, target=None, *, categories=None, **kwargs):
         """No-op init - categories already handled in __new__."""

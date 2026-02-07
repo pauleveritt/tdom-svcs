@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 
+import pytest
 from markupsafe import Markup
 from svcs_di import Inject
 from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
@@ -41,33 +42,30 @@ class SpanishGreeting(Greeting):
         return Markup(f"<h1>Hola {user}!</h1>")
 
 
-def test_get_implementation_returns_registered_impl():
-    """Test _get_implementation returns the registered implementation."""
-    registry = HopscotchRegistry()
-    registry.register_value(DatabaseService, DatabaseService())
-    registry.register_implementation(Greeting, FrenchGreeting)
-
-    with HopscotchContainer(registry) as container:
-        impl = _get_implementation(container, Greeting)
-        assert impl is FrenchGreeting
-
-
-def test_get_implementation_returns_original_when_no_override():
-    """Test _get_implementation returns original class when no override registered."""
+@pytest.mark.parametrize(
+    ("setup_override", "expected"),
+    [
+        (True, "FrenchGreeting"),  # With override registered
+        (False, "Greeting"),  # No override registered
+    ],
+)
+def test_get_implementation_with_container(setup_override, expected):
+    """Test _get_implementation with container context."""
     registry = HopscotchRegistry()
     registry.register_value(DatabaseService, DatabaseService())
 
+    if setup_override:
+        registry.register_implementation(Greeting, FrenchGreeting)
+
     with HopscotchContainer(registry) as container:
         impl = _get_implementation(container, Greeting)
-        assert impl is Greeting
+        assert impl.__name__ == expected
 
 
-def test_get_implementation_returns_original_for_non_container():
-    """Test _get_implementation returns original class for non-DI contexts."""
-    impl = _get_implementation({"not": "a container"}, Greeting)
-    assert impl is Greeting
-
-    impl = _get_implementation(None, Greeting)
+@pytest.mark.parametrize("context", [{"not": "a container"}, None])
+def test_get_implementation_without_container(context):
+    """Test _get_implementation returns original for non-DI contexts."""
+    impl = _get_implementation(context, Greeting)
     assert impl is Greeting
 
 

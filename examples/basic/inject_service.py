@@ -8,48 +8,14 @@ This example demonstrates:
 - Component injection with Inject[] markers
 """
 
-from dataclasses import dataclass, field
-from typing import TypedDict
+from dataclasses import dataclass
 
 from svcs import Container, Registry
 from svcs_di import Inject, auto
 from tdom import Node
 
+from examples.common import Database as BaseDatabase, Request, UserDict
 from tdom_svcs import html
-
-
-@dataclass
-class Request:
-    """Imagine a route of /user/{user_id}"""
-
-    user_id: str
-
-
-class UserDict(TypedDict):
-    id: int
-    name: str
-    role: str
-
-
-type UsersDict = dict[int, UserDict]
-
-DEFAULT_USERS: UsersDict = {
-    1: {"id": 1, "name": "Alice", "role": "admin"},
-    2: {"id": 2, "name": "Bob", "role": "user"},
-    3: {"id": 3, "name": "Charlie", "role": "guest"},
-}
-
-
-# The underlying service
-@dataclass
-class Database:
-    """Example database service that can be injected using Inject[Database]."""
-
-    users: UsersDict = field(init=False)
-
-    def __post_init__(self) -> None:
-        """Populate the users key in the dict."""
-        self.users = DEFAULT_USERS.copy()
 
 
 # A service that depends on the database
@@ -58,7 +24,7 @@ class Users:
     """Service that depends on Database."""
 
     request: Inject[Request]
-    db: Inject[Database]
+    db: Inject[BaseDatabase]
 
     def get_current_user(self) -> UserDict:
         """Use the info on the container to get the current UserDict"""
@@ -92,7 +58,7 @@ def main() -> str:
     # Set up the service registry
     registry = Registry()
 
-    registry.register_factory(Database, Database)
+    registry.register_factory(BaseDatabase, BaseDatabase)
     # User registration using auto(User) to wrap
     registry.register_factory(Users, auto(Users))
 

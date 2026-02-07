@@ -15,33 +15,31 @@ from .conftest import DatabaseService
 # Test is_di_container helper
 
 
-def test_is_di_container_rejects_plain_dict():
-    """Plain dict should not be considered a DI container."""
-    d = {"foo": "bar"}
-    assert not is_di_container(d)
+class CustomContainer:
+    """Custom container for testing."""
+
+    def get(self, service_type: type):
+        return service_type()
 
 
-def test_is_di_container_accepts_hopscotch_container():
+@pytest.mark.parametrize(
+    ("obj", "expected"),
+    [
+        ({"foo": "bar"}, False),  # Plain dict
+        (None, False),  # None value
+        (CustomContainer(), True),  # Custom container
+    ],
+)
+def test_is_di_container(obj, expected):
+    """Test is_di_container with various inputs."""
+    assert is_di_container(obj) == expected
+
+
+def test_is_di_container_with_hopscotch():
     """HopscotchContainer should be recognized as a DI container."""
     registry = HopscotchRegistry()
     with HopscotchContainer(registry) as container:
         assert is_di_container(container)
-
-
-def test_is_di_container_accepts_custom_container():
-    """Custom class implementing DIContainer protocol should be recognized."""
-
-    class MyContainer:
-        def get(self, service_type: type):
-            return service_type()
-
-    container = MyContainer()
-    assert is_di_container(container)
-
-
-def test_is_di_container_rejects_none():
-    """None should not be a DI container."""
-    assert not is_di_container(None)
 
 
 # Test context passing to components

@@ -116,7 +116,9 @@ class component(injectable):
         else:
             merged_categories = (COMPONENT_CATEGORY,)
 
-        result = super().__new__(cls, target=target, categories=merged_categories, **kwargs)
+        result = super().__new__(
+            cls, target=target, categories=merged_categories, **kwargs
+        )
         if isinstance(result, cls):
             result._middleware_config = middleware
         return result
@@ -179,8 +181,6 @@ def register_component(
     if target not in registry._services:
         registry.register_factory(target, target)
     setattr(target, COMPONENT_MIDDLEWARE_ATTR, middleware or {})
-
-
 
 
 def execute_component_middleware(

@@ -1,51 +1,25 @@
-"""Services and components that are builtin into an application."""
+"""Services and components with @injectable wiring for override example."""
 
-from dataclasses import dataclass, field
-from typing import TypedDict
+from dataclasses import dataclass
 
 from svcs_di import Inject
-from svcs_di.injectors import injectable, HopscotchRegistry, HopscotchContainer
+from svcs_di.injectors import HopscotchContainer, HopscotchRegistry, injectable
 from tdom import Node
 
+from examples.common import Database as BaseDatabase, Request, UserDict
 from tdom_svcs import html, scan
 
 
-@dataclass
-class Request:
-    """Imagine a route of /user/{user_id}"""
-
-    user_id: str
-
-
-class UserDict(TypedDict):
-    id: int
-    name: str
-    role: str
-
-
-type UsersDict = dict[int, UserDict]
-
-DEFAULT_USERS: UsersDict = {
-    1: {"id": 1, "name": "Alice", "role": "admin"},
-    2: {"id": 2, "name": "Bob", "role": "user"},
-    3: {"id": 3, "name": "Charlie", "role": "guest"},
-}
-
-
-# The underlying service
+# The underlying service with @injectable
 @injectable
 @dataclass
-class Database:
+class Database(BaseDatabase):
     """Example database service that can be injected using Inject[Database]."""
 
-    users: UsersDict = field(init=False)
-
-    def __post_init__(self) -> None:
-        """Populate the users key in the dict."""
-        self.users = DEFAULT_USERS.copy()
+    pass
 
 
-# A service that depends on the database
+# A service that depends on the database with @injectable
 @injectable
 @dataclass
 class Users:

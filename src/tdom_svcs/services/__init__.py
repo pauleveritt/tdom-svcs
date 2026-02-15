@@ -1,16 +1,16 @@
 """Services for tdom-svcs integration."""
 
-from .middleware import (
-    Context,
-    Middleware,
-    component,
-    register_component,
+from .path import (
+    AssetReference,
+    ComponentLocation,
+    PathCollector,
+    PathMiddleware,
 )
 
 __all__ = [
-    # Middleware (per-component)
-    "Context",
-    "Middleware",
-    "component",
-    "register_component",
+    # Path collection
+    "AssetReference",
+    "ComponentLocation",
+    "PathCollector",
+    "PathMiddleware",
 ]

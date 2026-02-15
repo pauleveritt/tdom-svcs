@@ -1,23 +1,24 @@
 """Middleware for the aria verifier example.
 
 Demonstrates:
-- Per-component middleware (not global) via @component decorator
+- Per-target middleware (not global) via @hookable decorator
 - Middleware that inspects rendered output for accessibility issues
 - Using aria-testing to query the Node tree
 - Dependency injection with Inject[Logger]
 
-Uses @injectable for DI resolution (not @middleware - this is per-component).
+Uses @injectable for DI resolution (not @middleware - this is per-target).
 """
 
 from dataclasses import dataclass
+from typing import Any
 
 from aria_testing import query_all_by_tag_name
 from svcs_di import Inject
 from svcs_di.injectors import injectable
+from svcs_di.middleware import Props, PropsResult, Target
 from tdom import Node
 
 from examples.middleware.aria.services import Logger
-from tdom_svcs.types import Component, Context, Props, PropsResult
 
 
 # The aria verifier middleware
@@ -33,36 +34,34 @@ class AriaVerifierMiddleware:
     logger: Inject[Logger]
     priority: int = 10
 
-    def __call__(
-        self, component: Component, props: Props, context: Context
-    ) -> PropsResult:
-        component_name = getattr(component, "__name__", type(component).__name__)
+    def __call__(self, target: Target, props: Props, context: Any) -> PropsResult:
+        target_name = getattr(target, "__name__", type(target).__name__)
 
-        # Render the component to inspect its output
-        node = self._render_component(component)
+        # Render the target to inspect its output
+        node = self._render_target(target)
         if node is not None:
-            self._check_images(node, component_name)
+            self._check_images(node, target_name)
 
         return props
 
-    def _render_component(self, component: Component) -> Node | None:
-        """Render the component to get its Node output."""
+    def _render_target(self, target: Target) -> Node | None:
+        """Render the target to get its Node output."""
         try:
-            # For dataclass components, instantiate then call
-            if isinstance(component, type):
-                instance = component()
+            # For dataclass targets, instantiate then call
+            if isinstance(target, type):
+                instance = target()
                 return instance()
-            # For function components, just call
-            return component()
+            # For function targets, just call
+            return target()
         except Exception:
             # If rendering fails, skip inspection
             return None
 
-    def _check_images(self, node: Node, component_name: str) -> None:
+    def _check_images(self, node: Node, target_name: str) -> None:
         """Check all img tags for alt attributes."""
         # Use aria-testing to find all img elements
         images = query_all_by_tag_name(node, "img")
 
         for img in images:
             if "alt" not in img.attrs:
-                self.logger.warn(f"{component_name}: img missing alt attribute")
+                self.logger.warn(f"{target_name}: img missing alt attribute")

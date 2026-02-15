@@ -385,86 +385,16 @@ output = await component()  # If component() is also async
 
 ## Middleware System
 
-The **MiddlewareManager** service enables lifecycle hooks for components. Middleware can modify props, validate data, add context, log usage, or halt execution.
+tdom-svcs middleware is powered by [svcs-di's middleware framework](https://github.com/hynek/svcs-di). The generic middleware system (decorators, execution pipeline, priority ordering, async support) is provided by svcs-di.
 
-### What is Middleware?
+tdom-svcs adds tdom-specific middleware capabilities:
+- **Node tree inspection**: Middleware can render targets and inspect the resulting Node tree (e.g., for accessibility checking)
+- **Path collection**: Track component locations and asset references during rendering
+- **Container context**: Access to the DI container for rich transformations based on application state
 
-Middleware are stateless callables that execute during component resolution. They provide a clean way to handle cross-cutting concerns without cluttering component logic.
-
-**Common use cases:**
-- Logging component usage
-- Validating props before component construction
-- Adding authentication/authorization checks
-- Enriching props with contextual data
-- Error handling and recovery
-
-### Basic Middleware Pattern
-
-```python
-from dataclasses import dataclass
-from tdom_svcs.services.middleware import MiddlewareManager
-
-@dataclass
-class LoggingMiddleware:
-    priority: int = -10  # Lower numbers execute first
-
-    def __call__(self, component, props, context):
-        # Log component processing
-        print(f"Processing {component.__name__}")
-        return props  # Continue to next middleware
-
-# Register middleware
-manager = MiddlewareManager()
-manager.register_middleware(LoggingMiddleware())
-
-# Execute middleware chain
-result = manager.execute(Button, {"label": "Click"}, {})
-```
-
-### Middleware Execution Order
-
-Middleware execute in priority order:
-- **-10:** Logging, metrics (observe but don't modify)
-- **-5:** Authentication, authorization
-- **0:** Validation (check requirements)
-- **5:** Data enrichment (add context)
-- **10:** Transformation (final modifications)
-
-### Halting Execution
-
-Middleware can halt the chain by returning `None`:
-
-```python
-@dataclass
-class ValidationMiddleware:
-    priority: int = 0
-
-    def __call__(self, component, props, context):
-        if "required_field" not in props:
-            print("Validation failed")
-            return None  # Halt - no more middleware runs
-        return props  # Continue
-```
-
-### Async Middleware Support
-
-Middleware with async `__call__` are automatically detected:
-
-```python
-@dataclass
-class AsyncAuthMiddleware:
-    priority: int = -5
-
-    async def __call__(self, component, props, context):
-        # Async permission check
-        await check_user_permissions()
-        return props
-
-# Use execute_async() for async middleware
-result = await manager.execute_async(Button, props, context)
-```
-
-For complete documentation and working examples, see {doc}`services/middleware`.
+For complete middleware documentation, see:
+- {doc}`services/middleware` - tdom-specific middleware patterns
+- [svcs-di middleware docs](https://github.com/hynek/svcs-di) - Core middleware system
 
 ## Component Override Patterns
 

@@ -1,6 +1,6 @@
 # Services
 
-The services system in tdom-svcs provides foundational functionality for dependency injection, middleware execution, and introspection.
+The services system in tdom-svcs provides foundational functionality for dependency injection, middleware execution (powered by svcs-di), and introspection.
 
 ## Overview
 
@@ -13,22 +13,25 @@ tdom-svcs extends the [svcs](https://svcs.hynek.me/) service locator pattern wit
 
 ## Core Services
 
-### Middleware Manager
+### Middleware System
 
-The middleware system enables cross-cutting concerns in your application:
+The middleware system (from svcs-di) enables cross-cutting concerns. tdom-svcs adds tdom-specific middleware for Node tree inspection:
 
 ```python
-from tdom_svcs import register_middleware, execute_middleware
+from tdom_svcs import middleware, execute_middleware
 
-# Register middleware
-register_middleware(registry, LoggingMiddleware)
-register_middleware(registry, SecurityMiddleware)
+# Global middleware
+@middleware
+class LoggingMiddleware:
+    priority: int = 0
+    def __call__(self, target, props, context):
+        return props
 
 # Execute middleware chain
-props = execute_middleware(MyComponent, props, container)
+props = execute_middleware(MyTarget, props, container)
 ```
 
-{doc}`middleware` - Complete middleware documentation
+{doc}`middleware` - tdom-specific middleware patterns and [svcs-di middleware docs](https://github.com/hynek/svcs-di)
 
 ### Registry Introspection
 

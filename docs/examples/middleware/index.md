@@ -1,40 +1,31 @@
 # Middleware Examples
 
-Middleware allows you to intercept and modify component rendering, adding cross-cutting concerns like logging, caching, or authentication checks.
+tdom-svcs middleware enables operating on rendered Node trees for tdom-specific use cases like accessibility checking and path collection.
 
 ## Overview
 
-These examples demonstrate the middleware system through progressive complexity:
+For general middleware concepts (chain execution, priority ordering, dependencies, etc.), see the [svcs-di middleware documentation](https://github.com/hynek/svcs-di).
+
+These examples demonstrate **tdom-specific** middleware patterns:
 
 | Example | Description |
 |---------|-------------|
-| [Basic](basic_middleware) | Chain execution, priority ordering, halting |
-| [Dependencies](dependencies) | Middleware with injected services, testing with fakes |
-| [Error Handling](error_handling) | Exception handling, fallback rendering, circuit breaker |
-| [Scoping](scoping) | Global vs per-component middleware, async support |
-| [Aria](aria) | Accessibility validation, warning collection |
-| [Path](path) | Path-based middleware for asset collection |
+| [Aria](aria) | Accessibility validation using aria-testing to inspect Node trees |
+| [Path](path) | Path collection middleware for tracking components and assets |
 
-## Key Concepts
+## Key tdom Patterns
 
-**Chain Execution:** Middleware execute in sequence, each receiving the props from the previous middleware and passing them to the next.
+**Node Tree Inspection:** Middleware can render targets and inspect the resulting Node tree using tools like aria-testing.
 
-**Priority Ordering:** Lower priority numbers run first (-10 before 0 before 10). Use negative numbers for early middleware (logging) and positive for late (transformation).
+**Container Context:** Middleware receives the DI container, enabling access to services like loggers, configuration, and application state.
 
-**Halting:** Any middleware can halt the chain by returning `None`. This is useful for validation or authorization checks.
-
-**Service Integration:** Middleware can depend on services via factory functions and `register_middleware()`.
+**Per-Target Middleware:** Use `@hookable` to attach middleware to specific targets, executing only when those targets are processed.
 
 ## Running Examples
 
 All examples can be run directly:
 
 ```bash
-# Using uv
-uv run python -m examples.middleware.basic.app
-uv run python -m examples.middleware.dependencies.app
-uv run python -m examples.middleware.error_handling.app
-uv run python -m examples.middleware.scoping.app
 uv run python -m examples.middleware.aria.app
 uv run python -m examples.middleware.path.app
 ```
@@ -43,10 +34,6 @@ uv run python -m examples.middleware.path.app
 :hidden:
 :maxdepth: 1
 
-basic_middleware
-dependencies
-error_handling
-scoping
 aria
 path
 ```

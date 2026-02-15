@@ -1,13 +1,13 @@
 # Additional Categories
 
-Both `@middleware` and `@component` decorators (and their imperative counterparts) support additional categories for organizing and filtering your middleware and components.
+Both `@middleware` and `@hookable` decorators (and their imperative counterparts) support additional categories for organizing and filtering your middleware and hookable targets.
 
 ## Overview
 
-Every middleware automatically gets the `"middleware"` category, and every component gets the `"component"` category. You can add additional categories to tag items for:
+Every middleware automatically gets the `"middleware"` category, and every hookable target gets the `"hookable"` category. You can add additional categories to tag items for:
 
 - **Organization**: Group related items together
-- **Filtering**: Query subsets of middleware/components
+- **Filtering**: Query subsets of middleware/hookables
 - **Dynamic Configuration**: Build menus or features based on categories
 - **Separation of Concerns**: Tag items by purpose (security, logging, etc.)
 
@@ -23,7 +23,7 @@ from tdom_svcs import middleware
 @dataclass
 class LoggingMiddleware:
     priority: int = 0
-    def __call__(self, component, props, context):
+    def __call__(self, target, props, context):
         return props
 
 # With additional categories
@@ -31,31 +31,31 @@ class LoggingMiddleware:
 @dataclass
 class AuthMiddleware:
     priority: int = -10
-    def __call__(self, component, props, context):
+    def __call__(self, target, props, context):
         # Categories: ("middleware", "security", "auth")
         return props
 ```
 
-### Component
+### Hookable
 
 ```python
-from tdom_svcs import component
+from tdom_svcs import hookable
 
-# Basic usage - only "component" category
-@component
+# Basic usage - only "hookable" category
+@hookable
 @dataclass
 class Button:
     label: str = "Click"
 
 # With additional categories
-@component(categories=["page", "admin"])
+@hookable(categories=["page", "admin"])
 @dataclass
 class AdminDashboard:
-    # Categories: ("component", "page", "admin")
+    # Categories: ("hookable", "page", "admin")
     title: str = "Admin"
 
 # With both middleware config and categories
-@component(
+@hookable(
     middleware={"pre_resolution": [AuthMiddleware]},
     categories=["page", "protected"]
 )
@@ -84,23 +84,23 @@ register_middleware(
 # Categories: ("middleware", "security", "compliance")
 ```
 
-### Register Component
+### Register Hookable
 
 ```python
-from tdom_svcs.services.middleware import register_component
+from tdom_svcs import register_hookable
 
-# Basic registration - only "component" category
-register_component(registry, Button)
+# Basic registration - only "hookable" category
+register_hookable(registry, Button)
 
 # With additional categories
-register_component(
+register_hookable(
     registry,
     AdminPage,
     categories=["page", "admin"]
 )
 
 # With middleware config and categories
-register_component(
+register_hookable(
     registry,
     SecurePage,
     middleware={"pre_resolution": [AuthMiddleware]},
@@ -115,7 +115,7 @@ Once items are registered with categories, you can query them:
 ```python
 # List all category names in the registry
 all_categories = registry.list_categories()
-# Returns: ["middleware", "component", "security", "page", ...]
+# Returns: ["middleware", "hookable", "security", "page", ...]
 
 # Get all items in a specific category
 security_items = list(registry.get_by_category("security"))
@@ -222,7 +222,7 @@ print(f"  Security middleware: {len(security_items)}")
 - `error-handling`, `retry`, `timeout`
 - `debug`, `development`, `testing`
 
-**Component Categories:**
+**Hookable Target Categories:**
 - `page`, `widget`, `layout`, `container`
 - `admin`, `public`, `protected`, `restricted`
 - `interactive`, `display`, `form`, `input`
@@ -230,14 +230,11 @@ print(f"  Security middleware: {len(security_items)}")
 
 ## Examples
 
-See `examples/categories/` for complete working examples:
-
-- `organizing_with_categories.py` - Decorator approach with querying
-- `imperative_categories.py` - Imperative registration with categories
+See `examples/categories/` for complete working examples demonstrating both decorator and imperative approaches.
 
 ## See Also
 
 - {doc}`services/middleware` - Middleware system documentation
-- {doc}`core_concepts` - Component concepts and patterns
+- {doc}`core_concepts` - Core concepts and patterns
 - {doc}`examples/categories/index` - Category examples
 - [svcs-di Categories](https://github.com/hynek/svcs-di) - Upstream category system

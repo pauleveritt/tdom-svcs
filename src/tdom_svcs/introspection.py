@@ -24,8 +24,7 @@ from dataclasses import dataclass
 from pathlib import PurePath
 from typing import Any
 
-from tdom_svcs.middleware import get_middleware_types
-from tdom_svcs.types import AnyMiddleware
+from svcs_di.middleware import AnyMiddleware, get_middleware_types
 
 
 @dataclass(frozen=True)
@@ -128,10 +127,12 @@ def list_components(registry: Any) -> dict[type, ComponentInfo]:
         True
     """
     locator = registry.locator
+    type_map = locator.as_type_map()
     result: dict[type, list[ComponentVariation]] = {}
 
-    # Process single registrations (fast path)
-    for service_type, reg in locator._single_registrations.items():
+    # Iterate through all registrations in the TypeMap
+    # TypeMap stores entries keyed by (service_type, implementation)
+    for (service_type, _impl), reg in type_map._entries.items():
         if service_type not in result:
             result[service_type] = []
         variation = ComponentVariation(
@@ -140,18 +141,6 @@ def list_components(registry: Any) -> dict[type, ComponentInfo]:
             location=reg.location,
         )
         result[service_type].append(variation)
-
-    # Process multiple registrations (scoring path)
-    for service_type, regs in locator._multi_registrations.items():
-        if service_type not in result:
-            result[service_type] = []
-        for reg in regs:
-            variation = ComponentVariation(
-                implementation=reg.implementation,
-                resource=reg.resource,
-                location=reg.location,
-            )
-            result[service_type].append(variation)
 
     # Convert to ComponentInfo with tuples
     return {
@@ -166,8 +155,8 @@ def list_components(registry: Any) -> dict[type, ComponentInfo]:
 def list_middlewares(registry: Any) -> tuple[MiddlewareInfo, ...]:
     """List all registered global middleware types in the registry.
 
-    Inspects the registry's middleware metadata to extract all registered
-    middleware types with their priorities.
+    Uses svcs_di's get_middleware_types() to find all middleware
+    registered with the "middleware" category.
 
     Args:
         registry: HopscotchRegistry to inspect.
@@ -204,7 +193,7 @@ def list_middlewares(registry: Any) -> tuple[MiddlewareInfo, ...]:
         # Extract default priority from dataclass field if available
         priority = None
         if hasattr(mw_type, "__dataclass_fields__"):
-            priority_field = mw_type.__dataclass_fields__.get("priority")
+            priority_field = mw_type.__dataclass_fields__.get("priority")  # ty: ignore[unresolved-attribute]
             if priority_field is not None and priority_field.default is not None:
                 priority = priority_field.default
 

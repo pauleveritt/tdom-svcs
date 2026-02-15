@@ -3,7 +3,7 @@
 Demonstrates:
 - Component with proper accessibility (alt attribute)
 - Component missing accessibility (no alt attribute)
-- Using @component decorator to attach per-component middleware
+- Using @hookable decorator to attach per-target middleware
 """
 
 from dataclasses import dataclass
@@ -11,11 +11,11 @@ from dataclasses import dataclass
 from tdom import Node
 
 from examples.middleware.aria.middleware import AriaVerifierMiddleware
-from tdom_svcs import component, html
+from tdom_svcs import hookable, html
 
 
-# ImageWithAlt component with per-component middleware
-@component(middleware={"rendering": [AriaVerifierMiddleware]})
+# ImageWithAlt component with per-target middleware
+@hookable(middleware={"rendering": [AriaVerifierMiddleware]})
 @dataclass
 class ImageWithAlt:
     """Component with proper alt attribute."""
@@ -24,7 +24,7 @@ class ImageWithAlt:
         return html(t'<div><img src="photo.jpg" alt="A photo"></div>')
 
 
-@component(middleware={"rendering": [AriaVerifierMiddleware]})
+@hookable(middleware={"rendering": [AriaVerifierMiddleware]})
 @dataclass
 class ImageWithoutAlt:
     """Component missing alt attribute - will trigger warning."""

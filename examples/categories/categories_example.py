@@ -1,8 +1,8 @@
 """Example: Using categories with decorator and imperative approaches.
 
 This example demonstrates:
-- Using @middleware and @component decorators with additional categories
-- Imperative registration with register_middleware() and register_component()
+- Using @middleware and @hookable decorators with additional categories
+- Imperative registration with register_middleware() and register_hookable()
 - Querying items by category
 - Building organizational structures with categories
 """
@@ -11,8 +11,7 @@ from dataclasses import dataclass
 
 from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
 
-from tdom_svcs import component, middleware, register_middleware, scan
-from tdom_svcs.services.middleware import register_component
+from tdom_svcs import hookable, middleware, register_hookable, register_middleware, scan
 
 
 # =============================================================================
@@ -27,7 +26,7 @@ class AuthenticationMiddleware:
 
     priority: int = -20
 
-    def __call__(self, component, props, context):
+    def __call__(self, target, props, context):
         props["authenticated"] = True
         return props
 
@@ -39,12 +38,12 @@ class ValidationMiddleware:
 
     priority: int = -10
 
-    def __call__(self, component, props, context):
+    def __call__(self, target, props, context):
         props["validated"] = True
         return props
 
 
-@component(categories=["page", "admin"])
+@hookable(categories=["page", "admin"])
 @dataclass
 class AdminDashboard:
     """Admin dashboard page - tagged as page and admin."""
@@ -52,7 +51,7 @@ class AdminDashboard:
     title: str = "Admin Dashboard"
 
 
-@component(categories=["widget", "interactive"])
+@hookable(categories=["widget", "interactive"])
 @dataclass
 class Button:
     """Interactive button widget - tagged as widget and interactive."""
@@ -71,14 +70,14 @@ class AuditMiddleware:
 
     priority: int = 0
 
-    def __call__(self, component, props, context):
+    def __call__(self, target, props, context):
         props["audited"] = True
         return props
 
 
 @dataclass
 class PublicPage:
-    """A public page component - registered imperatively."""
+    """A public page - registered imperatively."""
 
     title: str = "Public Area"
 
@@ -98,7 +97,7 @@ def main() -> list[str]:
 
     # Register additional items imperatively
     register_middleware(registry, AuditMiddleware, categories=["audit", "compliance"])
-    register_component(registry, PublicPage, categories=["page", "public"])
+    register_hookable(registry, PublicPage, categories=["page", "public"])
 
     # List all categories
     all_categories = sorted(registry.list_categories())
@@ -111,12 +110,12 @@ def main() -> list[str]:
     security_middleware = list(registry.get_by_category("security"))
     results.append(f"Security middleware: {[m.__name__ for m in security_middleware]}")
 
-    # Query components
-    all_components = list(registry.get_by_category("component"))
-    results.append(f"Total components: {len(all_components)}")
+    # Query hookables
+    all_hookables = list(registry.get_by_category("hookable"))
+    results.append(f"Total hookables: {len(all_hookables)}")
 
-    page_components = list(registry.get_by_category("page"))
-    results.append(f"Page components: {[c.__name__ for c in page_components]}")
+    page_items = list(registry.get_by_category("page"))
+    results.append(f"Page items: {[c.__name__ for c in page_items]}")
 
     # Check specific item categories
     auth_categories = sorted(registry.get_categories(AuthenticationMiddleware))

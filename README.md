@@ -120,43 +120,34 @@ and [location](examples/hopscotch/location/) examples.
 
 ## Middleware
 
-Middleware intercepts component processing for cross-cutting concerns. Each middleware receives the component, its
-props, and the context—then returns modified props (or `None` to halt rendering).
+tdom-svcs middleware is powered by [svcs-di's middleware framework](https://github.com/hynek/svcs-di). Each middleware receives the target, its props, and the context—then returns modified props (or `None` to halt execution).
 
-Middleware can be **global** (runs for all components) or **per-component** (attached to specific components).
-Middleware can also inject services to help do their job.
-
-Use cases include validation, logging, and asset collection:
+tdom-svcs adds **tdom-specific middleware** for operating on Node trees:
 
 ```python
+from svcs_di import Inject, injectable
+from svcs_di.middleware import Props, PropsResult, Target
+from typing import Any
+
 @middleware
 @dataclass
-class HtmlValidator:
-    validator: Inject[ValidatorService]  # Injected service
-    priority: int = 100  # Runs late, after rendering
+class AriaValidator:
+    logger: Inject[Logger]
+    priority: int = 10
 
-    def __call__(self, component, props, context):
-        # Validate HTML output for accessibility
-        self.validator.check(props.get("result"))
+    def __call__(self, target: Target, props: Props, context: Any) -> PropsResult:
+        # Render target and inspect Node tree for accessibility
+        node = self._render(target)
+        # Check for missing alt attributes, etc.
         return props
 ```
 
-```python
-@middleware
-@dataclass
-class AssetRewriter:
-    assets: Inject[AssetService]
-    priority: int = 50
+Use cases include:
+- **Accessibility checking** - Inspect rendered nodes for ARIA issues
+- **Path collection** - Track component locations and asset references
+- **Link validation** - Verify internal links point to valid routes
 
-    def __call__(self, component, props, context):
-        # Rewrite static asset paths for CDN
-        if "src" in props:
-            props["src"] = self.assets.cdn_url(props["src"])
-        return props
-```
-
-See the [aria](examples/middleware/aria/), [path](examples/middleware/path/),
-and [dependencies](examples/middleware/dependencies/) examples.
+See the [aria](examples/middleware/aria/) and [path](examples/middleware/path/) examples.
 
 ## Quick Start
 

@@ -20,10 +20,12 @@ All tests are marked with @pytest.mark.freethreaded and require a free-threaded 
 import sysconfig
 import threading
 from dataclasses import dataclass
+from typing import Any
 
 import pytest
 from svcs_di.auto import Inject
 from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
+from svcs_di.middleware import Props, PropsResult, Target
 
 from tdom_svcs import (
     execute_middleware,
@@ -31,7 +33,6 @@ from tdom_svcs import (
     middleware,
     scan,
 )
-from tdom_svcs.types import Component, Context, Props, PropsResult
 
 
 # ============================================================================
@@ -196,7 +197,7 @@ def test_middleware_concurrent_registration():
                 priority: int = worker_id
 
                 def __call__(
-                    self, component: Component, props: Props, context: Context
+                    self, target: Target, props: Props, context: Any
                 ) -> PropsResult:
                     return props
 
@@ -226,9 +227,7 @@ def test_middleware_concurrent_execution():
     class CountingMiddleware:
         priority: int = 0
 
-        def __call__(
-            self, component: Component, props: Props, context: Context
-        ) -> PropsResult:
+        def __call__(self, target: Target, props: Props, context: Any) -> PropsResult:
             props = dict(props)
             props["processed"] = True
             return props
@@ -284,7 +283,7 @@ def test_middleware_decorator_concurrent_application():
                 priority: int = worker_id
 
                 def __call__(
-                    self, component: Component, props: Props, context: Context
+                    self, target: Target, props: Props, context: Any
                 ) -> PropsResult:
                     return props
 
@@ -325,7 +324,7 @@ def test_scan_concurrent_operations():
                 priority: int = worker_id
 
                 def __call__(
-                    self, component: Component, props: Props, context: Context
+                    self, target: Target, props: Props, context: Any
                 ) -> PropsResult:
                     return props
 
@@ -366,7 +365,7 @@ def test_scan_and_execute_concurrent():
                 priority: int = 0
 
                 def __call__(
-                    self, component: Component, props: Props, context: Context
+                    self, target: Target, props: Props, context: Any
                 ) -> PropsResult:
                     props = dict(props)
                     props["worker"] = worker_id

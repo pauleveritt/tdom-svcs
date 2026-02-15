@@ -67,6 +67,12 @@
     a recent commit `Add registry introspection helpers`. See how the work in `svcs-di` injectable categories could
     change that commit and any other part of this project. `M`
 
+13. [ ] Reduce Middleware to tdom-Specific Concerns — svcs-di now has its own middleware implementation. Refactor
+    tdom-svcs to remove generic middleware functionality that's now in svcs-di, keeping only the tdom-specific
+    integration code. Remove redundant code, tests, examples, and documentation. Update remaining docs to reference
+    svcs-di middleware where appropriate. Focus on the unique value-add: how tdom components integrate with svcs-di
+    middleware hooks during HTML rendering. `M`
+
 ## Phase 5: Performance & Developer Experience
 
 14. [ ] Testing Utilities and Mock Injection — Create testing helpers for injecting mock services, implement test

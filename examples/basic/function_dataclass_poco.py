@@ -11,7 +11,7 @@ This example demonstrates:
 from dataclasses import InitVar, dataclass, field
 from typing import TypedDict
 
-from tdom import Node
+from markupsafe import Markup
 
 from tdom_svcs import html
 
@@ -28,7 +28,7 @@ class Greeting2:
     def __post_init__(self, context: MyContext) -> None:
         self.user = context["user"]
 
-    def __call__(self) -> Node:
+    def __call__(self) -> str | Markup:
         return html(t"<h1>Hello {self.user}!</h1>")
 
 
@@ -40,11 +40,11 @@ class Greeting3:
         self.context = context
         self.user = context["user"]
 
-    def __call__(self) -> Node:
+    def __call__(self) -> str | Markup:
         return html(t"<h1>Hello {self.user}!</h1>")
 
 
-def Greeting1(context: MyContext) -> Node:
+def Greeting1(context: MyContext) -> str | Markup:
     """Use the request context to grab some info."""
     user = context.get("user", "Unknown")
     return html(t"<h1>Hello {user}!</h1>")

@@ -8,7 +8,7 @@ This example demonstrates:
 - Multi-resource testing (DefaultCustomer vs FrenchCustomer)
 """
 
-from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
+from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
 
 from examples.hopscotch.resource import components, services, site
 from examples.hopscotch.resource.components import Greeting

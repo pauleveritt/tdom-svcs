@@ -1,6 +1,6 @@
 """Inject a service into a service with svcs_di.auto"""
 
-from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
+from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
 
 from examples.hopscotch.app_site import app_common, site
 from examples.hopscotch.app_site.app_common import Greeting, Request

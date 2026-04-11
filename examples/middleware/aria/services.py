@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 
-from svcs_di.injectors import injectable
+from svcs_hopscotch.injectors import injectable
 
 
 @injectable

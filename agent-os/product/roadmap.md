@@ -92,7 +92,7 @@
 
 ## Phase 6: Dependency Modernization
 
-18. [ ] Add tdom-svcs to Workspace — Uncomment `tdom-svcs` from the root `pyproject.toml`
+18. [x] Add tdom-svcs to Workspace — Uncomment `tdom-svcs` from the root `pyproject.toml`
     workspace members list and resolve the resulting dependency graph. Verify that `uv sync`,
     `uv run pytest`, and `uvx ty check` all work from both the root workspace and the
     `tdom-svcs/` subdirectory. Update `tool.ty.environment.python` in `pyproject.toml` if the

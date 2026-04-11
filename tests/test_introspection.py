@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import PurePath
 
 from markupsafe import Markup
-from svcs_di.injectors import HopscotchRegistry
+from svcs_hopscotch.injectors import HopscotchRegistry
 
 from tdom_svcs import (
     ComponentInfo,
@@ -42,7 +42,7 @@ class MySQLDB(Database):
 class Greeting:
     """Greeting component."""
 
-    def __call__(self) -> Markup:
+    def __call__(self) -> str | Markup:
         return Markup("<h1>Hello</h1>")
 
 

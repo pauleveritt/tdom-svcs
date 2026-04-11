@@ -6,7 +6,7 @@ Demonstrates:
 - Rewriting relative paths to absolute paths for browser consumption
 """
 
-from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
+from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
 
 from examples.common import Request
 from examples.middleware.path import components, services

@@ -7,6 +7,7 @@ dependencies = [
     "aria-testing",
     "svcs",
     "svcs-di",
+    "svcs-hopscotch",
     "tdom",
     "ty>=0.0.21",
 ]
@@ -57,6 +58,7 @@ python = "../.venv"
 [tool.uv.sources]
 aria-testing = { workspace = true }
 svcs-di = { workspace = true }
+svcs-hopscotch = { workspace = true }
 tdom = { workspace = true }
 
 [build-system]

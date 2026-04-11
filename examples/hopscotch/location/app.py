@@ -10,7 +10,7 @@ This example demonstrates:
 
 from pathlib import PurePath
 
-from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
+from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
 
 from examples.hopscotch.location import components, services, site
 from examples.hopscotch.location.components import Greeting

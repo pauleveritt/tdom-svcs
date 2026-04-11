@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass, field
 
-from svcs_di.injectors import Resource
-from tdom import Node
+from svcs_hopscotch.injectors import Resource
+from markupsafe import Markup
 
 from examples.hopscotch.resource.resources import DefaultCustomer
 from tdom_svcs import html
@@ -20,5 +20,5 @@ class Greeting:
     def __post_init__(self) -> None:
         self.customer_name = self.customer.name
 
-    def __call__(self) -> Node:
+    def __call__(self) -> str | Markup:
         return html(t"<h1>Hello {self.customer_name}!</h1>")

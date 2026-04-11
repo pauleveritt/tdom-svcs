@@ -12,7 +12,7 @@ from dataclasses import InitVar, dataclass
 
 from svcs import Container, Registry
 from svcs_di import Inject, auto
-from tdom import Node
+from markupsafe import Markup
 
 from examples.common import Database as BaseDatabase, Request, UserDict
 from tdom_svcs import html
@@ -55,7 +55,7 @@ class Greeting:
             current_user = users.get_current_user()
             self.current_name = current_user["name"]
 
-    def __call__(self) -> Node:
+    def __call__(self) -> str | Markup:
         return html(t"<h1>Hello {self.current_name}!</h1>")
 
 

@@ -12,8 +12,8 @@ from dataclasses import dataclass, field
 from typing import TypedDict
 
 from svcs_di import Inject
-from svcs_di.injectors import injectable, HopscotchRegistry, HopscotchContainer
-from tdom import Node
+from svcs_hopscotch.injectors import injectable, HopscotchRegistry, HopscotchContainer
+from markupsafe import Markup
 
 from tdom_svcs import html, scan
 
@@ -85,7 +85,7 @@ class Greeting:
 
     users: Inject[Users]
 
-    def __call__(self) -> Node:
+    def __call__(self) -> str | Markup:
         current_user = self.users.get_current_user()
         return html(t"<h1>Hello {current_user['name']}!</h1>")
 

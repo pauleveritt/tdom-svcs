@@ -2,8 +2,8 @@
 
 from pathlib import Path, PurePosixPath
 
-from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
-from svcs_di.injectors.scanning import scan
+from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
+from svcs_hopscotch.injectors.scanning import scan
 from tdom import html
 
 from examples.middleware.path.components.body import Body

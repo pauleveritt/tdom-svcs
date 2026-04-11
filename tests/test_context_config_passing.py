@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import pytest
 from markupsafe import Markup
 from svcs_di import Inject
-from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
+from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
 
 from tdom_svcs import html
 from tdom_svcs.types import is_di_container
@@ -69,7 +69,7 @@ def test_dataclass_component_receives_context():
     class Greeting:
         name: str = "World"
 
-        def __call__(self, context=None) -> Markup:
+        def __call__(self, context=None) -> str | Markup:
             nonlocal received_context
             received_context = context
             return Markup(f"<p>Hello {self.name}</p>")
@@ -135,7 +135,7 @@ def test_dict_context_passed_but_no_di():
     class ComponentWithInject:
         db: Inject[DatabaseService]
 
-        def __call__(self, context=None) -> Markup:
+        def __call__(self, context=None) -> str | Markup:
             nonlocal received_context
             received_context = context
             return Markup(f"<p>User: {self.db.get_user()}</p>")
@@ -155,7 +155,7 @@ def test_di_still_works_with_proper_container():
     class ComponentWithInject:
         db: Inject[DatabaseService]
 
-        def __call__(self, context=None) -> Markup:
+        def __call__(self, context=None) -> str | Markup:
             nonlocal received_context
             received_context = context
             return Markup(f"<p>User: {self.db.get_user()}</p>")
@@ -217,7 +217,7 @@ def test_di_component_call_receives_context_and_children():
         db: Inject[DatabaseService]
         title: str = "Card"
 
-        def __call__(self, context=None, children: tuple = ()) -> Markup:
+        def __call__(self, context=None, children: tuple = ()) -> str | Markup:
             received["context"] = context
             received["children"] = children
             user = self.db.get_user()
@@ -245,7 +245,7 @@ def test_di_component_call_receives_context_and_children():
 def test_function_component_with_inject():
     """Function component with Inject[] gets dependencies injected."""
 
-    def Greeting(db: Inject[DatabaseService], name: str = "World") -> Markup:
+    def Greeting(db: Inject[DatabaseService], name: str = "World") -> str | Markup:
         user = db.get_user()
         return Markup(f"<p>Hello {name}, user is {user}</p>")
 
@@ -266,7 +266,7 @@ def test_function_component_with_multiple_inject():
         def get_cached(self) -> str:
             return "cached_value"
 
-    def Component(db: Inject[DatabaseService], cache: Inject[CacheService]) -> Markup:
+    def Component(db: Inject[DatabaseService], cache: Inject[CacheService]) -> str | Markup:
         return Markup(f"<p>DB: {db.get_user()}, Cache: {cache.get_cached()}</p>")
 
     registry = HopscotchRegistry()
@@ -283,7 +283,7 @@ def test_function_component_with_multiple_inject():
 def test_function_component_inject_without_container_fails():
     """Function component with Inject[] fails without DI container."""
 
-    def Greeting(db: Inject[DatabaseService]) -> Markup:
+    def Greeting(db: Inject[DatabaseService]) -> str | Markup:
         return Markup(f"<p>{db.get_user()}</p>")
 
     # Without a container, should fail because db is not injected
@@ -294,7 +294,7 @@ def test_function_component_inject_without_container_fails():
 def test_function_component_inject_with_dict_context_fails():
     """Function component with Inject[] fails with plain dict context."""
 
-    def Greeting(db: Inject[DatabaseService]) -> Markup:
+    def Greeting(db: Inject[DatabaseService]) -> str | Markup:
         return Markup(f"<p>{db.get_user()}</p>")
 
     # Plain dict doesn't trigger DI

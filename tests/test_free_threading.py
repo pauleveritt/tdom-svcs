@@ -24,8 +24,8 @@ from typing import Any
 
 import pytest
 from svcs_di.auto import Inject
-from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
-from svcs_di.middleware import Props, PropsResult, Target
+from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
+from svcs_hopscotch.middleware import Props, PropsResult, Target
 
 from tdom_svcs import (
     execute_middleware,

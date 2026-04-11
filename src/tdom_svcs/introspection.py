@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from pathlib import PurePath
 from typing import Any
 
-from svcs_di.middleware import AnyMiddleware, get_middleware_types
+from svcs_hopscotch.middleware import AnyMiddleware, get_middleware_types
 
 
 @dataclass(frozen=True)

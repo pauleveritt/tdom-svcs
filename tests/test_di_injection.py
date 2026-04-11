@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import pytest
 from markupsafe import Markup
 from svcs_di import Inject
-from svcs_di.injectors import HopscotchContainer, HopscotchRegistry, KeywordInjector
+from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry, KeywordInjector
 
 from tdom_svcs import html
 from tdom_svcs.processor import needs_dependency_injection
@@ -22,7 +22,7 @@ class SimpleComponent:
 
     label: str = "Default"
 
-    def __call__(self) -> Markup:
+    def __call__(self) -> str | Markup:
         return Markup(f"<div>{self.label}</div>")
 
 
@@ -33,7 +33,7 @@ class ButtonWithDI:
     db: Inject[DatabaseService]
     label: str = "Click"
 
-    def __call__(self) -> Markup:
+    def __call__(self) -> str | Markup:
         user = self.db.get_user()
         return Markup(f"<button>Hello {user}: {self.label}</button>")
 
@@ -46,7 +46,7 @@ class ComplexComponent:
     auth: Inject[AuthService]
     title: str = "Dashboard"
 
-    def __call__(self) -> Markup:
+    def __call__(self) -> str | Markup:
         user = self.db.get_user()
         authenticated = "Yes" if self.auth.is_authenticated() else "No"
         return Markup(f"<div>{self.title}: User={user}, Auth={authenticated}</div>")
@@ -150,7 +150,7 @@ def test_nested_components_with_di():
     class ContainerComponent:
         container: HopscotchContainer | None = None
 
-        def __call__(self) -> Markup:
+        def __call__(self) -> str | Markup:
             button_html = html(
                 t"<{ButtonWithDI} label='Nested' />", context=self.container
             )
@@ -232,7 +232,7 @@ def test_component_with_default_di_value():
         db: Inject[DatabaseService]
         label: str = "Test"
 
-        def __call__(self) -> Markup:
+        def __call__(self) -> str | Markup:
             user = self.db.get_user()
             return Markup(f"<div>User: {user}, Label: {self.label}</div>")
 
@@ -257,7 +257,7 @@ def test_component_with_children_and_di():
         db: Inject[DatabaseService]
         title: str = "Card"
 
-        def __call__(self, children: tuple = ()) -> Markup:
+        def __call__(self, children: tuple = ()) -> str | Markup:
             user = self.db.get_user()
             children_html = "".join(str(child) for child in children)
             return Markup(

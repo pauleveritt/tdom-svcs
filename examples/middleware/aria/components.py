@@ -8,7 +8,7 @@ Demonstrates:
 
 from dataclasses import dataclass
 
-from tdom import Node
+from markupsafe import Markup
 
 from examples.middleware.aria.middleware import AriaVerifierMiddleware
 from tdom_svcs import hookable, html
@@ -20,7 +20,7 @@ from tdom_svcs import hookable, html
 class ImageWithAlt:
     """Component with proper alt attribute."""
 
-    def __call__(self) -> Node:
+    def __call__(self) -> str | Markup:
         return html(t'<div><img src="photo.jpg" alt="A photo"></div>')
 
 
@@ -29,5 +29,5 @@ class ImageWithAlt:
 class ImageWithoutAlt:
     """Component missing alt attribute - will trigger warning."""
 
-    def __call__(self) -> Node:
+    def __call__(self) -> str | Markup:
         return html(t'<div><img src="photo.jpg"></div>')

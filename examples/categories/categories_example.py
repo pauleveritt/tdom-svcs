@@ -9,7 +9,7 @@ This example demonstrates:
 
 from dataclasses import dataclass
 
-from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
+from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
 
 from tdom_svcs import hookable, middleware, register_hookable, register_middleware, scan
 

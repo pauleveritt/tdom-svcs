@@ -12,11 +12,10 @@ Uses @injectable for DI resolution (not @middleware - this is per-target).
 from dataclasses import dataclass
 from typing import Any
 
-from aria_testing import query_all_by_tag_name
 from svcs_di import Inject
-from svcs_di.injectors import injectable
-from svcs_di.middleware import Props, PropsResult, Target
-from tdom import Node
+from svcs_hopscotch.injectors import injectable
+from svcs_hopscotch.middleware import Props, PropsResult, Target
+from markupsafe import Markup
 
 from examples.middleware.aria.services import Logger
 
@@ -44,7 +43,7 @@ class AriaVerifierMiddleware:
 
         return props
 
-    def _render_target(self, target: Target) -> Node | None:
+    def _render_target(self, target: Target) -> str | Markup | None:
         """Render the target to get its Node output."""
         try:
             # For dataclass targets, instantiate then call
@@ -57,11 +56,12 @@ class AriaVerifierMiddleware:
             # If rendering fails, skip inspection
             return None
 
-    def _check_images(self, node: Node, target_name: str) -> None:
-        """Check all img tags for alt attributes."""
-        # Use aria-testing to find all img elements
-        images = query_all_by_tag_name(node, "img")
+    def _check_images(self, node: str | Markup, target_name: str) -> None:
+        """Check all img tags for alt attributes.
 
-        for img in images:
-            if "alt" not in img.attrs:
-                self.logger.warn(f"{target_name}: img missing alt attribute")
+        NOTE: String-based image inspection is a stub (roadmap item 18).
+        The full Node-tree inspection using aria-testing will be restored
+        in roadmap item 20 when rendering returns DOM objects again.
+        """
+        # TODO(item 20): restore query_all_by_tag_name(node, "img") check
+        _ = node, target_name

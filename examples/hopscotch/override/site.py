@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 
-from svcs_di.hopscotch_registry import HopscotchRegistry
-from tdom import Node
+from svcs_hopscotch.hopscotch_registry import HopscotchRegistry
+from markupsafe import Markup
 
 from examples.hopscotch.override.app_common import Greeting
 from tdom_svcs import html
@@ -13,7 +13,7 @@ from tdom_svcs import html
 class FrenchGreeting(Greeting):
     """A unique Greeting for this site."""
 
-    def __call__(self) -> Node:
+    def __call__(self) -> str | Markup:
         # Subclass the structure and any `__post_init__`, just change template
         current_user = self.users.get_current_user()
         return html(t"<h1>Bonjour {current_user['name']}!</h1>")

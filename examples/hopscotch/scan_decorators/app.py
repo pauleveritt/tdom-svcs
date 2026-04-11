@@ -8,7 +8,7 @@ This example demonstrates:
 - Site-level overrides registered automatically
 """
 
-from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
+from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
 
 from examples.hopscotch.scan_decorators import components, services, site
 from examples.hopscotch.scan_decorators.components import Greeting

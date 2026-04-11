@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 
-from svcs_di.injectors import HopscotchRegistry
-from svcs_di.middleware import HOOKABLE_MIDDLEWARE_ATTR
+from svcs_hopscotch.injectors import HopscotchRegistry
+from svcs_hopscotch.middleware import HOOKABLE_MIDDLEWARE_ATTR
 
 from tdom_svcs import hookable, middleware, register_hookable, register_middleware, scan
 

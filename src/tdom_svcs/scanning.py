@@ -13,7 +13,7 @@ Example:
 from types import ModuleType
 from typing import Any
 
-from svcs_di.injectors.scanning import scan as svcs_scan
+from svcs_hopscotch.injectors.scanning import scan as svcs_scan
 
 
 def scan(

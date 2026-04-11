@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import pytest
 from markupsafe import Markup
 from svcs_di import Inject
-from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
+from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
 
 from tdom_svcs import html
 from tdom_svcs.processor import _get_implementation
@@ -19,7 +19,7 @@ class Greeting:
 
     db: Inject[DatabaseService]
 
-    def __call__(self) -> Markup:
+    def __call__(self) -> str | Markup:
         user = self.db.get_user()
         return Markup(f"<h1>Hello {user}!</h1>")
 
@@ -28,7 +28,7 @@ class Greeting:
 class FrenchGreeting(Greeting):
     """French greeting that overrides Greeting."""
 
-    def __call__(self) -> Markup:
+    def __call__(self) -> str | Markup:
         user = self.db.get_user()
         return Markup(f"<h1>Bonjour {user}!</h1>")
 
@@ -37,7 +37,7 @@ class FrenchGreeting(Greeting):
 class SpanishGreeting(Greeting):
     """Spanish greeting that overrides Greeting."""
 
-    def __call__(self) -> Markup:
+    def __call__(self) -> str | Markup:
         user = self.db.get_user()
         return Markup(f"<h1>Hola {user}!</h1>")
 
@@ -120,12 +120,12 @@ def test_multiple_components_with_different_overrides():
     class Button:
         label: str = "Click"
 
-        def __call__(self) -> Markup:
+        def __call__(self) -> str | Markup:
             return Markup(f"<button>{self.label}</button>")
 
     @dataclass
     class FrenchButton(Button):
-        def __call__(self) -> Markup:
+        def __call__(self) -> str | Markup:
             return Markup(f"<button>Cliquez: {self.label}</button>")
 
     registry = HopscotchRegistry()

@@ -6,10 +6,7 @@ from dataclasses import dataclass, field
 from importlib.resources import files
 from importlib.resources.abc import Traversable
 from pathlib import Path, PurePosixPath
-from typing import Any
-
-from svcs_di.injectors import injectable
-from tdom import Element, Fragment, Node
+from svcs_hopscotch.injectors import injectable
 
 from .types import AssetReference, ComponentLocation
 
@@ -177,61 +174,28 @@ class PathCollector:
         return asset_ref
 
     def collect_from_node(
-        self, node: Node, component_location: ComponentLocation
+        self, node: object, component_location: ComponentLocation
     ) -> None:
-        """Walk a Node tree and collect asset references.
+        """Walk a rendered output and collect asset references.
 
-        Recursively traverses the Node tree looking for <link href="...">
-        and <script src="..."> elements. For each found asset, creates
-        an AssetReference linking it to the owning component.
-
-        Skips external URLs (http://, https://, //), special schemes
-        (mailto:, tel:, data:, javascript:), and anchor-only links (#).
+        NOTE: Node-tree walking is a stub (roadmap item 18). The full
+        implementation using tstring-html v0.1.15+ API will be written
+        in roadmap item 20.
 
         Args:
-            node: Root node of the tree to scan
-            component_location: The component that rendered this node
-
-        Examples:
-            >>> collector = PathCollector()
-            >>> location = collector.register_component(Head)
-            >>> tree = html(t'<link rel="stylesheet" href="./static/styles.css">')
-            >>> collector.collect_from_node(tree, location)
-            >>> len(collector.assets)
-            1
+            node: Rendered output (str/Markup in new API)
+            component_location: The component that rendered this output
         """
-        self._walk_and_collect(node, component_location)
 
     def _walk_and_collect(
-        self, node: Node, component_location: ComponentLocation
+        self, node: object, component_location: ComponentLocation
     ) -> None:
-        """Internal recursive walker for asset collection."""
-        # Check for asset elements
-        self._check_for_asset(node, component_location)
-
-        # Recurse into children
-        match node:
-            case Element(children=children) if children:
-                for child in children:
-                    self._walk_and_collect(child, component_location)
-            case Fragment(children=children) if children:
-                for child in children:
-                    self._walk_and_collect(child, component_location)
+        """Internal recursive walker for asset collection (stub for item 20)."""
 
     def _check_for_asset(
-        self, node: Any, component_location: ComponentLocation
+        self, node: object, component_location: ComponentLocation
     ) -> None:
-        """Check if a node is an asset element and register it."""
-        match node:
-            case Element(tag="link", attrs=attrs):
-                href = attrs.get("href")
-                if _should_process_href(href):
-                    self.register_asset(component_location, href)
-
-            case Element(tag="script", attrs=attrs):
-                src = attrs.get("src")
-                if _should_process_href(src):
-                    self.register_asset(component_location, src)
+        """Check if a node is an asset element and register it (stub for item 20)."""
 
     def clear(self) -> None:
         """Clear all collected components and assets.

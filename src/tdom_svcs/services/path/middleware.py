@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from svcs_di import Inject
-from svcs_di.injectors import injectable
+from svcs_hopscotch.injectors import injectable
 
 from tdom_svcs.types import COMPONENT_LOCATION_PROP
 

@@ -1,7 +1,7 @@
 """A site that configures an app."""
 
-from svcs_di.hopscotch_registry import HopscotchRegistry
-from svcs_di.injectors import scan
+from svcs_hopscotch.hopscotch_registry import HopscotchRegistry
+from svcs_hopscotch.injectors import scan
 
 from examples.hopscotch.scan_decorators.site import components
 

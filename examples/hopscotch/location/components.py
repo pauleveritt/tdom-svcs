@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 
 from svcs_di import Inject
-from tdom import Node
+from markupsafe import Markup
 
 from examples.common.services import Users
 from tdom_svcs import html
@@ -21,5 +21,5 @@ class Greeting:
         current_user = self.users.get_current_user()
         self.user_name = current_user["name"]
 
-    def __call__(self) -> Node:
+    def __call__(self) -> str | Markup:
         return html(t"<h1>Hello {self.user_name}!</h1>")

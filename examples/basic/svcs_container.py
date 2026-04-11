@@ -9,7 +9,7 @@ from typing import TypedDict
 
 import svcs
 from svcs_di import Inject, auto
-from tdom import Node
+from markupsafe import Markup
 
 from tdom_svcs import html
 
@@ -54,7 +54,7 @@ class Service:
     timeout: int = 30
 
 
-def Greeting(service: Inject[Service]) -> Node:
+def Greeting(service: Inject[Service]) -> str | Markup:
     """A function component that receives an injected Database service."""
     users = service.db.list_users()
     timeout = service.timeout

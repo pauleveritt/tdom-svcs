@@ -1,7 +1,7 @@
 """tdom-svcs: Dependency injection for tdom templates."""
 
 # Re-export middleware machinery from svcs-di
-from svcs_di.middleware import (
+from svcs_hopscotch.middleware import (
     AsyncMiddleware,
     Middleware,
     execute_middleware,

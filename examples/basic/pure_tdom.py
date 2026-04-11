@@ -8,12 +8,12 @@ This example demonstrates:
 - Foundation pattern used throughout tdom-svcs
 """
 
-from tdom import Node
+from markupsafe import Markup
 
 from tdom_svcs import html
 
 
-def Greeting(context: dict[str, str]) -> Node:
+def Greeting(context: dict[str, str]) -> str | Markup:
     """Use the request context to grab some info."""
     user = context.get("user", "Unknown")
     return html(t"<h1>Hello {user}!</h1>")

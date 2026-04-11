@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import TypedDict
 
 from svcs_di import Inject
-from svcs_di.injectors import injectable
+from svcs_hopscotch.injectors import injectable
 
 from examples.common.request import Request
 

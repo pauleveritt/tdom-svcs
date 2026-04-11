@@ -8,7 +8,7 @@ This example demonstrates:
 - Component replacement without changing app code
 """
 
-from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
+from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
 
 from examples.hopscotch.override import app_common, site
 from examples.hopscotch.override.app_common import Greeting, Request

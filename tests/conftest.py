@@ -1,7 +1,7 @@
 """Shared test fixtures for tdom-svcs tests."""
 
 import pytest
-from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
+from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
 
 
 # =============================================================================

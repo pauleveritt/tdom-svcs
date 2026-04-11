@@ -9,7 +9,7 @@ This example uses Hopscotch patterns (decorators, scanning) for convenience.
 You can also use imperative registration if preferred.
 """
 
-from svcs_di.injectors import HopscotchContainer, HopscotchRegistry
+from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
 
 from examples.middleware.aria import components, middleware, services
 from examples.middleware.aria.components import ImageWithAlt, ImageWithoutAlt

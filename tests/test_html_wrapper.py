@@ -1,59 +1,36 @@
 """
 Tests for the html() wrapper function in tdom_svcs.
 
-These tests verify that html() accepts optional config and context parameters
-while maintaining backward compatibility.
+These tests verify that html() accepts an optional context parameter
+and returns correct HTML strings.
 """
-
-from dataclasses import dataclass
 
 import pytest
 
 from tdom_svcs import html
 
 
-@dataclass
-class MockConfig:
-    """Mock config for testing."""
-
-    pass
-
-
 @pytest.mark.parametrize(
-    ("template", "expected", "config", "context"),
+    ("template", "expected", "context"),
     [
-        # Basic backward compatibility
-        (t"<div>Hello</div>", "<div>Hello</div>", None, None),
-        # With config only
-        (t"<div>Hello</div>", "<div>Hello</div>", MockConfig(), None),
-        # With context only
-        (t"<div>Hello</div>", "<div>Hello</div>", None, {"key": "value"}),
-        # With both config and context
-        (
-            t"<div>Hello</div>",
-            "<div>Hello</div>",
-            MockConfig(),
-            {"key": "value"},
-        ),
+        # Basic usage without context
+        (t"<div>Hello</div>", "<div>Hello</div>", None),
+        # With dict context (no DI triggered)
+        (t"<div>Hello</div>", "<div>Hello</div>", {"key": "value"}),
         # Nested elements
         (
             t"<div><p>Nested</p><span>Content</span></div>",
             "<div><p>Nested</p><span>Content</span></div>",
-            MockConfig(),
             {"key": "value"},
         ),
     ],
 )
-def test_html_with_config_and_context(template, expected, config, context):
-    """Test html() with various combinations of config and context parameters."""
-    if config is None and context is None:
+def test_html_with_context(template, expected, context):
+    """Test html() with various context parameters."""
+    if context is None:
         node = html(template)
-    elif config is not None and context is None:
-        node = html(template, config=config)
-    elif config is None and context is not None:
-        node = html(template, context=context)
     else:
-        node = html(template, config=config, context=context)
+        node = html(template, context=context)
 
     assert str(node) == expected
 

@@ -1,29 +1,20 @@
 """
 Free-threaded Python compatibility tests.
 
-This module verifies thread-safety of tdom-svcs components under PEP 703's free-threaded
-Python (no-GIL mode) through concurrent access stress tests.
+Uses pytest-run-parallel to stress-test tdom-svcs components under concurrent
+access. Run with: uv run pytest tests/test_free_threading.py --parallel-threads=8
 
 Thread-Safety Design Patterns Verified:
 - Immutability: Frozen dataclasses and immutable data structures
 - Atomic operations: Dict get/set operations are thread-safe
 - No global state: All state is local to immutable objects
-
-The tests in this module use multiple concurrent threads to stress-test the following:
-1. html() template processing with concurrent calls
-2. Middleware registration and execution
-3. Scanning operations
-
-All tests are marked with @pytest.mark.freethreaded and require a free-threaded Python build.
 """
 
-import sysconfig
-import threading
 from dataclasses import dataclass
 from typing import Any
 
 import pytest
-from svcs_di.auto import Inject
+from svcs_di.types import Inject
 from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
 from svcs_hopscotch.middleware import Props, PropsResult, Target
 
@@ -36,63 +27,20 @@ from tdom_svcs import (
 
 
 # ============================================================================
-# Task Group 1: Infrastructure Setup
+# html() Template Processing Thread-Safety
 # ============================================================================
 
 
-def is_free_threaded_build() -> bool:
-    """
-    Check if running on free-threaded Python build.
-
-    Returns True if Py_GIL_DISABLED is set (free-threaded build),
-    False otherwise (standard GIL build).
-    """
-    gil_disabled = sysconfig.get_config_var("Py_GIL_DISABLED")
-    return gil_disabled == 1
-
-
-@pytest.mark.freethreaded
-@pytest.mark.skipif(
-    not is_free_threaded_build(),
-    reason="Requires free-threaded Python build (python3.14t or later)",
-)
-def test_free_threaded_build_confirmed():
-    """Test that we are running on a free-threaded build."""
-    assert is_free_threaded_build() is True
-
-
-# ============================================================================
-# Task Group 2: html() Template Processing Thread-Safety
-# ============================================================================
-
-
-@pytest.mark.freethreaded
+@pytest.mark.parallel_threads_limit(8)
+@pytest.mark.iterations(50)
 def test_html_concurrent_basic_templates():
     """Test html() with concurrent calls processing basic templates."""
-    results: list[str] = []
-    errors: list[Exception] = []
-
-    def worker(worker_id: int):
-        """Worker thread that processes templates."""
-        try:
-            for i in range(50):
-                node = html(t"<div>Worker {worker_id} iteration {i}</div>")
-                results.append(str(node))
-        except Exception as e:
-            errors.append(e)
-
-    threads = [threading.Thread(target=worker, args=(i,)) for i in range(8)]
-
-    for t_thread in threads:
-        t_thread.start()
-    for t_thread in threads:
-        t_thread.join()
-
-    assert len(errors) == 0, f"Errors occurred: {errors}"
-    assert len(results) == 400  # 8 threads * 50 iterations
+    result = html(t"<div>Hello world</div>")
+    assert "Hello world" in str(result)
 
 
-@pytest.mark.freethreaded
+@pytest.mark.parallel_threads_limit(8)
+@pytest.mark.iterations(20)
 def test_html_concurrent_with_di_container():
     """Test html() with concurrent DI container access."""
 
@@ -107,34 +55,16 @@ def test_html_concurrent_with_di_container():
         def __call__(self):
             return t"<span>{self.greeting.message}</span>"
 
-    results: list[str] = []
-    errors: list[Exception] = []
+    registry = HopscotchRegistry()
+    registry.register_value(Greeting, Greeting("Hello from test"))
 
-    def worker(worker_id: int):
-        """Worker thread that processes templates with DI."""
-        try:
-            registry = HopscotchRegistry()
-            registry.register_value(Greeting, Greeting(f"Hello from {worker_id}"))
-
-            with HopscotchContainer(registry) as container:
-                for _ in range(20):
-                    node = html(t"<{GreetingComponent} />", context=container)
-                    results.append(str(node))
-        except Exception as e:
-            errors.append(e)
-
-    threads = [threading.Thread(target=worker, args=(i,)) for i in range(8)]
-
-    for t_thread in threads:
-        t_thread.start()
-    for t_thread in threads:
-        t_thread.join()
-
-    assert len(errors) == 0, f"Errors occurred: {errors}"
-    assert len(results) == 160  # 8 threads * 20 iterations
+    with HopscotchContainer(registry) as container:
+        result = html(t"<{GreetingComponent} />", context=container)
+        assert "Hello from test" in str(result)
 
 
-@pytest.mark.freethreaded
+@pytest.mark.parallel_threads_limit(8)
+@pytest.mark.iterations(30)
 def test_html_concurrent_nested_components():
     """Test html() with concurrent nested component processing."""
 
@@ -152,73 +82,35 @@ def test_html_concurrent_nested_components():
         def __call__(self):
             return t"<div class={self.label}><{Inner} /></div>"
 
-    results: list[str] = []
-    errors: list[Exception] = []
-
-    def worker():
-        """Worker thread that processes nested components."""
-        try:
-            for _ in range(30):
-                node = html(t"<{Outer} />")
-                results.append(str(node))
-        except Exception as e:
-            errors.append(e)
-
-    threads = [threading.Thread(target=worker) for _ in range(8)]
-
-    for t_thread in threads:
-        t_thread.start()
-    for t_thread in threads:
-        t_thread.join()
-
-    assert len(errors) == 0, f"Errors occurred: {errors}"
-    assert len(results) == 240  # 8 threads * 30 iterations
+    result = html(t"<{Outer} />")
+    assert "inner" in str(result)
 
 
 # ============================================================================
-# Task Group 3: Middleware Thread-Safety
+# Middleware Thread-Safety
 # ============================================================================
 
 
-@pytest.mark.freethreaded
+@pytest.mark.parallel_threads_limit(8)
 def test_middleware_concurrent_registration():
     """Test concurrent middleware registration."""
-    errors: list[Exception] = []
-    registries: list[HopscotchRegistry] = []
+    registry = HopscotchRegistry()
 
-    def worker(worker_id: int):
-        """Worker thread that registers middleware."""
-        try:
-            registry = HopscotchRegistry()
+    @middleware
+    @dataclass
+    class WorkerMiddleware:
+        priority: int = 0
 
-            @middleware
-            @dataclass
-            class WorkerMiddleware:
-                priority: int = worker_id
+        def __call__(
+            self, target: Target, props: Props, context: Any
+        ) -> PropsResult:
+            return props
 
-                def __call__(
-                    self, target: Target, props: Props, context: Any
-                ) -> PropsResult:
-                    return props
-
-            # Use scan() to both register the service and add to middleware list
-            scan(registry, locals_dict={"WorkerMiddleware": WorkerMiddleware})
-            registries.append(registry)
-        except Exception as e:
-            errors.append(e)
-
-    threads = [threading.Thread(target=worker, args=(i,)) for i in range(8)]
-
-    for t_thread in threads:
-        t_thread.start()
-    for t_thread in threads:
-        t_thread.join()
-
-    assert len(errors) == 0, f"Errors occurred: {errors}"
-    assert len(registries) == 8
+    scan(registry, locals_dict={"WorkerMiddleware": WorkerMiddleware})
 
 
-@pytest.mark.freethreaded
+@pytest.mark.parallel_threads_limit(8)
+@pytest.mark.iterations(30)
 def test_middleware_concurrent_execution():
     """Test concurrent middleware execution."""
 
@@ -236,115 +128,56 @@ def test_middleware_concurrent_execution():
     class TestComponent:
         pass
 
-    results: list[PropsResult] = []
-    errors: list[Exception] = []
+    registry = HopscotchRegistry()
+    scan(registry, locals_dict={"CountingMiddleware": CountingMiddleware})
 
-    def worker():
-        """Worker thread that executes middleware."""
-        try:
-            registry = HopscotchRegistry()
-            # Use scan() to both register the service and add to middleware list
-            scan(registry, locals_dict={"CountingMiddleware": CountingMiddleware})
-
-            with HopscotchContainer(registry) as container:
-                for _ in range(30):
-                    result = execute_middleware(
-                        TestComponent, {"key": "value"}, container
-                    )
-                    results.append(result)
-        except Exception as e:
-            errors.append(e)
-
-    threads = [threading.Thread(target=worker) for _ in range(8)]
-
-    for t_thread in threads:
-        t_thread.start()
-    for t_thread in threads:
-        t_thread.join()
-
-    assert len(errors) == 0, f"Errors occurred: {errors}"
-    assert len(results) == 240  # 8 threads * 30 iterations
-    assert all(r is not None and r.get("processed") for r in results)
+    with HopscotchContainer(registry) as container:
+        result = execute_middleware(TestComponent, {"key": "value"}, container)
+        assert result is not None
+        assert result.get("processed") is True
 
 
-@pytest.mark.freethreaded
+@pytest.mark.parallel_threads_limit(8)
 def test_middleware_decorator_concurrent_application():
     """Test concurrent @middleware decorator application."""
-    results: list[tuple[int, type]] = []
-    errors: list[Exception] = []
 
-    def worker(worker_id: int):
-        """Worker thread that applies middleware decorator."""
-        try:
+    @middleware
+    @dataclass
+    class WorkerMiddleware:
+        priority: int = 0
 
-            @middleware
-            @dataclass
-            class WorkerMiddleware:
-                priority: int = worker_id
+        def __call__(
+            self, target: Target, props: Props, context: Any
+        ) -> PropsResult:
+            return props
 
-                def __call__(
-                    self, target: Target, props: Props, context: Any
-                ) -> PropsResult:
-                    return props
-
-            results.append((worker_id, WorkerMiddleware))
-        except Exception as e:
-            errors.append(e)
-
-    threads = [threading.Thread(target=worker, args=(i,)) for i in range(8)]
-
-    for t_thread in threads:
-        t_thread.start()
-    for t_thread in threads:
-        t_thread.join()
-
-    assert len(errors) == 0, f"Errors occurred: {errors}"
-    assert len(results) == 8
+    assert WorkerMiddleware is not None
 
 
 # ============================================================================
-# Task Group 4: Scanning Thread-Safety
+# Scanning Thread-Safety
 # ============================================================================
 
 
-@pytest.mark.freethreaded
+@pytest.mark.parallel_threads_limit(8)
 def test_scan_concurrent_operations():
     """Test concurrent scan() operations."""
-    results: list[HopscotchRegistry] = []
-    errors: list[Exception] = []
+    registry = HopscotchRegistry()
 
-    def worker(worker_id: int):
-        """Worker thread that performs scanning."""
-        try:
-            registry = HopscotchRegistry()
+    @middleware
+    @dataclass
+    class ScanMiddleware:
+        priority: int = 0
 
-            @middleware
-            @dataclass
-            class ScanMiddleware:
-                priority: int = worker_id
+        def __call__(
+            self, target: Target, props: Props, context: Any
+        ) -> PropsResult:
+            return props
 
-                def __call__(
-                    self, target: Target, props: Props, context: Any
-                ) -> PropsResult:
-                    return props
-
-            scan(registry, locals_dict={"ScanMiddleware": ScanMiddleware})
-            results.append(registry)
-        except Exception as e:
-            errors.append(e)
-
-    threads = [threading.Thread(target=worker, args=(i,)) for i in range(8)]
-
-    for t_thread in threads:
-        t_thread.start()
-    for t_thread in threads:
-        t_thread.join()
-
-    assert len(errors) == 0, f"Errors occurred: {errors}"
-    assert len(results) == 8
+    scan(registry, locals_dict={"ScanMiddleware": ScanMiddleware})
 
 
-@pytest.mark.freethreaded
+@pytest.mark.parallel_threads_limit(8)
 def test_scan_and_execute_concurrent():
     """Test end-to-end: concurrent scanning -> middleware execution."""
 
@@ -352,43 +185,22 @@ def test_scan_and_execute_concurrent():
     class TestComponent:
         pass
 
-    results: list[PropsResult] = []
-    errors: list[Exception] = []
+    @middleware
+    @dataclass
+    class WorkflowMiddleware:
+        priority: int = 0
 
-    def worker(worker_id: int):
-        """Worker thread performing full workflow."""
-        try:
+        def __call__(
+            self, target: Target, props: Props, context: Any
+        ) -> PropsResult:
+            props = dict(props)
+            props["worker"] = True
+            return props
 
-            @middleware
-            @dataclass
-            class WorkflowMiddleware:
-                priority: int = 0
+    registry = HopscotchRegistry()
+    scan(registry, locals_dict={"WorkflowMiddleware": WorkflowMiddleware})
 
-                def __call__(
-                    self, target: Target, props: Props, context: Any
-                ) -> PropsResult:
-                    props = dict(props)
-                    props["worker"] = worker_id
-                    return props
-
-            registry = HopscotchRegistry()
-            scan(registry, locals_dict={"WorkflowMiddleware": WorkflowMiddleware})
-
-            with HopscotchContainer(registry) as container:
-                result = execute_middleware(
-                    TestComponent, {"original": True}, container
-                )
-                results.append(result)
-        except Exception as e:
-            errors.append(e)
-
-    threads = [threading.Thread(target=worker, args=(i,)) for i in range(8)]
-
-    for t_thread in threads:
-        t_thread.start()
-    for t_thread in threads:
-        t_thread.join()
-
-    assert len(errors) == 0, f"Errors occurred: {errors}"
-    assert len(results) == 8
-    assert all(r is not None and r.get("original") for r in results)
+    with HopscotchContainer(registry) as container:
+        result = execute_middleware(TestComponent, {"original": True}, container)
+        assert result is not None
+        assert result.get("original") is True

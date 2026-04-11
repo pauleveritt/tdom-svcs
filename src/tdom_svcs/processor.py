@@ -1,19 +1,34 @@
 """Dependency injection processor for tdom templates.
 
-NOTE: This module is a minimal stub for workspace compatibility (roadmap item 18).
-The full DI-aware html() implementation that works with tstring-html v0.1.15+
-will be written in roadmap item 20 ("Migrate Processor Off the Node-Based API").
+Subclasses ProcessorService from tstring-html to add DI concerns:
+- Context threading to components that accept a `context` parameter
+- Inject[T] field resolution via KeywordInjector when context is a DI container
+- Component override lookup via _get_implementation
+- str | Markup return handling from existing tdom-svcs components
 
-The old node-object API (tdom.nodes.Node/Element/Fragment/Text) was removed in
-tstring-html v0.1.15. This stub delegates to tdom.html() for all calls while
-retaining the DI helper functions.
+Uses a ContextVar to carry the DI container through processing (thread-safe).
 """
 
+import inspect
+from collections.abc import Callable
+from contextvars import ContextVar
+from dataclasses import dataclass
 from string.templatelib import Template
+from typing import cast
 
+import svcs
 from markupsafe import Markup
-from svcs_di.auto import get_field_infos
-from tdom import html as tdom_html
+from svcs_hopscotch.auto import hopscotch_get_field_infos
+from svcs_hopscotch.injectors import HopscotchInjector
+from tdom.callables import get_callable_info
+from tdom.parser import TAttribute, TLiteralAttribute
+from tdom.processor import (
+    CachedParserService,
+    ProcessContext,
+    ProcessorService,
+    _resolve_t_attrs,
+    extract_embedded_template,
+)
 
 from tdom_svcs.types import is_di_container
 
@@ -22,7 +37,13 @@ from tdom_svcs.types import is_di_container
 # --------------------------------------------------------------------------
 
 type ContextArg = object | None
-type ConfigArg = object | None
+type ComponentResult = Template | str | Markup
+
+# --------------------------------------------------------------------------
+# ContextVar for thread-safe DI context threading
+# --------------------------------------------------------------------------
+
+_di_context: ContextVar[ContextArg] = ContextVar("_di_context", default=None)
 
 
 # --------------------------------------------------------------------------
@@ -34,22 +55,23 @@ def needs_dependency_injection(value: object) -> bool:
     """
     Check if a callable needs dependency injection.
 
-    Uses svcs-di's get_field_infos() which handles both classes and functions.
+    Uses hopscotch_get_field_infos() which handles Inject[T], Resource[T],
+    and other svcs-hopscotch field types for both classes and functions.
 
     Args:
         value: The callable to check
 
     Returns:
-        True if the callable has Inject[] or Resource[] fields/parameters, False otherwise
+        True if the callable has Inject[] or Resource[] fields/parameters
     """
     if not callable(value):
         return False
-    field_infos = get_field_infos(value)
+    field_infos = hopscotch_get_field_infos(value)
     return any(info.is_injectable or info.is_resource for info in field_infos)
 
 
 # --------------------------------------------------------------------------
-# _get_implementation — pure container/locator logic, no Node dependency
+# _get_implementation — pure container/locator logic
 # --------------------------------------------------------------------------
 
 
@@ -88,36 +110,177 @@ def _get_implementation(context: ContextArg, cls: type) -> type:
 
 
 # --------------------------------------------------------------------------
-# html() — Minimal stub until item 20 rewrites this for tstring-html v0.1.15+
+# DIProcessorService — ProcessorService subclass with DI support
+# --------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class DIProcessorService(ProcessorService):
+    """ProcessorService subclass that threads DI context to components."""
+
+    def _process_component(
+        self,
+        template: Template,
+        last_ctx: ProcessContext,
+        attrs: tuple[TAttribute, ...],
+        start_i_index: int,
+        end_i_index: int | None,
+    ) -> str:
+        """
+        Invoke a component with DI threading and return the result as a string.
+
+        Extends the base class behavior with:
+        - Context threading to components that accept a `context` parameter
+        - Inject[T] field resolution via KeywordInjector
+        - Component implementation overrides via _get_implementation
+        - str | Markup return handling (for existing tdom-svcs components)
+        """
+        # --- Extract component callable (mirrors base class) ---
+        body_start_s_index = (
+            start_i_index
+            + 1
+            + len([1 for attr in attrs if not isinstance(attr, TLiteralAttribute)])
+        )
+        start_i = template.interpolations[start_i_index]
+        component_callable = cast(Callable[..., object], start_i.value)
+
+        if start_i_index != end_i_index and end_i_index is not None:
+            children_template = extract_embedded_template(
+                template, body_start_s_index, end_i_index
+            )
+            if component_callable != template.interpolations[end_i_index].value:
+                raise TypeError(
+                    "Component callable in start tag must match component callable in end tag."
+                )
+        else:
+            children_template = t""
+
+        if not callable(component_callable):
+            raise TypeError("Component callable must be callable.")
+
+        # --- DI context from ContextVar ---
+        context = _di_context.get()
+
+        # --- Apply implementation override ---
+        if isinstance(component_callable, type):
+            component_callable = _get_implementation(context, component_callable)
+
+        # --- Pre-render children template to Markup ---
+        if children_template.strings == ("",):
+            children_html: str | Markup = Markup("")
+        else:
+            children_root = self.parser_api.to_tnode(children_template)
+            children_html = Markup(
+                self._process_tnode(children_template, last_ctx, children_root)
+            )
+
+        # --- Build kwargs from template attributes ---
+        callable_info = get_callable_info(component_callable)
+
+        if callable_info.requires_positional:
+            raise TypeError(
+                "Component callables cannot have required positional arguments."
+            )
+
+        resolved_attrs = _resolve_t_attrs(attrs, template.interpolations)
+        kwargs: dict[str, object] = {}
+
+        for attr_name, attr_value in resolved_attrs.items():
+            snake_name = attr_name.replace("-", "_").lower()
+            if snake_name in callable_info.named_params or callable_info.kwargs:
+                kwargs[snake_name] = attr_value
+
+        if "children" in callable_info.named_params or callable_info.kwargs:
+            kwargs["children"] = children_html
+
+        if "context" in callable_info.named_params or callable_info.kwargs:
+            kwargs["context"] = context
+
+        # --- Invoke component (with or without DI) ---
+        result_t: object
+        if needs_dependency_injection(component_callable) and is_di_container(context):
+            injector = HopscotchInjector(container=cast(svcs.Container, context))
+            result_t = injector(component_callable, **kwargs)
+        else:
+            missing = callable_info.required_named_params - kwargs.keys()
+            if missing:
+                raise TypeError(
+                    f"Missing required parameters for component: {', '.join(missing)}"
+                )
+            result_t = component_callable(**kwargs)
+
+        # --- Factory pattern: class component returns callable instance ---
+        if (
+            result_t is not None
+            and not isinstance(result_t, Template)
+            and not isinstance(result_t, (str, Markup))
+            and callable(result_t)
+        ):
+            # It's a component instance (e.g. dataclass __call__).
+            # Pass context and children to __call__ if it accepts them.
+            sig = inspect.signature(result_t.__call__)
+            call_kwargs: dict[str, object] = {}
+            if "context" in sig.parameters:
+                call_kwargs["context"] = context
+            if "children" in sig.parameters:
+                call_kwargs["children"] = children_html
+            result_t = cast(Callable[..., object], result_t)(**call_kwargs)
+
+        # --- Handle final result ---
+        match result_t:
+            case Template() if result_t.strings == ("",):
+                return ""
+            case Template():
+                result_root = self.parser_api.to_tnode(result_t)
+                return self._process_tnode(result_t, last_ctx, result_root)
+            case str() | Markup():
+                return str(result_t)
+            case _:
+                raise TypeError(f"Unknown component return value: {type(result_t)}")
+
+
+# --------------------------------------------------------------------------
+# Module-level processor instance
+# --------------------------------------------------------------------------
+
+_di_processor = DIProcessorService(
+    parser_api=CachedParserService(),
+    slash_void=True,
+    uppercase_doctype=True,
+)
+
+
+# --------------------------------------------------------------------------
+# html() — DI-aware entry point
 # --------------------------------------------------------------------------
 
 
 def html(
     template: Template,
     *,
-    config: ConfigArg = None,
     context: ContextArg = None,
 ) -> str | Markup:
     """
-    Process a template string into an HTML string.
+    Process a template string into an HTML string with DI support.
 
-    Currently delegates to tdom.html() for all cases. The DI-aware path
-    (context threading, component injection) will be implemented in
-    roadmap item 20 when the processor is rewritten for the new
-    ProcessorService API.
+    Threads `context` (a DI container or any object) to components that
+    accept a `context` parameter. Resolves Inject[T] fields via
+    KeywordInjector when `context` is a DI container.
 
     Args:
         template: A template string created with the t"" literal
-        config: Optional config object (accepted but currently unused)
-        context: Optional context for dependency injection (accepted but unused)
+        context: Optional context for dependency injection and component
+                 threading. Pass a HopscotchContainer for DI resolution.
 
     Returns:
         HTML string
 
     Examples:
         Basic usage:
-        >>> node = html(t"<div>Hello</div>")
+        >>> result = html(t"<div>Hello</div>")
     """
-    # config/context accepted for API compatibility; DI threading is item 20
-    _ = config, context
-    return tdom_html(template)
+    token = _di_context.set(context)
+    try:
+        return _di_processor.process_template(template)
+    finally:
+        _di_context.reset(token)

@@ -6,7 +6,11 @@ from dataclasses import dataclass
 import pytest
 from markupsafe import Markup
 from svcs_di import Inject
-from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry, KeywordInjector
+from svcs_hopscotch.injectors import (
+    HopscotchContainer,
+    HopscotchRegistry,
+    KeywordInjector,
+)
 
 from tdom_svcs import html
 from tdom_svcs.processor import needs_dependency_injection

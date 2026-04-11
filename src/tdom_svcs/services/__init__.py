@@ -1,6 +1,6 @@
 """Services for tdom-svcs integration."""
 
-from .path import (
+from tdom_svcs.services.path import (
     AssetReference,
     ComponentLocation,
     PathCollector,

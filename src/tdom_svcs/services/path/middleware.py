@@ -8,7 +8,7 @@ from svcs_hopscotch.injectors import injectable
 
 from tdom_svcs.types import COMPONENT_LOCATION_PROP
 
-from .collector import PathCollector
+from tdom_svcs.services.path.collector import PathCollector
 
 
 @injectable

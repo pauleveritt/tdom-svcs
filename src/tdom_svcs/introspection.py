@@ -26,6 +26,13 @@ from typing import Any
 
 from svcs_hopscotch.middleware import AnyMiddleware, get_middleware_types
 
+# -------------------------------------------------------------------------
+# Type Aliases
+# -------------------------------------------------------------------------
+
+type ComponentMap = dict[type, "ComponentInfo"]
+"""Mapping from service type to its complete registration info."""
+
 
 @dataclass(frozen=True)
 class ComponentVariation:
@@ -95,7 +102,7 @@ class MiddlewareInfo:
     priority: int | None
 
 
-def list_components(registry: Any) -> dict[type, ComponentInfo]:
+def list_components(registry: Any) -> ComponentMap:
     """List all registered component services in the registry.
 
     Inspects the registry's ServiceLocator to extract all registered component
@@ -208,6 +215,7 @@ def list_middlewares(registry: Any) -> tuple[MiddlewareInfo, ...]:
 
 
 __all__ = [
+    "ComponentMap",
     "ComponentVariation",
     "ComponentInfo",
     "MiddlewareInfo",

@@ -104,7 +104,7 @@
     the `tool.uv.sources` entry, and any documentation or docstring references to the old name.
     No behavior changes — mechanical rename only. `M`
 
-20. [ ] Migrate Processor Off the Node-Based API — `processor.py` forks tdom's old internal
+20. [x] Migrate Processor Off the Node-Based API — `processor.py` forks tdom's old internal
     node-object API (`tdom.nodes.Node/Element/Fragment/Text`, `_flatten_nodes`, `_node_from_value`,
     etc.) which no longer exists in tstring-html v0.1.15. Research the current `ProcessorService`
     class-based API and rewrite `processor.py` so `html()` returns `str`/`Markup` rather than

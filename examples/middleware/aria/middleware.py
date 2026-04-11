@@ -3,13 +3,14 @@
 Demonstrates:
 - Per-target middleware (not global) via @hookable decorator
 - Middleware that inspects rendered output for accessibility issues
-- Using aria-testing to query the Node tree
+- Parsing rendered HTML strings to check for accessibility issues
 - Dependency injection with Inject[Logger]
 
 Uses @injectable for DI resolution (not @middleware - this is per-target).
 """
 
 from dataclasses import dataclass
+from html.parser import HTMLParser
 from typing import Any
 
 from svcs_di import Inject
@@ -20,14 +21,28 @@ from markupsafe import Markup
 from examples.middleware.aria.services import Logger
 
 
+class _ImgAltChecker(HTMLParser):
+    """HTML parser that collects img tags missing alt attributes."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.missing_alt: list[dict[str, str | None]] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag == "img":
+            attr_dict = dict(attrs)
+            if "alt" not in attr_dict:
+                self.missing_alt.append(attr_dict)
+
+
 # The aria verifier middleware
 @injectable
 @dataclass
 class AriaVerifierMiddleware:
     """Middleware that warns about accessibility issues.
 
-    Renders the component and inspects the Node tree for img tags
-    missing alt attributes. Uses injected Logger service for warnings.
+    Renders the component and inspects the rendered HTML string for img
+    tags missing alt attributes. Uses injected Logger service for warnings.
     """
 
     logger: Inject[Logger]
@@ -44,7 +59,7 @@ class AriaVerifierMiddleware:
         return props
 
     def _render_target(self, target: Target) -> str | Markup | None:
-        """Render the target to get its Node output."""
+        """Render the target to get its HTML output."""
         try:
             # For dataclass targets, instantiate then call
             if isinstance(target, type):
@@ -57,11 +72,9 @@ class AriaVerifierMiddleware:
             return None
 
     def _check_images(self, node: str | Markup, target_name: str) -> None:
-        """Check all img tags for alt attributes.
-
-        NOTE: String-based image inspection is a stub (roadmap item 18).
-        The full Node-tree inspection using aria-testing will be restored
-        in roadmap item 20 when rendering returns DOM objects again.
-        """
-        # TODO(item 20): restore query_all_by_tag_name(node, "img") check
-        _ = node, target_name
+        """Check all img tags for alt attributes."""
+        checker = _ImgAltChecker()
+        checker.feed(str(node))
+        for img_attrs in checker.missing_alt:
+            src = img_attrs.get("src", "<unknown>")
+            self.logger.warn(f"{target_name}: img src='{src}' missing alt attribute")

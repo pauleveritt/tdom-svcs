@@ -81,38 +81,50 @@ def test_dataclass_component_receives_context():
     assert received_context is ctx
 
 
-def test_component_receives_config():
-    """Component with config parameter receives it."""
+def test_component_receives_config_from_context():
+    """Config comes from the context (registered as a service), not a separate param."""
+
+    class AppConfig:
+        debug = True
+
     received_config = None
 
-    def Greeting(name: str = "World", config=None):
-        nonlocal received_config
-        received_config = config
-        return Markup(f"<p>Hello {name}</p>")
+    @dataclass
+    class Greeting:
+        config: Inject[AppConfig]
+        name: str = "World"
 
-    cfg = {"debug": True}
-    result = html(t"<{Greeting} name='Test' />", config=cfg)
+        def __call__(self) -> str | Markup:
+            nonlocal received_config
+            received_config = self.config
+            return Markup(f"<p>Hello {self.name}</p>")
+
+    from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
+
+    registry = HopscotchRegistry()
+    cfg = AppConfig()
+    registry.register_value(AppConfig, cfg)
+
+    with HopscotchContainer(registry) as container:
+        result = html(t"<{Greeting} name='Test' />", context=container)
 
     assert str(result) == "<p>Hello Test</p>"
     assert received_config is cfg
 
 
-def test_component_receives_context_and_config():
-    """Component can receive both context and config."""
+def test_component_receives_context():
+    """Component can receive context."""
     received = {}
 
-    def Greeting(name: str = "World", context=None, config=None):
+    def Greeting(name: str = "World", context=None):
         received["context"] = context
-        received["config"] = config
         return Markup(f"<p>Hello {name}</p>")
 
     ctx = {"user": "Alice"}
-    cfg = {"debug": True}
-    result = html(t"<{Greeting} name='Test' />", context=ctx, config=cfg)
+    result = html(t"<{Greeting} name='Test' />", context=ctx)
 
     assert str(result) == "<p>Hello Test</p>"
     assert received["context"] is ctx
-    assert received["config"] is cfg
 
 
 def test_component_without_context_param_ignores_it():
@@ -129,15 +141,12 @@ def test_component_without_context_param_ignores_it():
 
 def test_dict_context_passed_but_no_di():
     """Plain dict context is passed to component but doesn't trigger DI."""
-    received_context = None
 
     @dataclass
     class ComponentWithInject:
         db: Inject[DatabaseService]
 
         def __call__(self, context=None) -> str | Markup:
-            nonlocal received_context
-            received_context = context
             return Markup(f"<p>User: {self.db.get_user()}</p>")
 
     # With a plain dict, DI should NOT be triggered, so this should fail
@@ -190,9 +199,9 @@ def test_nested_components_receive_context():
     """Nested components all receive the same context."""
     contexts_received = []
 
-    def Outer(context=None, children=()):
+    def Outer(context=None, children=""):
         contexts_received.append(("outer", context))
-        return Markup(f"<div>{''.join(str(c) for c in children)}</div>")
+        return Markup(f"<div>{children}</div>")
 
     def Inner(context=None):
         contexts_received.append(("inner", context))
@@ -217,12 +226,11 @@ def test_di_component_call_receives_context_and_children():
         db: Inject[DatabaseService]
         title: str = "Card"
 
-        def __call__(self, context=None, children: tuple = ()) -> str | Markup:
+        def __call__(self, context=None, children: str | Markup = "") -> str | Markup:
             received["context"] = context
             received["children"] = children
             user = self.db.get_user()
-            children_html = "".join(str(child) for child in children)
-            return Markup(f"<div>{self.title}: {user}{children_html}</div>")
+            return Markup(f"<div>{self.title}: {user}{children}</div>")
 
     registry = HopscotchRegistry()
     db = DatabaseService()
@@ -236,7 +244,7 @@ def test_di_component_call_receives_context_and_children():
 
     assert str(result) == "<div>Profile: Alice<p>Child</p></div>"
     assert received["context"] is container
-    assert len(received["children"]) == 1
+    assert str(received["children"]) == "<p>Child</p>"
 
 
 # Test function component DI injection
@@ -266,7 +274,9 @@ def test_function_component_with_multiple_inject():
         def get_cached(self) -> str:
             return "cached_value"
 
-    def Component(db: Inject[DatabaseService], cache: Inject[CacheService]) -> str | Markup:
+    def Component(
+        db: Inject[DatabaseService], cache: Inject[CacheService]
+    ) -> str | Markup:
         return Markup(f"<p>DB: {db.get_user()}, Cache: {cache.get_cached()}</p>")
 
     registry = HopscotchRegistry()

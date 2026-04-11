@@ -6,9 +6,11 @@ from dataclasses import dataclass, field
 from importlib.resources import files
 from importlib.resources.abc import Traversable
 from pathlib import Path, PurePosixPath
+
+from selectolax.parser import HTMLParser
 from svcs_hopscotch.injectors import injectable
 
-from .types import AssetReference, ComponentLocation
+from tdom_svcs.services.path.types import AssetReference, ComponentLocation
 
 # Compile regex once at module load time for performance
 # Matches external URLs, special schemes, and anchor-only links
@@ -176,26 +178,30 @@ class PathCollector:
     def collect_from_node(
         self, node: object, component_location: ComponentLocation
     ) -> None:
-        """Walk a rendered output and collect asset references.
+        """Walk rendered HTML output and collect asset references.
 
-        NOTE: Node-tree walking is a stub (roadmap item 18). The full
-        implementation using tstring-html v0.1.15+ API will be written
-        in roadmap item 20.
+        Parses the rendered HTML string to find <link href="..."> and
+        <script src="..."> elements with local (non-external) paths,
+        and registers them as AssetReferences.
 
         Args:
-            node: Rendered output (str/Markup in new API)
+            node: Rendered output (str/Markup)
             component_location: The component that rendered this output
         """
+        if not isinstance(node, str):
+            return
 
-    def _walk_and_collect(
-        self, node: object, component_location: ComponentLocation
-    ) -> None:
-        """Internal recursive walker for asset collection (stub for item 20)."""
-
-    def _check_for_asset(
-        self, node: object, component_location: ComponentLocation
-    ) -> None:
-        """Check if a node is an asset element and register it (stub for item 20)."""
+        parser = HTMLParser(node)
+        for element in parser.css("link[href], script[src]"):
+            match element.tag:
+                case "link":
+                    href = element.attributes.get("href")
+                    if href is not None and _should_process_href(href):
+                        self.register_asset(component_location, href)
+                case "script":
+                    src = element.attributes.get("src")
+                    if src is not None and _should_process_href(src):
+                        self.register_asset(component_location, src)
 
     def clear(self) -> None:
         """Clear all collected components and assets.

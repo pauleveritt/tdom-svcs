@@ -16,6 +16,7 @@ from svcs_hopscotch.middleware import (
 # Local tdom-specific functionality
 from tdom_svcs.introspection import (
     ComponentInfo,
+    ComponentMap,
     ComponentVariation,
     MiddlewareInfo,
     list_components,
@@ -25,7 +26,6 @@ from tdom_svcs.processor import html
 from tdom_svcs.scanning import scan
 
 __all__ = [
-    # Middleware (re-exported from svcs-di)
     "AsyncMiddleware",
     "Middleware",
     "execute_middleware",
@@ -37,6 +37,7 @@ __all__ = [
     "register_middleware",
     # tdom-specific functionality
     "ComponentInfo",
+    "ComponentMap",
     "ComponentVariation",
     "MiddlewareInfo",
     "html",

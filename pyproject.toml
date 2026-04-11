@@ -7,7 +7,8 @@ dependencies = [
     "aria-testing",
     "svcs",
     "svcs-di",
-    "tdom"
+    "tdom",
+    "ty>=0.0.21",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -51,10 +52,12 @@ exclude = ["agent-os"]
 
 [tool.ty.environment]
 extra-paths = ["./examples"]
+python = "../.venv"
 
 [tool.uv.sources]
 aria-testing = { workspace = true }
 svcs-di = { workspace = true }
+tdom = { workspace = true }
 
 [build-system]
 requires = ["uv_build>=0.8.17,<0.9.0"]

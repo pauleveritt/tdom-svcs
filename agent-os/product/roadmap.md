@@ -90,6 +90,27 @@
     `list_middlewares()` should return the registered middleware factories. These helpers enable runtime inspection
     and debugging of the registry state. `S`
 
+## Phase 6: Dependency Modernization
+
+18. [ ] Add tdom-svcs to Workspace — Uncomment `tdom-svcs` from the root `pyproject.toml`
+    workspace members list and resolve the resulting dependency graph. Verify that `uv sync`,
+    `uv run pytest`, and `uvx ty check` all work from both the root workspace and the
+    `tdom-svcs/` subdirectory. Update `tool.ty.environment.python` in `pyproject.toml` if the
+    path changes. `S`
+
+19. [ ] Rename `tdom` Dependency to `tstring-html` — Update all 35 `from tdom import` and
+    `from tdom.X import` statements in `src/`, `tests/`, and `examples/` to use the new
+    package import name (`tstring_html`). Update the `dependencies` list in `pyproject.toml`,
+    the `tool.uv.sources` entry, and any documentation or docstring references to the old name.
+    No behavior changes — mechanical rename only. `M`
+
+20. [ ] Migrate Processor Off the Node-Based API — `processor.py` forks tdom's old internal
+    node-object API (`tdom.nodes.Node/Element/Fragment/Text`, `_flatten_nodes`, `_node_from_value`,
+    etc.) which no longer exists in tstring-html v0.1.15. Research the current `ProcessorService`
+    class-based API and rewrite `processor.py` so `html()` returns `str`/`Markup` rather than
+    a `Node` tree. Update the 49 `Node`/`Fragment`/`Element` type annotations and usages
+    in tests and examples accordingly. `L`
+
 > Notes
 > - Order items by technical dependencies and product architecture
 > - Each item should represent an end-to-end (frontend + backend) functional and testable feature
@@ -98,3 +119,4 @@
 > - Phase 3: Middleware examples and services refactoring
 > - Phase 4: Django integration research and patterns
 > - Phase 5: Performance and developer experience enhancements
+> - Phase 6: Dependency modernization (workspace, rename, API migration)

@@ -80,11 +80,6 @@ class AuthMiddleware:
         return props
 
 
-# =============================================================================
-# list_components() tests
-# =============================================================================
-
-
 def test_list_components_empty_registry():
     """Empty registry returns empty dict."""
     registry = HopscotchRegistry()
@@ -201,11 +196,6 @@ def test_list_components_multiple_service_types():
     assert ServiceC in result
 
 
-# =============================================================================
-# list_middlewares() tests
-# =============================================================================
-
-
 def test_list_middlewares_empty_registry():
     """Empty registry returns empty tuple."""
     registry = HopscotchRegistry()
@@ -304,11 +294,6 @@ def test_list_middlewares_no_priority_field():
     assert len(result) == 1
     assert result[0].middleware_type is NoPriorityMiddleware
     assert result[0].priority is None
-
-
-# =============================================================================
-# Integration tests
-# =============================================================================
 
 
 def test_introspection_with_real_registry():

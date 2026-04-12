@@ -13,10 +13,10 @@ from dataclasses import dataclass
 from html.parser import HTMLParser
 from typing import Any
 
+from markupsafe import Markup
 from svcs_di import Inject
 from svcs_hopscotch.injectors import injectable
 from svcs_hopscotch.middleware import Props, PropsResult, Target
-from markupsafe import Markup
 
 from examples.middleware.aria.services import Logger
 

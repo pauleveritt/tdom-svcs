@@ -13,7 +13,6 @@ from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
 
 from tdom_svcs import hookable, middleware, register_hookable, register_middleware, scan
 
-
 # =============================================================================
 # Decorator Approach
 # =============================================================================

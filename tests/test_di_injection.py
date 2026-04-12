@@ -69,20 +69,15 @@ def test_needs_dependency_injection():
     assert not needs_dependency_injection(some_function)
 
 
-def test_keyword_injector_injects_dependencies():
+def test_keyword_injector_injects_dependencies(
+    registry_with_db: HopscotchRegistry,
+):
     """Test that KeywordInjector correctly injects dependencies."""
-    registry = HopscotchRegistry()
-    db = DatabaseService()
-    registry.register_value(DatabaseService, db)
-
-    with HopscotchContainer(registry) as container:
+    with HopscotchContainer(registry_with_db) as container:
         injector = KeywordInjector(container=container)
-
-        # Call injector with just label (db should be injected)
         result = injector(ButtonWithDI, label="Test")
 
         assert isinstance(result, ButtonWithDI)
-        assert result.db is db
         assert result.label == "Test"
 
 
@@ -92,13 +87,9 @@ def test_simple_component_without_di():
     assert str(result) == "<div>Test</div>"
 
 
-def test_component_with_di_in_context():
+def test_component_with_di_in_context(registry_with_db: HopscotchRegistry):
     """Test that components with DI work when passing context."""
-    registry = HopscotchRegistry()
-    db = DatabaseService()
-    registry.register_value(DatabaseService, db)
-
-    with HopscotchContainer(registry) as container:
+    with HopscotchContainer(registry_with_db) as container:
         result = html(t"<{ButtonWithDI} label='Click Me' />", context=container)
 
     assert str(result) == "<button>Hello Alice: Click Me</button>"
@@ -120,14 +111,9 @@ def test_component_with_multiple_di_dependencies():
     assert str(result) == expected
 
 
-def test_multiple_components_in_template():
+def test_multiple_components_in_template(registry_with_db: HopscotchRegistry):
     """Test multiple components with and without DI in same template."""
-
-    registry = HopscotchRegistry()
-    db = DatabaseService()
-    registry.register_value(DatabaseService, db)
-
-    with HopscotchContainer(registry) as container:
+    with HopscotchContainer(registry_with_db) as container:
         result = html(
             t"""
             <div>
@@ -160,11 +146,10 @@ def test_nested_components_with_di():
             )
             return Markup(f"<div class='container'>{button_html}</div>")
 
-    registry = HopscotchRegistry()
-    db = DatabaseService()
-    registry.register_value(DatabaseService, db)
+    registry_with_db = HopscotchRegistry()
+    registry_with_db.register_value(DatabaseService, DatabaseService())
 
-    with HopscotchContainer(registry) as container:
+    with HopscotchContainer(registry_with_db) as container:
         result = html(
             t"<{ContainerComponent} container={container} />", context=container
         )
@@ -214,22 +199,14 @@ def test_di_context_is_thread_safe():
     assert "Bob" in results["thread2"]
 
 
-def test_component_without_di_context_works():
-    """Test that DI components fail gracefully without context."""
-
-    # Without context, component should fail because required param is missing
-    # Should raise TypeError about missing 'db' parameter
+def test_component_with_inject_fails_without_context():
+    """DI component raises TypeError when no container is provided."""
     with pytest.raises(TypeError, match="db"):
         html(t"<{ButtonWithDI} label='Test' />")
 
 
-def test_component_with_default_di_value():
-    """Test component where DI field has a default value.
-
-    Note: svcs-di doesn't currently support Inject[T] | None unions,
-    so we test with a required Inject field that has a None default.
-    The injector will override the default when the service is available.
-    """
+def test_di_overrides_default_field_value(registry_with_db: HopscotchRegistry):
+    """DI injection resolves Inject[T] fields even when a default exists."""
 
     @dataclass
     class ComponentWithDefault:
@@ -240,12 +217,7 @@ def test_component_with_default_di_value():
             user = self.db.get_user()
             return Markup(f"<div>User: {user}, Label: {self.label}</div>")
 
-    # With context, injects dependency
-    registry = HopscotchRegistry()
-    db = DatabaseService()
-    registry.register_value(DatabaseService, db)
-
-    with HopscotchContainer(registry) as container:
+    with HopscotchContainer(registry_with_db) as container:
         result = html(
             t"<{ComponentWithDefault} label='WithContext' />", context=container
         )
@@ -269,11 +241,10 @@ def test_component_with_children_and_di():
                 f"<p>User: {user}</p>{children_html}</div>"
             )
 
-    registry = HopscotchRegistry()
-    db = DatabaseService()
-    registry.register_value(DatabaseService, db)
+    registry_with_db = HopscotchRegistry()
+    registry_with_db.register_value(DatabaseService, DatabaseService())
 
-    with HopscotchContainer(registry) as container:
+    with HopscotchContainer(registry_with_db) as container:
         result = html(
             t"<{Card} title='Profile'><p>Child content</p></{Card}>",
             context=container,

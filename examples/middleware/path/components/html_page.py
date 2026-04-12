@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 
-from svcs_hopscotch.injectors import injectable
 from markupsafe import Markup
+from svcs_hopscotch.injectors import injectable
 
 from examples.middleware.path.components.body import Body
 from examples.middleware.path.components.head import Head
@@ -19,7 +19,7 @@ class HTMLPage:
     child components, each of which may have their own assets.
     """
 
-    def __call__(self, context=None) -> str | Markup:
+    def __call__(self, context: object = None) -> str | Markup:
         """Render complete HTML document."""
         return html(
             t"""

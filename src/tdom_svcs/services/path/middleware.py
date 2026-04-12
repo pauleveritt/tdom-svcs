@@ -6,39 +6,17 @@ from typing import Any
 from svcs_di import Inject
 from svcs_hopscotch.injectors import injectable
 
-from tdom_svcs.types import COMPONENT_LOCATION_PROP
-
 from tdom_svcs.services.path.collector import PathCollector
+from tdom_svcs.types import COMPONENT_LOCATION_PROP
 
 
 @injectable
 @dataclass(frozen=True, kw_only=True, slots=True)
 class PathMiddleware:
-    """Middleware that registers components with PathCollector.
+    """Middleware that registers components with PathCollector during rendering.
 
-    PathMiddleware integrates with the middleware system to track which
-    components are rendered. It runs late in the middleware chain (high
-    priority number) so other middleware can process props first.
-
-    The middleware:
-    1. Registers the component with PathCollector
-    2. Stores the ComponentLocation in props for later access
-    3. Returns props unchanged (except for the location addition)
-
-    Note: Asset collection from rendered Nodes is handled separately,
-    not by this middleware. This middleware only tracks component registrations.
-
-    Attributes:
-        collector: PathCollector service instance (injected)
-        priority: Middleware priority (100 = runs late)
-
-    Examples:
-        >>> from tdom_svcs.services.path import PathCollector, PathMiddleware
-        >>> collector = PathCollector()
-        >>> middleware = PathMiddleware(collector=collector)
-        >>> props = middleware(MyComponent, {}, context)
-        >>> props[COMPONENT_LOCATION_PROP].module_name
-        'myapp.components.my_component'
+    Runs late in the middleware chain (priority=100) to let other middleware
+    process props first. Stores the ComponentLocation in props for later access.
     """
 
     collector: Inject[PathCollector]
@@ -50,16 +28,7 @@ class PathMiddleware:
         props: dict[str, Any],
         context: Any,
     ) -> dict[str, Any]:
-        """Register component and add location to props.
-
-        Args:
-            component: The component being rendered
-            props: Component props dictionary
-            context: Middleware context (unused)
-
-        Returns:
-            Props dict with _component_location added
-        """
+        """Register component and add its location to props."""
         # Register the component and get its location
         location = self.collector.register_component(component)
 

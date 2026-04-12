@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 
-from svcs_hopscotch.injectors import injectable
 from markupsafe import Markup
+from svcs_hopscotch.injectors import injectable
 
 from examples.common import Greeting
 from tdom_svcs import html
@@ -14,6 +14,6 @@ from tdom_svcs import html
 class Body:
     """Body component that renders a nested Greeting component."""
 
-    def __call__(self, context=None) -> str | Markup:
+    def __call__(self, context: object = None) -> str | Markup:
         """Render body element with greeting."""
         return html(t"<body><{Greeting} /></body>", context=context)

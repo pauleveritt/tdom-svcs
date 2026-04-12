@@ -1,5 +1,3 @@
-"""Re-export Request from common for backwards compatibility."""
+"""Re-export Request from common."""
 
-from examples.common.request import Request
-
-__all__ = ["Request"]
+from examples.common.request import Request as Request

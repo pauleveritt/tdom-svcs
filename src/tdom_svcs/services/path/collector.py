@@ -19,32 +19,15 @@ _EXTERNAL_URL_PATTERN = re.compile(
 )
 
 
-def _should_process_href(href: str | None) -> bool:
-    """Check if href should be processed (skip external/special URLs).
-
-    Args:
-        href: The href or src attribute value to check
-
-    Returns:
-        True if the href should be processed, False otherwise
-    """
-    if not isinstance(href, str) or not href:
+def _should_process_href(href: str) -> bool:
+    """Return True if href is a local path (not external/special URL)."""
+    if not href:
         return False
     return not _EXTERNAL_URL_PATTERN.match(href)
 
 
 def _normalize_module_name(module_name: str) -> str:
-    """Normalize module name by stripping repeated final component.
-
-    If a module ends with a repeated component (e.g., mysite.components.heading.heading),
-    strip the last component to get the package path (mysite.components.heading).
-
-    Args:
-        module_name: The module name to normalize
-
-    Returns:
-        Normalized module name with repeated component removed if present
-    """
+    """Strip repeated final component (e.g., ``a.heading.heading`` -> ``a.heading``)."""
     parts = module_name.split(".")
     if len(parts) >= 2 and parts[-1] == parts[-2]:
         return ".".join(parts[:-1])
@@ -52,18 +35,11 @@ def _normalize_module_name(module_name: str) -> str:
 
 
 def _get_component_file_path(component: type) -> Path:
-    """Get the file path for a component.
-
-    Args:
-        component: The component class or function
-
-    Returns:
-        Path to the component's source file
-    """
+    """Get the file path for a component's source file."""
     try:
         source_file = inspect.getfile(component)
         return Path(source_file)
-    except (TypeError, OSError):
+    except TypeError, OSError:
         # Fallback for built-in or dynamically created components
         return Path("<unknown>")
 
@@ -71,48 +47,18 @@ def _get_component_file_path(component: type) -> Path:
 @injectable
 @dataclass
 class PathCollector:
-    """Service for collecting component locations and asset references.
-
-    PathCollector tracks components and their static assets during rendering.
-    It provides methods to register components, detect assets from Node trees,
-    and query the collected data.
+    """Collects component locations and static asset references during rendering.
 
     Unlike tdom-path which transforms paths, PathCollector only collects
     information. This data can be used by build tools, dev servers, or
     other systems that need to know about component assets.
-
-    Attributes:
-        components: Set of ComponentLocation instances for registered components
-        assets: Set of AssetReference instances for detected assets
-
-    Examples:
-        >>> collector = PathCollector()
-        >>> location = collector.register_component(MyComponent)
-        >>> collector.collect_from_node(rendered_node, location)
-        >>> print(f"Found {len(collector.assets)} assets")
     """
 
     components: set[ComponentLocation] = field(default_factory=set)
     assets: set[AssetReference] = field(default_factory=set)
 
     def register_component(self, component: type) -> ComponentLocation:
-        """Register a component and return its location information.
-
-        Creates a ComponentLocation for the given component type,
-        stores it in the components set, and returns it.
-
-        Args:
-            component: The component class or callable to register
-
-        Returns:
-            ComponentLocation with component metadata
-
-        Examples:
-            >>> collector = PathCollector()
-            >>> location = collector.register_component(MyComponent)
-            >>> location.module_name
-            'myapp.components.my_component'
-        """
+        """Register a component and return its ComponentLocation."""
         module_name = getattr(component, "__module__", "unknown")
         module_name = _normalize_module_name(module_name)
         file_path = _get_component_file_path(component)
@@ -129,25 +75,7 @@ class PathCollector:
     def register_asset(
         self, component_location: ComponentLocation, relative_path: str
     ) -> AssetReference:
-        """Register an asset reference for a component.
-
-        Creates an AssetReference linking the asset to its owning component,
-        resolves the module path, and stores it in the assets set.
-
-        Args:
-            component_location: The component that owns this asset
-            relative_path: Original path as in template (e.g., "./static/styles.css")
-
-        Returns:
-            AssetReference with resolved paths
-
-        Examples:
-            >>> collector = PathCollector()
-            >>> location = collector.register_component(Head)
-            >>> ref = collector.register_asset(location, "./static/styles.css")
-            >>> str(ref.module_path)
-            'examples/middleware/path/components/head/static/styles.css'
-        """
+        """Register an asset reference and resolve its module path."""
         # Calculate module path from module name + relative path
         module_web_path = component_location.module_name.replace(".", "/")
         clean_relative = relative_path.lstrip("./")
@@ -178,16 +106,7 @@ class PathCollector:
     def collect_from_node(
         self, node: object, component_location: ComponentLocation
     ) -> None:
-        """Walk rendered HTML output and collect asset references.
-
-        Parses the rendered HTML string to find <link href="..."> and
-        <script src="..."> elements with local (non-external) paths,
-        and registers them as AssetReferences.
-
-        Args:
-            node: Rendered output (str/Markup)
-            component_location: The component that rendered this output
-        """
+        """Parse rendered HTML and collect local asset references (link/script tags)."""
         if not isinstance(node, str):
             return
 
@@ -204,16 +123,6 @@ class PathCollector:
                         self.register_asset(component_location, src)
 
     def clear(self) -> None:
-        """Clear all collected components and assets.
-
-        Useful for resetting state between renders or tests.
-
-        Examples:
-            >>> collector = PathCollector()
-            >>> collector.register_component(MyComponent)
-            >>> collector.clear()
-            >>> len(collector.components)
-            0
-        """
+        """Clear all collected components and assets."""
         self.components.clear()
         self.assets.clear()

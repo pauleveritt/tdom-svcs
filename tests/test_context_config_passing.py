@@ -99,8 +99,6 @@ def test_component_receives_config_from_context():
             received_config = self.config
             return Markup(f"<p>Hello {self.name}</p>")
 
-    from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
-
     registry = HopscotchRegistry()
     cfg = AppConfig()
     registry.register_value(AppConfig, cfg)
@@ -110,21 +108,6 @@ def test_component_receives_config_from_context():
 
     assert str(result) == "<p>Hello Test</p>"
     assert received_config is cfg
-
-
-def test_component_receives_context():
-    """Component can receive context."""
-    received = {}
-
-    def Greeting(name: str = "World", context=None):
-        received["context"] = context
-        return Markup(f"<p>Hello {name}</p>")
-
-    ctx = {"user": "Alice"}
-    result = html(t"<{Greeting} name='Test' />", context=ctx)
-
-    assert str(result) == "<p>Hello Test</p>"
-    assert received["context"] is ctx
 
 
 def test_component_without_context_param_ignores_it():

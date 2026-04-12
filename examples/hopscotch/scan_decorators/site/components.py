@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 
-from svcs_hopscotch.injectors import injectable
 from markupsafe import Markup
+from svcs_hopscotch.injectors import injectable
 
 from examples.hopscotch.scan_decorators.components import Greeting
 from tdom_svcs import html

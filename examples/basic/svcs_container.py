@@ -8,8 +8,8 @@ from dataclasses import dataclass, field
 from typing import TypedDict
 
 import svcs
-from svcs_di import Inject, auto
 from markupsafe import Markup
+from svcs_di import Inject, auto
 
 from tdom_svcs import html
 

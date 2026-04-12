@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 
-from svcs_hopscotch.hopscotch_registry import HopscotchRegistry
 from markupsafe import Markup
+from svcs_hopscotch.hopscotch_registry import HopscotchRegistry
 
 from examples.hopscotch.override.app_common import Greeting
 from tdom_svcs import html

@@ -7,24 +7,7 @@ from pathlib import Path, PurePosixPath
 
 @dataclass(frozen=True)
 class ComponentLocation:
-    """Information about a component's source location.
-
-    This dataclass stores metadata about where a component is defined,
-    enabling asset path resolution relative to the component's module.
-
-    Attributes:
-        component_type: The component class or function type
-        module_name: Fully qualified module name (e.g., "examples.middleware.path.components.head")
-        file_path: Absolute path to the component's source file
-
-    Examples:
-        >>> from examples.middleware.path.components.head import Head
-        >>> location = ComponentLocation(
-        ...     component_type=Head,
-        ...     module_name="examples.middleware.path.components.head",
-        ...     file_path=Path("/path/to/head.py")
-        ... )
-    """
+    """Where a component is defined -- enables asset path resolution relative to its module."""
 
     component_type: type
     module_name: str
@@ -43,26 +26,7 @@ class ComponentLocation:
 
 @dataclass(frozen=True)
 class AssetReference:
-    """Reference to a collected asset with source and component information.
-
-    This dataclass stores information about static assets (CSS, JS files)
-    encountered during rendering, enabling build tools to process them.
-
-    Attributes:
-        source: Traversable instance for reading file contents via .read_bytes()
-        component_location: The component that owns this asset
-        relative_path: Original path as written in template (e.g., "./static/styles.css")
-        module_path: Resolved path using module structure (e.g., "examples/middleware/path/components/head/static/styles.css")
-
-    Examples:
-        >>> from pathlib import PurePosixPath
-        >>> ref = AssetReference(
-        ...     source=traversable,
-        ...     component_location=location,
-        ...     relative_path="./static/styles.css",
-        ...     module_path=PurePosixPath("examples/middleware/path/components/head/static/styles.css")
-        ... )
-    """
+    """A static asset (CSS, JS) encountered during rendering, with resolved paths."""
 
     source: Traversable
     component_location: ComponentLocation

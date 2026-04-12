@@ -26,11 +26,6 @@ from tdom_svcs import (
 )
 
 
-# ============================================================================
-# html() Template Processing Thread-Safety
-# ============================================================================
-
-
 @pytest.mark.parallel_threads_limit(8)
 @pytest.mark.iterations(50)
 def test_html_concurrent_basic_templates():
@@ -86,11 +81,6 @@ def test_html_concurrent_nested_components():
     assert "inner" in str(result)
 
 
-# ============================================================================
-# Middleware Thread-Safety
-# ============================================================================
-
-
 @pytest.mark.parallel_threads_limit(8)
 def test_middleware_concurrent_registration():
     """Test concurrent middleware registration."""
@@ -101,9 +91,7 @@ def test_middleware_concurrent_registration():
     class WorkerMiddleware:
         priority: int = 0
 
-        def __call__(
-            self, target: Target, props: Props, context: Any
-        ) -> PropsResult:
+        def __call__(self, target: Target, props: Props, context: Any) -> PropsResult:
             return props
 
     scan(registry, locals_dict={"WorkerMiddleware": WorkerMiddleware})
@@ -146,17 +134,10 @@ def test_middleware_decorator_concurrent_application():
     class WorkerMiddleware:
         priority: int = 0
 
-        def __call__(
-            self, target: Target, props: Props, context: Any
-        ) -> PropsResult:
+        def __call__(self, target: Target, props: Props, context: Any) -> PropsResult:
             return props
 
     assert WorkerMiddleware is not None
-
-
-# ============================================================================
-# Scanning Thread-Safety
-# ============================================================================
 
 
 @pytest.mark.parallel_threads_limit(8)
@@ -169,9 +150,7 @@ def test_scan_concurrent_operations():
     class ScanMiddleware:
         priority: int = 0
 
-        def __call__(
-            self, target: Target, props: Props, context: Any
-        ) -> PropsResult:
+        def __call__(self, target: Target, props: Props, context: Any) -> PropsResult:
             return props
 
     scan(registry, locals_dict={"ScanMiddleware": ScanMiddleware})
@@ -190,9 +169,7 @@ def test_scan_and_execute_concurrent():
     class WorkflowMiddleware:
         priority: int = 0
 
-        def __call__(
-            self, target: Target, props: Props, context: Any
-        ) -> PropsResult:
+        def __call__(self, target: Target, props: Props, context: Any) -> PropsResult:
             props = dict(props)
             props["worker"] = True
             return props

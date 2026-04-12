@@ -2,7 +2,7 @@
 
 Subclasses ProcessorService from tstring-html to add DI concerns:
 - Context threading to components that accept a `context` parameter
-- Inject[T] field resolution via KeywordInjector when context is a DI container
+- Inject[T] field resolution via HopscotchInjector when context is a DI container
 - Component override lookup via _get_implementation
 - str | Markup return handling from existing tdom-svcs components
 
@@ -32,60 +32,22 @@ from tdom.processor import (
 
 from tdom_svcs.types import is_di_container
 
-# --------------------------------------------------------------------------
-# Type Aliases
-# --------------------------------------------------------------------------
-
 type ContextArg = object | None
 type ComponentResult = Template | str | Markup
-
-# --------------------------------------------------------------------------
-# ContextVar for thread-safe DI context threading
-# --------------------------------------------------------------------------
 
 _di_context: ContextVar[ContextArg] = ContextVar("_di_context", default=None)
 
 
-# --------------------------------------------------------------------------
-# DI Helper Functions
-# --------------------------------------------------------------------------
-
-
 def needs_dependency_injection(value: object) -> bool:
-    """
-    Check if a callable needs dependency injection.
-
-    Uses hopscotch_get_field_infos() which handles Inject[T], Resource[T],
-    and other svcs-hopscotch field types for both classes and functions.
-
-    Args:
-        value: The callable to check
-
-    Returns:
-        True if the callable has Inject[] or Resource[] fields/parameters
-    """
+    """Check if a callable has Inject[T] or Resource[T] fields/parameters."""
     if not callable(value):
         return False
     field_infos = hopscotch_get_field_infos(value)
     return any(info.is_injectable or info.is_resource for info in field_infos)
 
 
-# --------------------------------------------------------------------------
-# _get_implementation — pure container/locator logic
-# --------------------------------------------------------------------------
-
-
 def _get_implementation(context: ContextArg, cls: type) -> type:
-    """
-    Get the registered implementation for a class from the container's locator.
-
-    Args:
-        context: The context (potentially a DI container)
-        cls: The class to look up an implementation for
-
-    Returns:
-        The registered implementation, or the original class if none found
-    """
+    """Get the registered implementation for a class, or the original if none found."""
     if not is_di_container(context):
         return cls
 
@@ -109,12 +71,7 @@ def _get_implementation(context: ContextArg, cls: type) -> type:
     return impl if impl is not None else cls
 
 
-# --------------------------------------------------------------------------
-# DIProcessorService — ProcessorService subclass with DI support
-# --------------------------------------------------------------------------
-
-
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class DIProcessorService(ProcessorService):
     """ProcessorService subclass that threads DI context to components."""
 
@@ -126,15 +83,7 @@ class DIProcessorService(ProcessorService):
         start_i_index: int,
         end_i_index: int | None,
     ) -> str:
-        """
-        Invoke a component with DI threading and return the result as a string.
-
-        Extends the base class behavior with:
-        - Context threading to components that accept a `context` parameter
-        - Inject[T] field resolution via KeywordInjector
-        - Component implementation overrides via _get_implementation
-        - str | Markup return handling (for existing tdom-svcs components)
-        """
+        """Invoke a component with DI context threading, injection, and override resolution."""
         # --- Extract component callable (mirrors base class) ---
         body_start_s_index = (
             start_i_index
@@ -239,10 +188,6 @@ class DIProcessorService(ProcessorService):
                 raise TypeError(f"Unknown component return value: {type(result_t)}")
 
 
-# --------------------------------------------------------------------------
-# Module-level processor instance
-# --------------------------------------------------------------------------
-
 _di_processor = DIProcessorService(
     parser_api=CachedParserService(),
     slash_void=True,
@@ -250,33 +195,17 @@ _di_processor = DIProcessorService(
 )
 
 
-# --------------------------------------------------------------------------
-# html() — DI-aware entry point
-# --------------------------------------------------------------------------
-
-
 def html(
     template: Template,
     *,
     context: ContextArg = None,
 ) -> str | Markup:
-    """
-    Process a template string into an HTML string with DI support.
+    """Process a template string into HTML with DI support.
 
-    Threads `context` (a DI container or any object) to components that
-    accept a `context` parameter. Resolves Inject[T] fields via
-    KeywordInjector when `context` is a DI container.
-
-    Args:
-        template: A template string created with the t"" literal
-        context: Optional context for dependency injection and component
-                 threading. Pass a HopscotchContainer for DI resolution.
-
-    Returns:
-        HTML string
+    Threads ``context`` to components that accept it, and resolves
+    Inject[T] fields via HopscotchInjector when ``context`` is a DI container.
 
     Examples:
-        Basic usage:
         >>> result = html(t"<div>Hello</div>")
     """
     token = _di_context.set(context)

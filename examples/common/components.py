@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 
-from svcs_di import Inject
 from markupsafe import Markup
+from svcs_di import Inject
 
 from examples.common.services import Users
 from tdom_svcs import html

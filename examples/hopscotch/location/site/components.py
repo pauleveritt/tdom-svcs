@@ -3,8 +3,8 @@
 from dataclasses import dataclass
 from pathlib import PurePath
 
-from svcs_hopscotch.injectors import injectable
 from markupsafe import Markup
+from svcs_hopscotch.injectors import injectable
 
 from examples.hopscotch.location.components import Greeting
 from tdom_svcs import html

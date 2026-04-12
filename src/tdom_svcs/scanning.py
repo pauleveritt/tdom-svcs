@@ -23,16 +23,10 @@ def scan(
 ) -> Any:
     """Scan packages for services, middleware, and component middleware.
 
-    This function wraps svcs_di's scan() which discovers all @injectable
-    subclasses (including @middleware and @component) in a single pass.
+    Wraps svcs_di's scan() which discovers all @injectable subclasses
+    (including @middleware and @component) in a single pass.
 
-    Args:
-        registry: HopscotchRegistry to register with.
-        *packages: Package/module references to scan.
-        locals_dict: Dictionary of local variables to scan (useful for testing).
-
-    Returns:
-        The registry instance for method chaining.
+    Returns the registry instance for method chaining.
 
     Example:
         >>> from tdom_svcs import scan
@@ -41,7 +35,6 @@ def scan(
         >>> # For testing:
         >>> scan(registry, locals_dict=locals())
     """
-    # svcs_scan discovers all @injectable subclasses (services, middleware, components)
     if locals_dict is not None:
         svcs_scan(registry, locals_dict=locals_dict)
     else:

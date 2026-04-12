@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass, field
 
-from svcs_hopscotch.injectors import Resource
 from markupsafe import Markup
+from svcs_hopscotch.injectors import Resource
 
 from examples.hopscotch.resource.resources import DefaultCustomer
 from tdom_svcs import html

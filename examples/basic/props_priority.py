@@ -10,11 +10,12 @@ This example demonstrates:
 
 from dataclasses import InitVar, dataclass
 
+from markupsafe import Markup
 from svcs import Container, Registry
 from svcs_di import Inject, auto
-from markupsafe import Markup
 
-from examples.common import Database as BaseDatabase, Request, UserDict
+from examples.common import Database as BaseDatabase
+from examples.common import Request, UserDict
 from tdom_svcs import html
 
 

@@ -1,15 +1,7 @@
 from typing import Protocol, TypeGuard, runtime_checkable
 
-# -------------------------------------------------------------------------
-# Constants
-# -------------------------------------------------------------------------
-
 COMPONENT_LOCATION_PROP = "_component_location"
 """Internal prop key for storing component location during rendering."""
-
-# -------------------------------------------------------------------------
-# Protocols
-# -------------------------------------------------------------------------
 
 
 @runtime_checkable

@@ -11,9 +11,9 @@ This example demonstrates:
 from dataclasses import dataclass, field
 from typing import TypedDict
 
-from svcs_di import Inject
-from svcs_hopscotch.injectors import injectable, HopscotchRegistry, HopscotchContainer
 from markupsafe import Markup
+from svcs_di import Inject
+from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry, injectable
 
 from tdom_svcs import html, scan
 

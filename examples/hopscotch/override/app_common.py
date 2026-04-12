@@ -2,11 +2,12 @@
 
 from dataclasses import dataclass
 
+from markupsafe import Markup
 from svcs_di import Inject
 from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry, injectable
-from markupsafe import Markup
 
-from examples.common import Database as BaseDatabase, Request, UserDict
+from examples.common import Database as BaseDatabase
+from examples.common import Request, UserDict
 from tdom_svcs import html, scan
 
 

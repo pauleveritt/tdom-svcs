@@ -98,18 +98,18 @@
     `tdom-svcs/` subdirectory. Update `tool.ty.environment.python` in `pyproject.toml` if the
     path changes. `S`
 
-19. [ ] Rename `tdom` Dependency to `tstring-html` — Update all 35 `from tdom import` and
-    `from tdom.X import` statements in `src/`, `tests/`, and `examples/` to use the new
-    package import name (`tstring_html`). Update the `dependencies` list in `pyproject.toml`,
-    the `tool.uv.sources` entry, and any documentation or docstring references to the old name.
-    No behavior changes — mechanical rename only. `M`
-
-20. [x] Migrate Processor Off the Node-Based API — `processor.py` forks tdom's old internal
+19. [x] Migrate Processor Off the Node-Based API — `processor.py` forks tdom's old internal
     node-object API (`tdom.nodes.Node/Element/Fragment/Text`, `_flatten_nodes`, `_node_from_value`,
     etc.) which no longer exists in tstring-html v0.1.15. Research the current `ProcessorService`
     class-based API and rewrite `processor.py` so `html()` returns `str`/`Markup` rather than
     a `Node` tree. Update the 49 `Node`/`Fragment`/`Element` type annotations and usages
     in tests and examples accordingly. `L`
+
+20. [ ] Rename `tdom` Dependency to `tstring-html` — Update all `from tdom import` and
+    `from tdom.X import` statements in `src/`, `tests/`, and `examples/` to use the new
+    package import name (`tstring_html`). Update the `dependencies` list in `pyproject.toml`,
+    the `tool.uv.sources` entry, and any documentation or docstring references to the old name.
+    No behavior changes — mechanical rename only. `M`
 
 > Notes
 > - Order items by technical dependencies and product architecture

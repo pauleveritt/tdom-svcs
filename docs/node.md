@@ -45,15 +45,7 @@ for img in images:
         logger.warn("img missing alt attribute")
 ```
 
-**Asset collection** - Walk the tree to find static assets:
-
-```python
-match node:
-    case Element(tag="link", attrs=attrs):
-        collector.register_asset(attrs.get("href"))
-    case Element(tag="script", attrs=attrs):
-        collector.register_asset(attrs.get("src"))
-```
+**Asset collection** - Walk the tree to find static assets by pattern matching on tags and attributes. See [tdom-assets](https://github.com/pauleveritt/tdom-assets) for a complete implementation.
 
 **ARIA validation** - Check accessibility before rendering:
 
@@ -63,7 +55,7 @@ def validate(node: Node) -> None:
         assert "alt" in img.attrs, "Images must have alt text"
 ```
 
-See the {doc}`examples/middleware/aria` and {doc}`examples/middleware/path` examples for complete implementations.
+See the {doc}`examples/middleware/aria` example for a complete implementation.
 
 ## The Ecosystem Vision
 
@@ -102,7 +94,6 @@ See the middleware examples:
 
 - {doc}`examples/middleware/basic_middleware` - Chain execution, priority, and logging
 - {doc}`examples/middleware/aria` - ARIA validation that collects accessibility warnings
-- {doc}`examples/middleware/path` - Asset path collection during render
 
 ### Framework Integration
 

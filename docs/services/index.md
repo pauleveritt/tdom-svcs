@@ -8,7 +8,6 @@ tdom-svcs extends the [svcs](https://svcs.hynek.me/) service locator pattern wit
 
 - **Middleware System**: Cross-cutting concerns for component rendering
 - **Introspection**: Query and inspect registered services, middleware, and components
-- **Path Collection**: Track component locations and static assets during rendering
 - **Category System**: Organize and filter services by category tags
 
 ## Core Services
@@ -50,27 +49,6 @@ for info in list_components(registry):
 ```
 
 {doc}`introspection` - Complete introspection documentation
-
-### Path Collection Service
-
-Track component locations and collect static asset references:
-
-```python
-from tdom_svcs.services.path import PathCollector
-
-collector = PathCollector()
-registry.register_value(PathCollector, collector)
-
-# During rendering, paths are collected
-location = collector.register_component(MyComponent)
-collector.collect_from_node(rendered_node, location)
-
-# Access collected assets
-for asset in collector.assets:
-    print(f"Asset: {asset.relative_path} -> {asset.module_path}")
-```
-
-See the {doc}`../examples/middleware/index` for path middleware examples.
 
 ## Service Patterns
 

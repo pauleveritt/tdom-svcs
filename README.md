@@ -144,10 +144,9 @@ class AriaValidator:
 
 Use cases include:
 - **Accessibility checking** - Inspect rendered nodes for ARIA issues
-- **Path collection** - Track component locations and asset references
 - **Link validation** - Verify internal links point to valid routes
 
-See the [aria](examples/middleware/aria/) and [path](examples/middleware/path/) examples.
+See the [aria](examples/middleware/aria/) example.
 
 ## Quick Start
 

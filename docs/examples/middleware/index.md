@@ -1,6 +1,6 @@
 # Middleware Examples
 
-tdom-svcs middleware enables operating on rendered Node trees for tdom-specific use cases like accessibility checking and path collection.
+tdom-svcs middleware enables operating on rendered Node trees for tdom-specific use cases like accessibility checking.
 
 ## Overview
 
@@ -11,7 +11,6 @@ These examples demonstrate **tdom-specific** middleware patterns:
 | Example | Description |
 |---------|-------------|
 | [Aria](aria) | Accessibility validation using aria-testing to inspect Node trees |
-| [Path](path) | Path collection middleware for tracking components and assets |
 
 ## Key tdom Patterns
 
@@ -27,7 +26,6 @@ All examples can be run directly:
 
 ```bash
 uv run python -m examples.middleware.aria.app
-uv run python -m examples.middleware.path.app
 ```
 
 ```{toctree}
@@ -35,5 +33,4 @@ uv run python -m examples.middleware.path.app
 :maxdepth: 1
 
 aria
-path
 ```

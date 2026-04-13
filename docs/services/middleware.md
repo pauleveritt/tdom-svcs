@@ -23,19 +23,6 @@ For complete middleware documentation, see the [svcs-di middleware guide](https:
 
 tdom-svcs provides middleware for operating on rendered Node trees:
 
-### Path Collection Middleware
-
-Tracks component locations and asset references during rendering:
-
-```python
-from tdom_svcs.services import PathCollector, PathMiddleware
-
-# PathMiddleware records paths to components and assets
-# Useful for build systems, static analysis, etc.
-```
-
-See `examples/middleware/path/` for a complete example.
-
 ### ARIA/Accessibility Middleware
 
 Inspects rendered Node trees for accessibility issues:

@@ -389,7 +389,6 @@ tdom-svcs middleware is powered by [svcs-di's middleware framework](https://gith
 
 tdom-svcs adds tdom-specific middleware capabilities:
 - **Node tree inspection**: Middleware can render targets and inspect the resulting Node tree (e.g., for accessibility checking)
-- **Path collection**: Track component locations and asset references during rendering
 - **Container context**: Access to the DI container for rich transformations based on application state
 
 For complete middleware documentation, see:

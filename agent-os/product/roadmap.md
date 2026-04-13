@@ -105,11 +105,35 @@
     a `Node` tree. Update the 49 `Node`/`Fragment`/`Element` type annotations and usages
     in tests and examples accordingly. `L`
 
-20. [ ] Rename `tdom` Dependency to `tstring-html` — Update all `from tdom import` and
+20. [x] Drop `services/path/` — Asset management has been consolidated into `tdom-assets`
+    (an svcs-native package). Remove the entire `src/tdom_svcs/services/path/` directory
+    (`collector.py`, `middleware.py`, `types.py`, `__init__.py`), the `COMPONENT_LOCATION_PROP`
+    constant from `tdom_svcs/types.py`, all tests in `tests/examples/middleware/test_path.py`,
+    and the `examples/middleware/path/` example app. See `docs/research/drop-services-path.md`
+    for the full migration mapping and verification checklist. `S`
+
+21. [ ] Rename `tdom` Dependency to `tstring-html` — Update all `from tdom import` and
     `from tdom.X import` statements in `src/`, `tests/`, and `examples/` to use the new
     package import name (`tstring_html`). Update the `dependencies` list in `pyproject.toml`,
     the `tool.uv.sources` entry, and any documentation or docstring references to the old name.
     No behavior changes — mechanical rename only. `M`
+
+## Backlog
+
+- [ ] Fix stale `register_component` docs — several docs pages still use the old name
+  (`register_component`) that was renamed to `register_hookable` in a prior refactor. Files
+  affected: `docs/api_reference.md` (function signature and examples), `docs/examples/categories/
+  imperative_categories.md` (description, code examples, and a broken `literalinclude` path
+  pointing to the non-existent `imperative_categories.py` instead of `categories_example.py`),
+  `docs/examples/index.md` (table row with broken file link and stale description),
+  `docs/examples/categories/index.md` (code example). Mechanical rename only — no behavior
+  changes. `S`
+
+- [ ] Fix storyville pytest plugin breakage — `storyville` registers a `pytest11` entrypoint
+  in the workspace venv that imports `from tdom import Node`. Since `Node` was removed from
+  tdom (now `tstring-html`), pytest fails to start without `-p no:storyville`. Fix by updating
+  storyville to drop the `Node` import, or configure `pytest.ini`/`pyproject.toml` in tdom-svcs
+  to suppress the broken plugin via `addopts = -p no:storyville`. `S`
 
 > Notes
 > - Order items by technical dependencies and product architecture

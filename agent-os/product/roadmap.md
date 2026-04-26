@@ -142,7 +142,7 @@
     `tdom-svcs/docs/research/port-tstring-html-integrations.md` (Stage 2) for the
     full plan. `L`
 
-24. [ ] Port tdom-svcs to ian/integrations with `_invoke_component` Hook — Branch
+24. [x] Port tdom-svcs to ian/integrations with `_invoke_component` Hook — Branch
     the workspace's `tstring-html/` off `ian/integrations` to a local branch (e.g.
     `pauleveritt/invoke-component-hook`), apply the `_invoke_component` hook
     (~6 lines) to `ComponentProcessor.process()`, and open the upstream PR

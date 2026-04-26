@@ -6,11 +6,7 @@ from dataclasses import dataclass
 import pytest
 from string.templatelib import Template
 from svcs_di import Inject
-from svcs_hopscotch.injectors import (
-    HopscotchContainer,
-    HopscotchRegistry,
-    KeywordInjector,
-)
+from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
 
 from tdom_svcs import html
 from tdom_svcs.processor import needs_dependency_injection
@@ -67,18 +63,6 @@ def test_needs_dependency_injection():
         return "test"
 
     assert not needs_dependency_injection(some_function)
-
-
-def test_keyword_injector_injects_dependencies(
-    registry_with_db: HopscotchRegistry,
-):
-    """Test that KeywordInjector correctly injects dependencies."""
-    with HopscotchContainer(registry_with_db) as container:
-        injector = KeywordInjector(container=container)
-        result = injector(ButtonWithDI, label="Test")
-
-        assert isinstance(result, ButtonWithDI)
-        assert result.label == "Test"
 
 
 def test_simple_component_without_di():
@@ -234,11 +218,11 @@ def test_component_with_children_and_di():
     class Card:
         db: Inject[DatabaseService]
         title: str = "Card"
+        children: Template | None = None
 
-        def __call__(self, children: tuple = ()) -> Template:
+        def __call__(self) -> Template:
             user = self.db.get_user()
-            children_html = "".join(str(child) for child in children)
-            return t"<div class='card'><h2>{self.title}</h2><p>User: {user}</p>{children_html}</div>"
+            return t"<div class='card'><h2>{self.title}</h2><p>User: {user}</p>{self.children}</div>"
 
     registry_with_db = HopscotchRegistry()
     registry_with_db.register_value(DatabaseService, DatabaseService())
@@ -253,3 +237,83 @@ def test_component_with_children_and_di():
     assert "User: Alice" in html_str
     assert "Profile" in html_str
     assert "Child content" in html_str
+
+
+# Function component DI
+
+
+def test_function_component_with_inject():
+    """Function component with Inject[] gets dependencies injected."""
+
+    def Greeting(db: Inject[DatabaseService], name: str = "World") -> Template:
+        user = db.get_user()
+        return t"<p>Hello {name}, user is {user}</p>"
+
+    registry = HopscotchRegistry()
+    registry.register_value(DatabaseService, DatabaseService())
+
+    with HopscotchContainer(registry) as container:
+        result = html(t"<{Greeting} name='Test' />", container=container)
+
+    assert "Alice" in str(result)
+    assert "Test" in str(result)
+
+
+def test_function_component_with_multiple_inject():
+    """Function component with multiple Inject[] parameters."""
+
+    class CacheService:
+        def get_cached(self) -> str:
+            return "cached_value"
+
+    def Component(db: Inject[DatabaseService], cache: Inject[CacheService]) -> Template:
+        return t"<p>DB: {db.get_user()}, Cache: {cache.get_cached()}</p>"
+
+    registry = HopscotchRegistry()
+    registry.register_value(DatabaseService, DatabaseService())
+    registry.register_value(CacheService, CacheService())
+
+    with HopscotchContainer(registry) as container:
+        result = html(t"<{Component} />", container=container)
+
+    assert "Alice" in str(result)
+    assert "cached_value" in str(result)
+
+
+def test_function_component_inject_without_container_fails():
+    """Function component with Inject[] fails without DI container."""
+
+    def Greeting(db: Inject[DatabaseService]) -> Template:
+        return t"<p>{db.get_user()}</p>"
+
+    with pytest.raises(TypeError, match="db"):
+        html(t"<{Greeting} />")
+
+
+def test_component_receives_config_via_inject():
+    """Config comes from the container via Inject[]."""
+
+    class AppConfig:
+        debug = True
+
+    received_config = None
+
+    @dataclass
+    class Greeting:
+        config: Inject[AppConfig]
+        name: str = "World"
+
+        def __call__(self) -> Template:
+            nonlocal received_config
+            received_config = self.config
+            return t"<p>Hello {self.name}</p>"
+
+    registry = HopscotchRegistry()
+    cfg = AppConfig()
+    registry.register_value(AppConfig, cfg)
+
+    with HopscotchContainer(registry) as container:
+        result = html(t"<{Greeting} name='Test' />", container=container)
+
+    assert str(result) == "<p>Hello Test</p>"
+    assert received_config is cfg

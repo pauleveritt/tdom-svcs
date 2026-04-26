@@ -71,7 +71,7 @@ def main() -> str:
     # A request comes in
     with svcs.Container(registry) as container:
         # Pass container as context - html() auto-injects Inject[] params
-        result = html(t"<main><{Greeting} /></main>", context=container)
+        result = html(t"<main><{Greeting} /></main>", container=container)
         result = str(result)
 
         assert "Users: 3" in result

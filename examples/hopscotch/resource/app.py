@@ -28,7 +28,7 @@ def main() -> list[str]:
     default_customer = DefaultCustomer(name="Alice")
     with HopscotchContainer(registry, resource=default_customer) as container:
         container.register_local_value(Request, Request(user_id="1"))
-        response = html(t"<{Greeting} />", context=container)
+        response = html(t"<{Greeting} />", container=container)
         result = str(response)
 
         # DefaultGreeting uses Hello
@@ -39,7 +39,7 @@ def main() -> list[str]:
     french_customer = FrenchCustomer(name="Marie")
     with HopscotchContainer(registry, resource=french_customer) as container:
         container.register_local_value(Request, Request(user_id="1"))
-        response = html(t"<{Greeting} />", context=container)
+        response = html(t"<{Greeting} />", container=container)
         result = str(response)
 
         # FrenchGreeting uses Bonjour

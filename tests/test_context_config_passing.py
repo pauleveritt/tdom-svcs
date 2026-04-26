@@ -8,45 +8,14 @@ from svcs_di import Inject
 from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
 
 from tdom_svcs import html
-from tdom_svcs.types import is_di_container
 
 from .conftest import DatabaseService
-
-# Test is_di_container helper
-
-
-class CustomContainer:
-    """Custom container for testing."""
-
-    def get(self, service_type: type):
-        return service_type()
-
-
-@pytest.mark.parametrize(
-    ("obj", "expected"),
-    [
-        ({"foo": "bar"}, False),  # Plain dict
-        (None, False),  # None value
-        (CustomContainer(), True),  # Custom container
-    ],
-)
-def test_is_di_container(obj, expected):
-    """Test is_di_container with various inputs."""
-    assert is_di_container(obj) == expected
-
-
-def test_is_di_container_with_hopscotch():
-    """HopscotchContainer should be recognized as a DI container."""
-    registry = HopscotchRegistry()
-    with HopscotchContainer(registry) as container:
-        assert is_di_container(container)
-
 
 # Test context passing to components
 
 
 def test_function_component_receives_context():
-    """Function component with context parameter receives it."""
+    """Function component with context parameter receives None when no container is provided."""
     received_context = None
 
     def Greeting(name: str = "World", context=None):
@@ -54,15 +23,14 @@ def test_function_component_receives_context():
         received_context = context
         return Markup(f"<p>Hello {name}</p>")
 
-    ctx = {"user": "Alice"}
-    result = html(t"<{Greeting} name='Test' />", context=ctx)
+    result = html(t"<{Greeting} name='Test' />", container=None)
 
     assert str(result) == "<p>Hello Test</p>"
-    assert received_context is ctx
+    assert received_context is None
 
 
 def test_dataclass_component_receives_context():
-    """Dataclass component's __call__ receives context."""
+    """Dataclass component's __call__ receives None when no container is provided."""
     received_context = None
 
     @dataclass
@@ -74,15 +42,14 @@ def test_dataclass_component_receives_context():
             received_context = context
             return Markup(f"<p>Hello {self.name}</p>")
 
-    ctx = {"user": "Alice"}
-    result = html(t"<{Greeting} name='Test' />", context=ctx)
+    result = html(t"<{Greeting} name='Test' />", container=None)
 
     assert str(result) == "<p>Hello Test</p>"
-    assert received_context is ctx
+    assert received_context is None
 
 
 def test_component_receives_config_from_context():
-    """Config comes from the context (registered as a service), not a separate param."""
+    """Config comes from the container (registered as a service), not a separate param."""
 
     class AppConfig:
         debug = True
@@ -104,39 +71,21 @@ def test_component_receives_config_from_context():
     registry.register_value(AppConfig, cfg)
 
     with HopscotchContainer(registry) as container:
-        result = html(t"<{Greeting} name='Test' />", context=container)
+        result = html(t"<{Greeting} name='Test' />", container=container)
 
     assert str(result) == "<p>Hello Test</p>"
     assert received_config is cfg
 
 
 def test_component_without_context_param_ignores_it():
-    """Component without context parameter works when context is provided."""
+    """Component without context parameter works when container is None."""
 
     def Greeting(name: str = "World"):
         return Markup(f"<p>Hello {name}</p>")
 
-    ctx = {"user": "Alice"}
-    result = html(t"<{Greeting} name='Test' />", context=ctx)
+    result = html(t"<{Greeting} name='Test' />", container=None)
 
     assert str(result) == "<p>Hello Test</p>"
-
-
-def test_dict_context_passed_but_no_di():
-    """Plain dict context is passed to component but doesn't trigger DI."""
-
-    @dataclass
-    class ComponentWithInject:
-        db: Inject[DatabaseService]
-
-        def __call__(self, context=None) -> str | Markup:
-            return Markup(f"<p>User: {self.db.get_user()}</p>")
-
-    # With a plain dict, DI should NOT be triggered, so this should fail
-    # because db is not injected
-    ctx = {"user": "Alice"}
-    with pytest.raises(TypeError, match="db"):
-        html(t"<{ComponentWithInject} />", context=ctx)
 
 
 def test_di_still_works_with_proper_container():
@@ -157,7 +106,7 @@ def test_di_still_works_with_proper_container():
     registry.register_value(DatabaseService, db)
 
     with HopscotchContainer(registry) as container:
-        result = html(t"<{ComponentWithInject} />", context=container)
+        result = html(t"<{ComponentWithInject} />", container=container)
 
     assert str(result) == "<p>User: Alice</p>"
     # The container should be passed to __call__ as context
@@ -165,21 +114,20 @@ def test_di_still_works_with_proper_container():
 
 
 def test_component_with_kwargs_receives_context():
-    """Component with **kwargs receives context."""
+    """Component with **kwargs receives context when container is None."""
 
     def Greeting(**kwargs):
         ctx = kwargs.get("context")
         name = kwargs.get("name", "World")
         return Markup(f"<p>Hello {name}, ctx={ctx is not None}</p>")
 
-    ctx = {"user": "Alice"}
-    result = html(t"<{Greeting} name='Test' />", context=ctx)
+    result = html(t"<{Greeting} name='Test' />", container=None)
 
-    assert str(result) == "<p>Hello Test, ctx=True</p>"
+    assert str(result) == "<p>Hello Test, ctx=False</p>"
 
 
 def test_nested_components_receive_context():
-    """Nested components all receive the same context."""
+    """Nested components all receive the same context (None when no container)."""
     contexts_received = []
 
     def Outer(context=None, children=""):
@@ -190,14 +138,13 @@ def test_nested_components_receive_context():
         contexts_received.append(("inner", context))
         return Markup("<span>inner</span>")
 
-    ctx = {"user": "Alice"}
-    result = html(t"<{Outer}><{Inner} /></{Outer}>", context=ctx)
+    result = html(t"<{Outer}><{Inner} /></{Outer}>", container=None)
 
     assert str(result) == "<div><span>inner</span></div>"
     assert len(contexts_received) == 2
     # Children are resolved before being passed to parent
-    assert contexts_received[0] == ("inner", ctx)
-    assert contexts_received[1] == ("outer", ctx)
+    assert contexts_received[0] == ("inner", None)
+    assert contexts_received[1] == ("outer", None)
 
 
 def test_di_component_call_receives_context_and_children():
@@ -222,7 +169,7 @@ def test_di_component_call_receives_context_and_children():
     with HopscotchContainer(registry) as container:
         result = html(
             t"<{Card} title='Profile'><p>Child</p></{Card}>",
-            context=container,
+            container=container,
         )
 
     assert str(result) == "<div>Profile: Alice<p>Child</p></div>"
@@ -244,7 +191,7 @@ def test_function_component_with_inject():
     registry.register_value(DatabaseService, DatabaseService())
 
     with HopscotchContainer(registry) as container:
-        result = html(t"<{Greeting} name='Test' />", context=container)
+        result = html(t"<{Greeting} name='Test' />", container=container)
 
     assert "Alice" in str(result)
     assert "Test" in str(result)
@@ -267,7 +214,7 @@ def test_function_component_with_multiple_inject():
     registry.register_value(CacheService, CacheService())
 
     with HopscotchContainer(registry) as container:
-        result = html(t"<{Component} />", context=container)
+        result = html(t"<{Component} />", container=container)
 
     assert "Alice" in str(result)
     assert "cached_value" in str(result)
@@ -282,14 +229,3 @@ def test_function_component_inject_without_container_fails():
     # Without a container, should fail because db is not injected
     with pytest.raises(TypeError, match="db"):
         html(t"<{Greeting} />")
-
-
-def test_function_component_inject_with_dict_context_fails():
-    """Function component with Inject[] fails with plain dict context."""
-
-    def Greeting(db: Inject[DatabaseService]) -> str | Markup:
-        return Markup(f"<p>{db.get_user()}</p>")
-
-    # Plain dict doesn't trigger DI
-    with pytest.raises(TypeError, match="db"):
-        html(t"<{Greeting} />", context={"user": "Alice"})

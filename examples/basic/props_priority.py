@@ -75,12 +75,12 @@ def main() -> tuple[str, str]:
         container.register_local_value(Request, request)
 
         # Override the user_name prop from here in this call
-        response1 = html(t'<{Greeting} current_name="Mary" />', context=container)
+        response1 = html(t'<{Greeting} current_name="Mary" />', container=container)
         result1 = str(response1)
         assert "Mary" in result1
 
         # Let the injector derive the value
-        response2 = html(t"<{Greeting} />", context=container)
+        response2 = html(t"<{Greeting} />", container=container)
         result2 = str(response2)
         assert "Alice" in result2
 

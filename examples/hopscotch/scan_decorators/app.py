@@ -24,7 +24,7 @@ def main() -> str:
         container.register_local_value(Request, Request(user_id="1"))
 
         # Dataclass component: pass context container into the rendering
-        response = html(t"<{Greeting} />", context=container)
+        response = html(t"<{Greeting} />", container=container)
         result = str(response)
 
         # We no longer use the default Greeting with "Hello"

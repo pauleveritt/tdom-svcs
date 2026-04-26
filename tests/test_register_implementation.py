@@ -76,7 +76,7 @@ def test_template_uses_registered_implementation():
     registry.register_implementation(Greeting, FrenchGreeting)
 
     with HopscotchContainer(registry) as container:
-        result = html(t"<{Greeting} />", context=container)
+        result = html(t"<{Greeting} />", container=container)
 
     assert "Bonjour Alice!" in str(result)
     assert "Hello" not in str(result)
@@ -88,7 +88,7 @@ def test_template_uses_original_when_no_override():
     registry.register_value(DatabaseService, DatabaseService())
 
     with HopscotchContainer(registry) as container:
-        result = html(t"<{Greeting} />", context=container)
+        result = html(t"<{Greeting} />", container=container)
 
     assert "Hello Alice!" in str(result)
 
@@ -102,14 +102,14 @@ def test_override_can_be_changed():
     registry.register_implementation(Greeting, FrenchGreeting)
 
     with HopscotchContainer(registry) as container:
-        result = html(t"<{Greeting} />", context=container)
+        result = html(t"<{Greeting} />", container=container)
         assert "Bonjour" in str(result)
 
     # Now register Spanish (overwrites previous)
     registry.register_implementation(Greeting, SpanishGreeting)
 
     with HopscotchContainer(registry) as container:
-        result = html(t"<{Greeting} />", context=container)
+        result = html(t"<{Greeting} />", container=container)
         assert "Hola" in str(result)
 
 
@@ -136,7 +136,7 @@ def test_multiple_components_with_different_overrides():
     with HopscotchContainer(registry) as container:
         result = html(
             t"<div><{Greeting} /><{Button} label='OK' /></div>",
-            context=container,
+            container=container,
         )
 
     html_str = str(result)
@@ -152,7 +152,7 @@ def test_override_inherits_di_fields():
     registry.register_implementation(Greeting, FrenchGreeting)
 
     with HopscotchContainer(registry) as container:
-        result = html(t"<{Greeting} />", context=container)
+        result = html(t"<{Greeting} />", container=container)
 
     # The FrenchGreeting should have received the db via DI
     assert "Alice" in str(result)

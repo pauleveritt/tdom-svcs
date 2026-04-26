@@ -1,10 +1,9 @@
-"""Pure tdom with context parameter fundamentals.
+"""Pure tdom with props parameter fundamentals.
 
 This example demonstrates:
 
-- Basic context parameter passing without DI framework
-- Function components receiving context as a parameter
-- Accessing context data in component rendering
+- Basic function component rendering without DI framework
+- Function components receiving props as parameters
 - Foundation pattern used throughout tdom-svcs
 """
 
@@ -13,20 +12,14 @@ from markupsafe import Markup
 from tdom_svcs import html
 
 
-def Greeting(context: dict[str, str]) -> str | Markup:
-    """Use the request context to grab some info."""
-    user = context.get("user", "Unknown")
-    return html(t"<h1>Hello {user}!</h1>")
+def Greeting(name: str = "World") -> str | Markup:
+    """Render a greeting with the given name."""
+    return html(t"<h1>Hello {name}!</h1>")
 
 
 def main() -> str:
-    # A request comes in, let's get some data as "context"
-    context = {"user": "Alice"}
+    response = html(t"<{Greeting} name='Alice' />")
 
-    # Now pass it into the rendering
-    response = html(t"<{Greeting} />", context=context)
-
-    # Check the result to make sure it has what we expect
     result = str(response)
     assert "Alice" in result
 

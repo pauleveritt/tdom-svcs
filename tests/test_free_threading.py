@@ -54,7 +54,7 @@ def test_html_concurrent_with_di_container():
     registry.register_value(Greeting, Greeting("Hello from test"))
 
     with HopscotchContainer(registry) as container:
-        result = html(t"<{GreetingComponent} />", context=container)
+        result = html(t"<{GreetingComponent} />", container=container)
         assert "Hello from test" in str(result)
 
 

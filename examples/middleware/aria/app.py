@@ -39,7 +39,7 @@ def main() -> str:
         assert "missing alt" in logger.warnings[0]
 
         # Render target
-        response = html(t"<{ImageWithAlt} />", context=container)
+        response = html(t"<{ImageWithAlt} />", container=container)
         return str(response)
 
 

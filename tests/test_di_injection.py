@@ -90,7 +90,7 @@ def test_simple_component_without_di():
 def test_component_with_di_in_context(registry_with_db: HopscotchRegistry):
     """Test that components with DI work when passing context."""
     with HopscotchContainer(registry_with_db) as container:
-        result = html(t"<{ButtonWithDI} label='Click Me' />", context=container)
+        result = html(t"<{ButtonWithDI} label='Click Me' />", container=container)
 
     assert str(result) == "<button>Hello Alice: Click Me</button>"
 
@@ -105,7 +105,9 @@ def test_component_with_multiple_di_dependencies():
     registry.register_value(AuthService, auth)
 
     with HopscotchContainer(registry) as container:
-        result = html(t"<{ComplexComponent} title='Admin Panel' />", context=container)
+        result = html(
+            t"<{ComplexComponent} title='Admin Panel' />", container=container
+        )
 
     expected = "<div>Admin Panel: User=Alice, Auth=Yes</div>"
     assert str(result) == expected
@@ -121,7 +123,7 @@ def test_multiple_components_in_template(registry_with_db: HopscotchRegistry):
                 <{ButtonWithDI} label='Login' />
             </div>
         """,
-            context=container,
+            container=container,
         )
 
     html_str = str(result)
@@ -142,7 +144,7 @@ def test_nested_components_with_di():
 
         def __call__(self) -> str | Markup:
             button_html = html(
-                t"<{ButtonWithDI} label='Nested' />", context=self.container
+                t"<{ButtonWithDI} label='Nested' />", container=self.container
             )
             return Markup(f"<div class='container'>{button_html}</div>")
 
@@ -151,7 +153,7 @@ def test_nested_components_with_di():
 
     with HopscotchContainer(registry_with_db) as container:
         result = html(
-            t"<{ContainerComponent} container={container} />", context=container
+            t"<{ContainerComponent} container={container} />", container=container
         )
 
     html_str = str(result)
@@ -179,12 +181,12 @@ def test_di_context_is_thread_safe():
 
     def thread1_work():
         with HopscotchContainer(registry1) as container:
-            result = html(t"<{ButtonWithDI} label='Thread1' />", context=container)
+            result = html(t"<{ButtonWithDI} label='Thread1' />", container=container)
             results["thread1"] = str(result)
 
     def thread2_work():
         with HopscotchContainer(registry2) as container:
-            result = html(t"<{ButtonWithDI} label='Thread2' />", context=container)
+            result = html(t"<{ButtonWithDI} label='Thread2' />", container=container)
             results["thread2"] = str(result)
 
     t1 = threading.Thread(target=thread1_work)
@@ -219,7 +221,7 @@ def test_di_overrides_default_field_value(registry_with_db: HopscotchRegistry):
 
     with HopscotchContainer(registry_with_db) as container:
         result = html(
-            t"<{ComponentWithDefault} label='WithContext' />", context=container
+            t"<{ComponentWithDefault} label='WithContext' />", container=container
         )
 
     assert "User: Alice" in str(result)
@@ -247,7 +249,7 @@ def test_component_with_children_and_di():
     with HopscotchContainer(registry_with_db) as container:
         result = html(
             t"<{Card} title='Profile'><p>Child content</p></{Card}>",
-            context=container,
+            container=container,
         )
 
     html_str = str(result)

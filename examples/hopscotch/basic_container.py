@@ -104,7 +104,7 @@ def main() -> str:
         container.register_local_value(Request, request)
 
         # Dataclass component: pass context container into the rendering
-        response = html(t"<{Greeting} />", context=container)
+        response = html(t"<{Greeting} />", container=container)
         result = str(response)
         assert "Alice" in result
 

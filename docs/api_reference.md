@@ -40,9 +40,8 @@ def scan(
 def html(
     template: Template,
     *,
-    context: DIContainer | dict[str, Any] | None = None,
-    config: dict[str, Any] | None = None,
-) -> Markup:
+    container: svcs.Container | None = None,
+) -> str | Markup:
     """
     Render a tdom template with automatic dependency injection.
 

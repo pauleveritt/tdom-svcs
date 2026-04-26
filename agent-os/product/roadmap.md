@@ -120,7 +120,7 @@
 
 ## Phase 7: Port to Pluggable Component Processor
 
-22. [ ] Cleanup tdom-svcs Against Current Upstream — Drop the `dict | object | None`
+22. [x] Cleanup tdom-svcs Against Current Upstream — Drop the `dict | object | None`
     `ContextArg` type alias in favor of `svcs.Container | None`. Remove the
     `is_di_container` TypeGuard and `DIContainer` Protocol from `types.py`. Remove
     dict-handling branches in `processor.py`. Type `html()` signature as

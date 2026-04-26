@@ -12,7 +12,6 @@ from dataclasses import dataclass
 from string.templatelib import Template
 
 import svcs
-from markupsafe import Markup
 from svcs_hopscotch.auto import hopscotch_get_field_infos
 from svcs_hopscotch.injectors import HopscotchInjector
 from tdom.parser import TAttribute
@@ -99,7 +98,7 @@ def html(
     template: Template,
     *,
     container: svcs.Container | None = None,
-) -> str | Markup:
+) -> str:
     """Process a template string into HTML with DI support.
 
     Threads ``container`` to components that accept it, and resolves
@@ -108,4 +107,4 @@ def html(
     Examples:
         >>> result = html(t"<div>Hello</div>")
     """
-    return Markup(_tp.process(template, ProcessContext(), container))
+    return _tp.process(template, ProcessContext(), container)

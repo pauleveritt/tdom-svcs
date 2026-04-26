@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from pathlib import PurePath
 
-from markupsafe import Markup
+from string.templatelib import Template
 from svcs_hopscotch.injectors import HopscotchRegistry
 
 from tdom_svcs import (
@@ -42,8 +42,8 @@ class MySQLDB(Database):
 class Greeting:
     """Greeting component."""
 
-    def __call__(self) -> str | Markup:
-        return Markup("<h1>Hello</h1>")
+    def __call__(self) -> Template:
+        return t"<h1>Hello</h1>"
 
 
 # Test context types

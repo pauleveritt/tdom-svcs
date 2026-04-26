@@ -12,7 +12,7 @@ import inspect
 from collections.abc import Callable
 from dataclasses import dataclass
 from string.templatelib import Template
-from typing import cast
+from typing import TypeGuard
 
 import svcs
 from markupsafe import Markup
@@ -28,6 +28,10 @@ from tdom.processor import (
 )
 
 type ComponentResult = Template | str | Markup
+
+
+def _is_callable(obj: object) -> TypeGuard[Callable[..., object]]:
+    return callable(obj)
 
 
 def needs_dependency_injection(value: object) -> bool:
@@ -80,9 +84,10 @@ class DIProcessorService(TemplateProcessor[svcs.Container | None]):
         children_template = self._extract_component_template(
             template, attrs, start_i_index, end_i_index, check_callables=True
         )
-        component_callable = cast(
-            Callable[..., object], template.interpolations[start_i_index].value
-        )
+        raw_value = template.interpolations[start_i_index].value
+        if not _is_callable(raw_value):
+            raise TypeError("Component interpolation must be callable")
+        component_callable = raw_value
 
         # --- Apply implementation override ---
         if isinstance(component_callable, type):
@@ -119,7 +124,6 @@ class DIProcessorService(TemplateProcessor[svcs.Container | None]):
             kwargs["context"] = app_state
 
         # --- Invoke component (with or without DI) ---
-        result_t: object
         if needs_dependency_injection(component_callable) and app_state is not None:
             injector = HopscotchInjector(container=app_state)
             result_t = injector(component_callable, **kwargs)
@@ -136,15 +140,15 @@ class DIProcessorService(TemplateProcessor[svcs.Container | None]):
             result_t is not None
             and not isinstance(result_t, Template)
             and not isinstance(result_t, (str, Markup))
-            and callable(result_t)
+            and _is_callable(result_t)
         ):
-            sig = inspect.signature(result_t.__call__)
+            sig = inspect.signature(result_t)
             call_kwargs: dict[str, object] = {}
             if "context" in sig.parameters:
                 call_kwargs["context"] = app_state
             if "children" in sig.parameters:
                 call_kwargs["children"] = children_html
-            result_t = cast(Callable[..., object], result_t)(**call_kwargs)
+            result_t = result_t(**call_kwargs)
 
         # --- Handle final result ---
         match result_t:

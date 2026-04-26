@@ -9,8 +9,8 @@ This example demonstrates:
 """
 
 from dataclasses import InitVar, dataclass
+from string.templatelib import Template
 
-from markupsafe import Markup
 from svcs import Container, Registry
 from svcs_di import Inject, auto
 
@@ -56,8 +56,8 @@ class Greeting:
             current_user = users.get_current_user()
             self.current_name = current_user["name"]
 
-    def __call__(self) -> str | Markup:
-        return html(t"<h1>Hello {self.current_name}!</h1>")
+    def __call__(self) -> Template:
+        return t"<h1>Hello {self.current_name}!</h1>"
 
 
 def main() -> tuple[str, str]:

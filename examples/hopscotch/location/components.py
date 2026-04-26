@@ -1,12 +1,11 @@
 """Components built into the base app."""
 
 from dataclasses import dataclass, field
+from string.templatelib import Template
 
-from markupsafe import Markup
 from svcs_di import Inject
 
 from examples.common.services import Users
-from tdom_svcs import html
 
 
 # A component that injects the Users service
@@ -21,5 +20,5 @@ class Greeting:
         current_user = self.users.get_current_user()
         self.user_name = current_user["name"]
 
-    def __call__(self) -> str | Markup:
-        return html(t"<h1>Hello {self.user_name}!</h1>")
+    def __call__(self) -> Template:
+        return t"<h1>Hello {self.user_name}!</h1>"

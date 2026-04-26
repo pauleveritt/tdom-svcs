@@ -5,10 +5,10 @@ which automatically injects Inject[] parameters into components.
 """
 
 from dataclasses import dataclass, field
+from string.templatelib import Template
 from typing import TypedDict
 
 import svcs
-from markupsafe import Markup
 from svcs_di import Inject, auto
 
 from tdom_svcs import html
@@ -54,12 +54,12 @@ class Service:
     timeout: int = 30
 
 
-def Greeting(service: Inject[Service]) -> str | Markup:
+def Greeting(service: Inject[Service]) -> Template:
     """A function component that receives an injected Database service."""
     users = service.db.list_users()
     timeout = service.timeout
     user_count = len(users)
-    return html(t"<div>Hello! (Users: {user_count}, Timeout: {timeout})</div>")
+    return t"<div>Hello! (Users: {user_count}, Timeout: {timeout})</div>"
 
 
 def main() -> str:

@@ -1,12 +1,11 @@
 """Components built into the base app."""
 
 from dataclasses import dataclass, field
+from string.templatelib import Template
 
-from markupsafe import Markup
 from svcs_hopscotch.injectors import Resource
 
 from examples.hopscotch.resource.resources import DefaultCustomer
-from tdom_svcs import html
 
 
 # A component that injects registered Customer resource
@@ -20,5 +19,5 @@ class Greeting:
     def __post_init__(self) -> None:
         self.customer_name = self.customer.name
 
-    def __call__(self) -> str | Markup:
-        return html(t"<h1>Hello {self.customer_name}!</h1>")
+    def __call__(self) -> Template:
+        return t"<h1>Hello {self.customer_name}!</h1>"

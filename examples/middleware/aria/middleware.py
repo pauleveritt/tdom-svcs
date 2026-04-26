@@ -11,6 +11,7 @@ Uses @injectable for DI resolution (not @middleware - this is per-target).
 
 from dataclasses import dataclass
 from html.parser import HTMLParser
+from string.templatelib import Template
 from typing import Any
 
 from markupsafe import Markup
@@ -19,6 +20,7 @@ from svcs_hopscotch.injectors import injectable
 from svcs_hopscotch.middleware import Props, PropsResult, Target
 
 from examples.middleware.aria.services import Logger
+from tdom_svcs import html
 
 
 class _ImgAltChecker(HTMLParser):
@@ -64,9 +66,14 @@ class AriaVerifierMiddleware:
             # For dataclass targets, instantiate then call
             if isinstance(target, type):
                 instance = target()
-                return instance()
-            # For function targets, just call
-            return target()
+                result = instance()
+            else:
+                # For function targets, just call
+                result = target()
+            # If result is a Template, render it to Markup
+            if isinstance(result, Template):
+                return html(result)
+            return result
         except Exception:
             # If rendering fails, skip inspection
             return None

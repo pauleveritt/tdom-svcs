@@ -130,7 +130,7 @@
     cleanup that shrinks the fork before the larger port. See
     `docs/research/port-tstring-html-integrations.md` for the full plan. `S`
 
-23. [ ] Migrate Component Return Types to Template — Update component Protocols
+23. [x] Migrate Component Return Types to Template — Update component Protocols
     (`themester/views/decorators.py:View`, `themester/layouts/types.py:Layout`) to
     require `__call__(self) -> Template`. Migrate themester production code
     (`cli/layout_generate.py`, `layouts/decorators.py`, `views/decorators.py`,

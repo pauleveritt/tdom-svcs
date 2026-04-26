@@ -4,7 +4,7 @@ import threading
 from dataclasses import dataclass
 
 import pytest
-from markupsafe import Markup
+from string.templatelib import Template
 from svcs_di import Inject
 from svcs_hopscotch.injectors import (
     HopscotchContainer,
@@ -26,8 +26,8 @@ class SimpleComponent:
 
     label: str = "Default"
 
-    def __call__(self) -> str | Markup:
-        return Markup(f"<div>{self.label}</div>")
+    def __call__(self) -> Template:
+        return t"<div>{self.label}</div>"
 
 
 @dataclass
@@ -37,9 +37,9 @@ class ButtonWithDI:
     db: Inject[DatabaseService]
     label: str = "Click"
 
-    def __call__(self) -> str | Markup:
+    def __call__(self) -> Template:
         user = self.db.get_user()
-        return Markup(f"<button>Hello {user}: {self.label}</button>")
+        return t"<button>Hello {user}: {self.label}</button>"
 
 
 @dataclass
@@ -50,10 +50,10 @@ class ComplexComponent:
     auth: Inject[AuthService]
     title: str = "Dashboard"
 
-    def __call__(self) -> str | Markup:
+    def __call__(self) -> Template:
         user = self.db.get_user()
         authenticated = "Yes" if self.auth.is_authenticated() else "No"
-        return Markup(f"<div>{self.title}: User={user}, Auth={authenticated}</div>")
+        return t"<div>{self.title}: User={user}, Auth={authenticated}</div>"
 
 
 def test_needs_dependency_injection():
@@ -142,11 +142,11 @@ def test_nested_components_with_di():
     class ContainerComponent:
         container: HopscotchContainer | None = None
 
-        def __call__(self) -> str | Markup:
+        def __call__(self) -> Template:
             button_html = html(
                 t"<{ButtonWithDI} label='Nested' />", container=self.container
             )
-            return Markup(f"<div class='container'>{button_html}</div>")
+            return t"<div class='container'>{button_html}</div>"
 
     registry_with_db = HopscotchRegistry()
     registry_with_db.register_value(DatabaseService, DatabaseService())
@@ -157,7 +157,7 @@ def test_nested_components_with_di():
         )
 
     html_str = str(result)
-    assert "class='container'" in html_str
+    assert 'class="container"' in html_str
     assert "Hello Alice: Nested" in html_str
 
 
@@ -215,9 +215,9 @@ def test_di_overrides_default_field_value(registry_with_db: HopscotchRegistry):
         db: Inject[DatabaseService]
         label: str = "Test"
 
-        def __call__(self) -> str | Markup:
+        def __call__(self) -> Template:
             user = self.db.get_user()
-            return Markup(f"<div>User: {user}, Label: {self.label}</div>")
+            return t"<div>User: {user}, Label: {self.label}</div>"
 
     with HopscotchContainer(registry_with_db) as container:
         result = html(
@@ -235,13 +235,10 @@ def test_component_with_children_and_di():
         db: Inject[DatabaseService]
         title: str = "Card"
 
-        def __call__(self, children: tuple = ()) -> str | Markup:
+        def __call__(self, children: tuple = ()) -> Template:
             user = self.db.get_user()
             children_html = "".join(str(child) for child in children)
-            return Markup(
-                f"<div class='card'><h2>{self.title}</h2>"
-                f"<p>User: {user}</p>{children_html}</div>"
-            )
+            return t"<div class='card'><h2>{self.title}</h2><p>User: {user}</p>{children_html}</div>"
 
     registry_with_db = HopscotchRegistry()
     registry_with_db.register_value(DatabaseService, DatabaseService())

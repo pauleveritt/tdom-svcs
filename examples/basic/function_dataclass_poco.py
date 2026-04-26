@@ -9,8 +9,7 @@ This example demonstrates:
 """
 
 from dataclasses import dataclass
-
-from markupsafe import Markup
+from string.templatelib import Template
 
 from tdom_svcs import html
 
@@ -19,21 +18,21 @@ from tdom_svcs import html
 class Greeting2:
     name: str = "World"
 
-    def __call__(self) -> str | Markup:
-        return html(t"<h1>Hello {self.name}!</h1>")
+    def __call__(self) -> Template:
+        return t"<h1>Hello {self.name}!</h1>"
 
 
 class Greeting3:
     def __init__(self, name: str = "World") -> None:
         self.name = name
 
-    def __call__(self) -> str | Markup:
-        return html(t"<h1>Hello {self.name}!</h1>")
+    def __call__(self) -> Template:
+        return t"<h1>Hello {self.name}!</h1>"
 
 
-def Greeting1(name: str = "World") -> str | Markup:
+def Greeting1(name: str = "World") -> Template:
     """Render a greeting."""
-    return html(t"<h1>Hello {name}!</h1>")
+    return t"<h1>Hello {name}!</h1>"
 
 
 def main() -> tuple[str, str, str]:

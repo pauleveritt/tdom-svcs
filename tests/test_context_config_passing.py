@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 import pytest
 from markupsafe import Markup
+from string.templatelib import Template
 from svcs_di import Inject
 from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
 
@@ -37,10 +38,10 @@ def test_dataclass_component_receives_context():
     class Greeting:
         name: str = "World"
 
-        def __call__(self, context=None) -> str | Markup:
+        def __call__(self, context=None) -> Template:
             nonlocal received_context
             received_context = context
-            return Markup(f"<p>Hello {self.name}</p>")
+            return t"<p>Hello {self.name}</p>"
 
     result = html(t"<{Greeting} name='Test' />", container=None)
 
@@ -61,10 +62,10 @@ def test_component_receives_config_from_context():
         config: Inject[AppConfig]
         name: str = "World"
 
-        def __call__(self) -> str | Markup:
+        def __call__(self) -> Template:
             nonlocal received_config
             received_config = self.config
-            return Markup(f"<p>Hello {self.name}</p>")
+            return t"<p>Hello {self.name}</p>"
 
     registry = HopscotchRegistry()
     cfg = AppConfig()
@@ -96,10 +97,10 @@ def test_di_still_works_with_proper_container():
     class ComponentWithInject:
         db: Inject[DatabaseService]
 
-        def __call__(self, context=None) -> str | Markup:
+        def __call__(self, context=None) -> Template:
             nonlocal received_context
             received_context = context
-            return Markup(f"<p>User: {self.db.get_user()}</p>")
+            return t"<p>User: {self.db.get_user()}</p>"
 
     registry = HopscotchRegistry()
     db = DatabaseService()
@@ -156,11 +157,11 @@ def test_di_component_call_receives_context_and_children():
         db: Inject[DatabaseService]
         title: str = "Card"
 
-        def __call__(self, context=None, children: str | Markup = "") -> str | Markup:
+        def __call__(self, context=None, children: str | Markup = "") -> Template:
             received["context"] = context
             received["children"] = children
             user = self.db.get_user()
-            return Markup(f"<div>{self.title}: {user}{children}</div>")
+            return t"<div>{self.title}: {user}{children}</div>"
 
     registry = HopscotchRegistry()
     db = DatabaseService()

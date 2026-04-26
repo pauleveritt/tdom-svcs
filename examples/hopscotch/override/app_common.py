@@ -1,8 +1,8 @@
 """Services and components with @injectable wiring for override example."""
 
 from dataclasses import dataclass
+from string.templatelib import Template
 
-from markupsafe import Markup
 from svcs_di import Inject
 from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry, injectable
 
@@ -52,9 +52,9 @@ class Greeting:
 
     users: Inject[Users]
 
-    def __call__(self) -> str | Markup:
+    def __call__(self) -> Template:
         current_user = self.users.get_current_user()
-        return html(t"<h1>Hello {current_user['name']}!</h1>")
+        return t"<h1>Hello {current_user['name']}!</h1>"
 
 
 def main() -> str:

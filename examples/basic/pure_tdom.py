@@ -7,14 +7,14 @@ This example demonstrates:
 - Foundation pattern used throughout tdom-svcs
 """
 
-from markupsafe import Markup
+from string.templatelib import Template
 
 from tdom_svcs import html
 
 
-def Greeting(name: str = "World") -> str | Markup:
+def Greeting(name: str = "World") -> Template:
     """Render a greeting with the given name."""
-    return html(t"<h1>Hello {name}!</h1>")
+    return t"<h1>Hello {name}!</h1>"
 
 
 def main() -> str:

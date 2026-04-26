@@ -154,7 +154,7 @@
     upstream now. See `tdom-svcs/docs/research/port-tstring-html-integrations.md`
     (Stage 3 and "Upstream ask" section) for the full plan. `M`
 
-25. [ ] Adopt tdom-svcs as Workspace-Wide Processor — Audit workspace for direct
+25. [x] Adopt tdom-svcs as Workspace-Wide Processor — Audit workspace for direct
     `from tdom import html` and `from tdom.processor import` usage. Switch each
     site to `from tdom_svcs import html`. Verify byte-identical output for the
     `container=None` path (e.g. compare a themester SSG build before/after).

@@ -118,6 +118,52 @@
     the `tool.uv.sources` entry, and any documentation or docstring references to the old name.
     No behavior changes — mechanical rename only. `M`
 
+## Phase 7: Port to Pluggable Component Processor
+
+22. [ ] Cleanup tdom-svcs Against Current Upstream — Drop the `dict | object | None`
+    `ContextArg` type alias in favor of `svcs.Container | None`. Remove the
+    `is_di_container` TypeGuard and `DIContainer` Protocol from `types.py`. Remove
+    dict-handling branches in `processor.py`. Type `html()` signature as
+    `html(template, *, container: svcs.Container | None = None) -> str | Markup`.
+    Update tests in `test_html_wrapper.py` to remove dict-context parametrizations.
+    No behavior changes for themester or tdom-assets — purely a type/dead-code
+    cleanup that shrinks the fork before the larger port. See
+    `docs/research/port-tstring-html-integrations.md` for the full plan. `S`
+
+23. [ ] Migrate Component Return Types to Template — Update component Protocols
+    (`themester/views/decorators.py:View`, `themester/layouts/types.py:Layout`) to
+    require `__call__(self) -> Template`. Migrate themester production code
+    (`cli/layout_generate.py`, `layouts/decorators.py`, `views/decorators.py`,
+    `views/__init__.py:get_view`), all examples, tests, docs, and lat.md sections.
+    Migrate tdom-svcs own examples and tests. Drop manual `context=` threading and
+    `Markup(children)` wrapping; components return `t"..."` directly and let the
+    processor recurse via `app_state`. tdom-svcs continues to support both
+    `Template` and `str | Markup` returns during the migration window. See
+    `tdom-svcs/docs/research/port-tstring-html-integrations.md` (Stage 2) for the
+    full plan. `L`
+
+24. [ ] Port tdom-svcs to ian/integrations with `_invoke_component` Hook — Branch
+    the workspace's `tstring-html/` off `ian/integrations` to a local branch (e.g.
+    `pauleveritt/invoke-component-hook`), apply the `_invoke_component` hook
+    (~6 lines) to `ComponentProcessor.process()`, and open the upstream PR
+    concurrently. Replace tdom-svcs `processor.py` with a thin
+    `DIComponentProcessor(ComponentProcessor[svcs.Container | None])` subclass
+    (~30 lines) that overrides `process()` for impl-override and
+    `_invoke_component` for DI injection. Delete the `_di_context` ContextVar
+    transport, factory pattern handling, and children pre-rendering — all handled
+    upstream now. See `tdom-svcs/docs/research/port-tstring-html-integrations.md`
+    (Stage 3 and "Upstream ask" section) for the full plan. `M`
+
+25. [ ] Adopt tdom-svcs as Workspace-Wide Processor — Audit workspace for direct
+    `from tdom import html` and `from tdom.processor import` usage. Switch each
+    site to `from tdom_svcs import html`. Verify byte-identical output for the
+    `container=None` path (e.g. compare a themester SSG build before/after).
+    Decide whether to re-export `tdom.svg()` from tdom-svcs with a `container`
+    parameter or leave direct imports. Optionally promote `tdom_svcs.html` as
+    the workspace render entry point in workspace `README.md` and member
+    `CLAUDE.md` files. See `tdom-svcs/docs/research/port-tstring-html-integrations.md`
+    (Stage 4) for the full plan. `S`
+
 ## Backlog
 
 - [ ] Fix stale `register_component` docs — several docs pages still use the old name
@@ -144,3 +190,4 @@
 > - Phase 4: Django integration research and patterns
 > - Phase 5: Performance and developer experience enhancements
 > - Phase 6: Dependency modernization (workspace, rename, API migration)
+> - Phase 7: Port to pluggable component processor (cleanup, Template migration, ian/integrations port, workspace adoption)

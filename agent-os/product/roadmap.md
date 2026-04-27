@@ -247,7 +247,7 @@ the rest of Hopscotch's resolution pipeline via regression tests.
     See `docs/research/port-tstring-html-integrations-revisited.md` (Stage 3
     "Add regression tests" subsection). `M`
 
-30. [ ] Type-Checking Improvements for the Rewrite — Parametrize
+30. [x] Type-Checking Improvements for the Rewrite — Parametrize
     `_get_implementation[T](container, cls: type[T]) -> type[T]` to carry the type
     through the Protocol → impl swap. Wrap `HopscotchInjector._resolve_field_value_sync`
     access in a single typed seam (one `# ty: ignore[private]` in a helper named

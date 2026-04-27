@@ -13,6 +13,7 @@ from svcs_di.injector_helpers import FieldResolverWithKwargs, build_resolved_kwa
 from svcs_hopscotch.auto import hopscotch_get_field_infos
 from svcs_hopscotch.injectors.hopscotch import HopscotchInjector
 from string.templatelib import Template
+from tdom.parser import TAttribute
 
 from tdom.processor import (
     Attribute,
@@ -46,8 +47,18 @@ def _get_implementation[T](container: svcs.Container, cls: type[T]) -> type[T]:
 
 
 def _make_resolver(container: svcs.Container) -> FieldResolverWithKwargs:
-    """Typed seam for HopscotchInjector._resolve_field_value_sync."""
-    injector = HopscotchInjector(container=container)
+    """Typed seam for HopscotchInjector._resolve_field_value_sync.
+
+    Passes resource type and location from container so the locator can select
+    the correct implementation for Inject[Protocol] fields.
+    """
+    resource = getattr(container, "resource", None)
+    location = getattr(container, "location", None)
+    injector = HopscotchInjector(
+        container=container,
+        resource=type(resource) if resource is not None else None,
+        location=location,
+    )
     return injector._resolve_field_value_sync
 
 
@@ -72,7 +83,7 @@ class DIComponentProcessor(ComponentProcessor):
         last_ctx: ProcessContext,
         app_state: DefaultAppState,
         component_callable: object,
-        attrs: tuple,
+        attrs: tuple[TAttribute, ...],
         component_template: Template,
         provided_attrs: tuple[Attribute, ...] = (),
     ) -> tuple[Template, ComponentObject | None]:
@@ -111,6 +122,7 @@ class DIComponentProcessor(ComponentProcessor):
             children=component_template,
             provided_attrs=provided_attrs,
             raise_on_missing=False,
+            raise_on_requires_positional=False,
         )
 
         # Phase 2: full Hopscotch resolution — Get[T, Attr], locator, adapters, defaults.

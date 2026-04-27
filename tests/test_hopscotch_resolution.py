@@ -8,7 +8,6 @@ from string.templatelib import Template
 from typing import Annotated, Protocol, runtime_checkable
 from unittest.mock import patch
 
-import pytest
 import svcs
 from svcs_di import Inject
 from svcs_hopscotch import Get, Resource
@@ -16,6 +15,43 @@ from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
 
 from tdom_svcs import html
 from tdom_svcs.processor import DIComponentProcessor, _di_context
+
+
+# Module-level classes for scenario 5 (Inject[Protocol] locator-aware resolution).
+# Must be at module level so get_type_hints() can resolve them by name.
+
+
+@runtime_checkable
+class IConfig(Protocol):
+    name: str
+
+
+@dataclass
+class ConfigA:
+    name: str = "ConfigA"
+
+
+@dataclass
+class ConfigB:
+    name: str = "ConfigB"
+
+
+@dataclass
+class PageResource:
+    page_type: str = "page"
+
+
+@dataclass
+class SectionResource:
+    page_type: str = "section"
+
+
+@dataclass
+class PageConsumer:
+    config: Inject[IConfig]
+
+    def __call__(self) -> Template:
+        return t"<p>{self.config.name}</p>"
 
 
 # Scenario 1: Inject[T] basic, with and without template override
@@ -177,42 +213,8 @@ def test_inject_container_self_injection():
 # Scenario 5: Locator-aware Inject[Protocol]
 
 
-@pytest.mark.skip(
-    reason="Field-level locator-aware Inject[Protocol] requires svcs-hopscotch "
-    "register_implementation to expose Protocol-as-service for Inject resolution. "
-    "Verifying scenario 6 (component-level Protocol override) covers the locator "
-    "for the rendering path; field-level resolution needs further investigation."
-)
 def test_locator_aware_inject_protocol():
     """Inject[Protocol] uses locator to pick impl based on container.resource."""
-
-    @runtime_checkable
-    class IConfig(Protocol):
-        name: str
-
-    @dataclass
-    class ConfigA:
-        name: str = "ConfigA"
-
-    @dataclass
-    class ConfigB:
-        name: str = "ConfigB"
-
-    @dataclass
-    class PageResource:
-        page_type: str = "page"
-
-    @dataclass
-    class SectionResource:
-        page_type: str = "section"
-
-    @dataclass
-    class PageConsumer:
-        config: Inject[IConfig]
-
-        def __call__(self) -> Template:
-            return t"<p>{self.config.name}</p>"
-
     registry = HopscotchRegistry()
     registry.register_implementation(IConfig, ConfigA, resource=PageResource)
     registry.register_implementation(IConfig, ConfigB, resource=SectionResource)

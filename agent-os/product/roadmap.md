@@ -164,6 +164,125 @@
     `CLAUDE.md` files. See `tdom-svcs/docs/research/port-tstring-html-integrations.md`
     (Stage 4) for the full plan. `S`
 
+## Phase 8: Resolution Strategy Refactor
+
+After today's upstream activity in `tstring-html` `ian/integrations` (`a877d46`,
+`9a5c37c`, `6fb4227`), the supported subclassing surface for DI changed from
+"override `_invoke_component`" to "use `_prep_component_kwargs` flags + reordered
+merge". The `_invoke_component` hook from item 24 was reverted. This phase
+re-rewrites tdom-svcs's processor against the new surface (Option C: route
+resolution through Hopscotch, delegate the call to `super().process()`), moves
+the container from `app_state` to a ContextVar, and locks in `Get[T, Attr]` and
+the rest of Hopscotch's resolution pipeline via regression tests.
+
+26. [x] Track ian/integrations Directly — Replace the
+    `pauleveritt/invoke-component-hook` workspace branch (which carried our reverted
+    `_invoke_component` hook commit) with a direct checkout of `ian/integrations`.
+    Branch deleted; workspace `tstring-html/` now follows `ian/integrations` HEAD
+    (post-`6fb4227 Add exceptional flags`). No upstream patches required for the
+    revised architecture. See
+    `docs/research/port-tstring-html-integrations-revisited.md` ("Why this revision"
+    and "Upstream changes — confirmed: none required" sections). `S`
+
+28. [ ] Rewrite tdom-svcs Processor per Option C — Replace the
+    `_invoke_component`-based `DIComponentProcessor` with the four-phase Option C
+    architecture in `src/tdom_svcs/processor.py`:
+
+    1. Re-introduce `_di_context: ContextVar[svcs.Container | None]` (Stage 1's
+       spec removed it; restore it).
+    2. In `process()`: read container from cvar; swap component-level Protocol →
+       impl via `_get_implementation`; if DI is needed, run the four phases:
+       - **Phase 1** — pre-prep `partial_kwargs` with `_prep_component_kwargs(...,
+         raise_on_missing=False)`.
+       - **Phase 2** — resolve through Hopscotch via `build_resolved_kwargs(
+         field_infos, HopscotchInjector(container)._resolve_field_value_sync,
+         partial_kwargs)`.
+       - **Phase 3** — compute `di_fill = (k, v) for k, v in resolved if k not in
+         partial_kwargs`.
+       - **Phase 4** — `super().process(..., provided_attrs=di_fill +
+         provided_attrs)`. The factory branch in upstream captures
+         component_object automatically.
+    3. Delete the `_invoke_component` override (upstream method no longer exists
+       post-`6fb4227`).
+    4. Drop the `[svcs.Container | None]` parameterization on
+       `DIComponentProcessor` and `TemplateProcessor`. Use upstream's
+       `DefaultAppState = None`.
+    5. Wrap `html()` body in `_di_context.set(container)` / `reset(token)`. Pass
+       `app_state=None` to `_tp.process()`.
+    6. Widen `needs_dependency_injection` to detect `info.operator is not None`
+       (so components using only `Get[T, Attr]` still trigger DI).
+
+    Imports four underscore-prefixed helpers (`_prep_component_kwargs`,
+    `_resolve_t_attrs`, `get_callable_info` from `tdom.processor`;
+    `_resolve_field_value_sync` method on `HopscotchInjector`) — all intentional
+    surfaces post-`6fb4227`. Concentrate the imports in one method to limit drift
+    blast-radius. See
+    `docs/research/port-tstring-html-integrations-revisited.md` ("Revised
+    architecture for tdom-svcs" and Q2 Option C sections). `M`
+
+29. [ ] Regression Tests for Full Hopscotch Resolution Surface — Add tests in
+    `tdom-svcs/tests/` covering each Hopscotch feature now routed through Option
+    C, with each test corresponding to a trace-through in the research doc:
+    - `Inject[T]` basic resolution, with and without template override.
+    - `Resource[T]` injection from `container.resource`.
+    - `Get[T, Attr]` operator: DI-resolved (returns
+      `container.get(T).attr`) AND template-overridden (template wins, no
+      `container.get(T)` call — verify via a counter on a stub Settings service).
+    - `Inject[svcs.Container]` self-injection: receives the container itself, not
+      `container.get(svcs.Container)`.
+    - Locator-aware `Inject[Protocol]`: register `IConfig` to `ConfigA` for
+      `resource=Page`, `ConfigB` for `resource=Section`; render same component in
+      both contexts; assert correct impl injected.
+    - Component-level Protocol → impl override (`<{IHeader}>...</{IHeader}>` with
+      `IHeader` registered to `Header`); kwarg prep uses `Header`'s field info.
+    - Component_object capture under DI: factory class with `Inject[T]` fields;
+      assert slot 2 of the returned tuple holds the constructed instance (test
+      via a recording wrapper around `DIComponentProcessor`).
+    - Required-DI-field fallback semantics: dataclass with required `Inject[T]`,
+      no template attr; renders correctly without raising
+      `TypeError: Missing required parameters`.
+    - No-DI fast path: function component with no `Inject` / `Resource` / `Get`
+      fields short-circuits to `super().process()` without resolution overhead.
+
+    See `docs/research/port-tstring-html-integrations-revisited.md` (Stage 3
+    "Add regression tests" subsection). `M`
+
+30. [ ] Type-Checking Improvements for the Rewrite — Parametrize
+    `_get_implementation[T](container, cls: type[T]) -> type[T]` to carry the type
+    through the Protocol → impl swap. Wrap `HopscotchInjector._resolve_field_value_sync`
+    access in a single typed seam (one `# ty: ignore[private]` in a helper named
+    `_make_resolver`). Add a Protocol-satisfaction test asserting
+    `DIComponentProcessor` satisfies `IComponentProcessor[None]` per the workspace
+    `protocol-satisfaction-test` standard. Verify `ty check` runs clean post-rewrite
+    in `just quality`. See
+    `docs/research/port-tstring-html-integrations-revisited.md` ("Type checking
+    opportunities" section). `S`
+
+27. [ ] Cache Field-Info Helpers in svcs-hopscotch and svcs-di — Add
+    `@functools.cache` to `hopscotch_get_field_infos` (`svcs-hopscotch/auto.py`) and
+    `get_field_infos` (`svcs-di/auto.py`). Annotations are static per callable; the
+    result is process-stable, identical across containers, and read-dominated. Apply
+    the same `if "pytest" in sys.modules` toggle that `tdom`'s `get_callable_info`
+    uses to avoid cross-test cache pollution. Independent perf win — speeds up both
+    the current implementation and the post-port one (HopscotchInjector calls
+    `get_field_infos_fn` on every `inject_target` invocation). Use `@functools.cache`
+    rather than `@lru_cache(maxsize=N)` since callable count is bounded by code size.
+    Same Python 3.14 thread-safety guarantee in both GIL and free-threaded builds.
+    See `docs/research/port-tstring-html-integrations-revisited.md` ("Performance
+    characteristics", "`functools.cache` vs `lru_cache(maxsize=N)`", and
+    "Why `@lru_cache` and not svcs container caching?" sections). `S`
+
+31. [ ] Themester Worked Example for Get[T, Attr] — Once Phase 8's port lands,
+    add a themester example demonstrating the `Get[T, Attr]` pattern as a
+    replacement for dataclass `__post_init__`. Show side-by-side: a component with
+    `Inject[Settings] + __post_init__` deriving `site_title` vs. the same component
+    using `site_title: Get[Settings, "site_title"]` directly. Include lat.md
+    sections explaining when each pattern is preferred. The user has flagged
+    `Get[T, Attr]` as a load-bearing feature ("usually makes the postinit pattern
+    unnecessary"); this example locks in the recommended pattern. See
+    `docs/research/port-tstring-html-integrations-revisited.md` ("Open questions /
+    risks" item 2 and Stage 3 verification step). `S`
+
 ## Backlog
 
 - [ ] Fix stale `register_component` docs — several docs pages still use the old name
@@ -181,6 +300,27 @@
   storyville to drop the `Node` import, or configure `pytest.ini`/`pyproject.toml` in tdom-svcs
   to suppress the broken plugin via `addopts = -p no:storyville`. `S`
 
+- [ ] Optional upstream ask: drop the `_` prefix on `_prep_component_kwargs` and
+  `_resolve_t_attrs` in `tstring-html/tdom/processor.py`. Since `6fb4227`'s flags
+  (`raise_on_missing`, `raise_on_requires_positional`) were added explicitly to
+  support DI subclasses calling `_prep_component_kwargs` directly, the function is
+  now part of the intentional public surface. The `_` prefix is misleading. Same
+  reasoning for `_resolve_t_attrs`. Mechanical rename only. tdom-svcs would update
+  the corresponding imports in Phase 8 item 28. See
+  `docs/research/port-tstring-html-integrations-revisited.md` ("Imports of
+  underscore-prefixed helpers" subsection). `S`
+
+- [ ] Optional upstream ask: bundle Phase 1 into a `ComponentProcessor` static
+  helper in `tstring-html/tdom/processor.py`. Adding a `@staticmethod
+  prep_partial_kwargs(component_callable, template, attrs, component_template,
+  provided_attrs)` to `ComponentProcessor` would let DI subclasses call one method
+  instead of importing three private helpers (`_prep_component_kwargs`,
+  `_resolve_t_attrs`, `get_callable_info`) and threading them together. Saves
+  subclasses ~6 lines and reduces the surface tdom-svcs imports. tdom-svcs ships
+  fine without it. See
+  `docs/research/port-tstring-html-integrations-revisited.md` ("Upstream changes —
+  confirmed: none required" section, second nice-to-have). `S`
+
 > Notes
 > - Order items by technical dependencies and product architecture
 > - Each item should represent an end-to-end (frontend + backend) functional and testable feature
@@ -191,3 +331,4 @@
 > - Phase 5: Performance and developer experience enhancements
 > - Phase 6: Dependency modernization (workspace, rename, API migration)
 > - Phase 7: Port to pluggable component processor (cleanup, Template migration, ian/integrations port, workspace adoption)
+> - Phase 8: Resolution strategy refactor (ContextVar container transport + Hopscotch resolution through `super()`, responding to upstream's `6fb4227` flags-based subclassing surface)

@@ -184,7 +184,7 @@ the rest of Hopscotch's resolution pipeline via regression tests.
     `docs/research/port-tstring-html-integrations-revisited.md` ("Why this revision"
     and "Upstream changes — confirmed: none required" sections). `S`
 
-28. [ ] Rewrite tdom-svcs Processor per Option C — Replace the
+28. [x] Rewrite tdom-svcs Processor per Option C — Replace the
     `_invoke_component`-based `DIComponentProcessor` with the four-phase Option C
     architecture in `src/tdom_svcs/processor.py`:
 

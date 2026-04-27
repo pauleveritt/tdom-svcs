@@ -272,7 +272,7 @@ the rest of Hopscotch's resolution pipeline via regression tests.
     characteristics", "`functools.cache` vs `lru_cache(maxsize=N)`", and
     "Why `@lru_cache` and not svcs container caching?" sections). `S`
 
-31. [ ] Themester Worked Example for Get[T, Attr] — Once Phase 8's port lands,
+31. [x] Themester Worked Example for Get[T, Attr] — Once Phase 8's port lands,
     add a themester example demonstrating the `Get[T, Attr]` pattern as a
     replacement for dataclass `__post_init__`. Show side-by-side: a component with
     `Inject[Settings] + __post_init__` deriving `site_title` vs. the same component

@@ -5,13 +5,19 @@ from dataclasses import dataclass
 import pytest
 from svcs_di import Inject
 from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
+from tdom.processor import IComponentProcessor
 
 from tdom_svcs.processor import (
+    DIComponentProcessor,
     _get_implementation,
     needs_dependency_injection,
 )
 
 from .conftest import DatabaseService
+
+# Protocol-satisfaction assertion: ty verifies DIComponentProcessor satisfies
+# IComponentProcessor[None] (DefaultAppState) at type-check time.
+_: IComponentProcessor[None] = DIComponentProcessor()
 
 
 def _plain_function():

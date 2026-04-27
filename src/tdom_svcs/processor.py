@@ -9,7 +9,7 @@ from contextvars import ContextVar
 from dataclasses import dataclass
 
 import svcs
-from svcs_di.injector_helpers import build_resolved_kwargs
+from svcs_di.injector_helpers import FieldResolverWithKwargs, build_resolved_kwargs
 from svcs_hopscotch.auto import hopscotch_get_field_infos
 from svcs_hopscotch.injectors.hopscotch import HopscotchInjector
 from string.templatelib import Template
@@ -29,7 +29,7 @@ from tdom.processor import (
 _di_context: ContextVar[svcs.Container | None] = ContextVar("_di_context", default=None)
 
 
-def _get_implementation(container: svcs.Container, cls: type) -> type:
+def _get_implementation[T](container: svcs.Container, cls: type[T]) -> type[T]:
     """Get the registered implementation for a class, or the original if none found."""
     try:
         get_impl = container.registry.locator.get_implementation  # ty: ignore[unresolved-attribute]
@@ -43,6 +43,12 @@ def _get_implementation(container: svcs.Container, cls: type) -> type:
         location=location,
     )
     return impl if impl is not None else cls
+
+
+def _make_resolver(container: svcs.Container) -> FieldResolverWithKwargs:
+    """Typed seam for HopscotchInjector._resolve_field_value_sync."""
+    injector = HopscotchInjector(container=container)
+    return injector._resolve_field_value_sync
 
 
 def needs_dependency_injection(value: object) -> bool:
@@ -108,11 +114,10 @@ class DIComponentProcessor(ComponentProcessor):
         )
 
         # Phase 2: full Hopscotch resolution — Get[T, Attr], locator, adapters, defaults.
-        injector = HopscotchInjector(container=container)
         field_infos = hopscotch_get_field_infos(component_callable)  # ty: ignore[invalid-argument-type]
         resolved = build_resolved_kwargs(
             field_infos,
-            injector._resolve_field_value_sync,
+            _make_resolver(container),
             partial_kwargs,
         )
 

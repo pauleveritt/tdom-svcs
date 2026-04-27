@@ -258,7 +258,7 @@ the rest of Hopscotch's resolution pipeline via regression tests.
     `docs/research/port-tstring-html-integrations-revisited.md` ("Type checking
     opportunities" section). `S`
 
-27. [ ] Cache Field-Info Helpers in svcs-hopscotch and svcs-di — Add
+27. [x] Cache Field-Info Helpers in svcs-hopscotch and svcs-di — Add
     `@functools.cache` to `hopscotch_get_field_infos` (`svcs-hopscotch/auto.py`) and
     `get_field_infos` (`svcs-di/auto.py`). Annotations are static per callable; the
     result is process-stable, identical across containers, and read-dominated. Apply

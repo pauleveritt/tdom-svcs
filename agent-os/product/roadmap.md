@@ -220,7 +220,7 @@ the rest of Hopscotch's resolution pipeline via regression tests.
     `docs/research/port-tstring-html-integrations-revisited.md` ("Revised
     architecture for tdom-svcs" and Q2 Option C sections). `M`
 
-29. [ ] Regression Tests for Full Hopscotch Resolution Surface — Add tests in
+29. [x] Regression Tests for Full Hopscotch Resolution Surface — Add tests in
     `tdom-svcs/tests/` covering each Hopscotch feature now routed through Option
     C, with each test corresponding to a trace-through in the research doc:
     - `Inject[T]` basic resolution, with and without template override.

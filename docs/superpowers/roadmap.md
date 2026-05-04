@@ -372,6 +372,63 @@ the rest of Hopscotch's resolution pipeline via regression tests.
     application with a custom `TemplateProcessor` configuration would override
     the default via its own `svcs_container` setup function. `S`
 
+## Phase 9: Rebaseline Against Merged tdom Main
+
+PR #118 (`Component Process API Remix`) merged Ian's processor work into
+`t-strings/tdom` `main` as squash commit `b2287f1` on 2026-05-03. The local
+workspace checkout is still on `ian/integrations` at `6fb4227`, which is
+patch-equivalent to PR commit `c1e9370`, but the merged PR head (`80a7ade`) made
+one more important simplification pass: `app_state`, `DefaultAppState`, generic
+`IComponentProcessor[T]`, and component-object capture were removed from the
+public processor extension shape. The remaining intentional integration surface is
+`ComponentProcessor.process()`, `_prep_component_kwargs()` with the
+`raise_on_missing` / `raise_on_requires_positional` flags, `_resolve_t_attrs()`,
+and optional `assume_ctx` on `html()` / `svg()`.
+
+37. [ ] Rebaseline tdom-svcs Processor for PR #118 — Move the workspace
+    `tstring-html/` member from local `ian/integrations` to merged `tdom` `main`
+    (`b2287f1` / `v0.1.15`) and update `tdom-svcs` to the final non-generic
+    processor API:
+
+    - Update `src/tdom_svcs/processor.py` imports and signatures:
+      remove `DefaultAppState` and `ComponentObject`; make
+      `DIComponentProcessor.process()` accept
+      `(template, last_ctx, component_callable, attrs, component_template,
+      provided_attrs=())` and return `Template`; update all `super().process()`
+      calls; call `tp.process(template, ProcessContext())` without `app_state`.
+    - Preserve the current four-phase Option C resolution strategy:
+      pre-prep partial kwargs with `_prep_component_kwargs(...,
+      raise_on_missing=False, raise_on_requires_positional=False)`, resolve
+      through `build_resolved_kwargs()` and Hopscotch, compute `di_fill`, then
+      delegate invocation to `super().process(..., provided_attrs=di_fill +
+      provided_attrs)`.
+    - Remove component-object capture as a tdom-svcs contract. Delete or rewrite
+      `tests/test_hopscotch_resolution.py::test_component_object_capture_factory`
+      and any comments/docs that claim `super().process()` returns
+      `(Template, ComponentObject | None)`. Keep factory-component rendering
+      coverage, but assert rendered behavior rather than instance capture.
+    - Update type checks and protocol assertions:
+      `IComponentProcessor` is no longer subscriptable, so replace
+      `IComponentProcessor[None]` assertions with the new non-generic protocol
+      shape.
+    - Refresh research and roadmap references that became stale after PR #118:
+      `docs/research/port-tstring-html-integrations-revisited.md`,
+      `docs/research/di-context-threading.md`, and Phase 8 wording that treats
+      `DefaultAppState`, `app_state`, or component-object capture as
+      load-bearing. Keep the historical context, but add a clear "superseded by
+      PR #118" note where appropriate.
+    - Re-evaluate the optional upstream asks in the backlog. Publicizing
+      `_prep_component_kwargs` / `_resolve_t_attrs` remains useful because
+      tdom-svcs now depends on them directly; a `ComponentProcessor`
+      `prep_partial_kwargs()` helper is still nice-to-have, but no longer needs
+      to account for component-object capture.
+
+    Verification: run `just quality && just test` in `tdom-svcs`; run the
+    affected downstream smoke checks in `themester`; and confirm there are no
+    remaining imports or references to `DefaultAppState`, `IComponentProcessor[...]`,
+    `app_state=` on `TemplateProcessor.process()`, or component-object capture in
+    executable code. `M`
+
 ## Backlog
 
 - [x] Fix stale `register_component` docs — several docs pages still use the old name
@@ -421,3 +478,4 @@ the rest of Hopscotch's resolution pipeline via regression tests.
 > - Phase 6: Dependency modernization (workspace, rename, API migration)
 > - Phase 7: Port to pluggable component processor (cleanup, Template migration, ian/integrations port, workspace adoption)
 > - Phase 8: Resolution strategy refactor (Hopscotch resolution through `super()` per upstream's `6fb4227` flags-based subclassing surface; subsequently, eliminate module-level globals in `processor.py` and make svcs the source of truth for the rendering pipeline via per-container `TemplateProcessor` registration — see `docs/research/di-context-threading.md`)
+> - Phase 9: Rebaseline against merged `tdom` main after PR #118 (`b2287f1`), adapting tdom-svcs from the local `ian/integrations` API to the final non-generic processor extension shape with no `app_state`, no `DefaultAppState`, and no component-object capture

@@ -75,7 +75,7 @@ class Greeting:
     service: Inject[GreetingService]  # Injected dependency
     name: str = "World"                # Regular parameter with default
 
-    def __call__(self) -> str:
+    def __call__(self) -> Template:
         """Render the component."""
         message = self.service.get_greeting(self.name)
         return f"<div>{message}</div>"
@@ -156,7 +156,7 @@ class Greeting:
     service: Inject[GreetingService]  # Injected dependency
     name: str = "World"                # Regular parameter with default
 
-    def __call__(self) -> str:
+    def __call__(self) -> Template:
         """Render the component."""
         message = self.service.get_greeting(self.name)
         return f"<div>{message}</div>"

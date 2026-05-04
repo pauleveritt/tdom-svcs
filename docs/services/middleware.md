@@ -75,7 +75,7 @@ scan(registry, "myapp.middleware", "myapp.components")
 # Container provides context for middleware execution
 with HopscotchContainer(registry) as container:
     # Global middleware runs automatically during html() processing
-    result = html(t"<{MyComponent} />", context=container)
+    result = html(t"<{MyComponent} />", container=container)
 ```
 
 ## See Also

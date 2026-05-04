@@ -57,7 +57,7 @@ def html(
         Markup: Rendered HTML markup
 
     Example:
-        >>> result = html(t"<{Button} label='Submit' />", context=container)
+        >>> result = html(t"<{Button} label='Submit' />", container=container)
         >>> str(result)
         '<button>Submit</button>'
     """

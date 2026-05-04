@@ -88,7 +88,7 @@ class DataDisplay:
     db: Inject[DatabaseService]  # Automatically injected
     title: str = "Display"        # Regular parameter
 
-    def __call__(self) -> str:
+    def __call__(self) -> Template:
         data = self.db.get_data()
         return f"<div><h2>{self.title}</h2><p>{data}</p></div>"
 

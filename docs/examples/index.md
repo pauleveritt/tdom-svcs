@@ -104,7 +104,7 @@ class MyComponent:
     service: Inject[SomeService]  # Injected
     param: str = "default"         # Regular parameter
 
-    def __call__(self) -> str:
+    def __call__(self) -> Template:
         """Render component."""
         data = self.service.get_data()
         return f"<div>{self.param}: {data}</div>"

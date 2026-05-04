@@ -30,11 +30,11 @@ class Button:
     label: str = "Click"          # Regular parameter with default
     disabled: bool = False        # Regular parameter with default
 
-    def __call__(self) -> str:
+    def __call__(self) -> Template:
         """Render the button."""
         color = self.theme.get_button_color()
         disabled_attr = " disabled" if self.disabled else ""
-        return f'<button style="color: {color}"{disabled_attr}>{self.label}</button>'
+        return t'<button style="color: {color}"{disabled_attr}>{self.label}</button>'
 ```
 
 **Key characteristics:**
@@ -92,7 +92,7 @@ class UserProfile:
     cache: Inject[CacheService]    # Injected
     user_id: int                    # From context
 
-    def __call__(self) -> str:
+    def __call__(self) -> Template:
         # Use injected dependencies
         user = self.db.get_user(self.user_id)
         cached = self.cache.get(f"user_{self.user_id}")
@@ -132,7 +132,7 @@ class ProductCard:
     product_id: int                   # Required from context
     quantity: int = 1                 # Optional from context
 
-    def __call__(self) -> str:
+    def __call__(self) -> Template:
         price = self.pricing.get_price(self.product_id, self.quantity)
         return f"<div>Price: ${price}</div>"
 ```
@@ -143,15 +143,19 @@ When resolving:
 
 ## Service Container
 
-The **service container** is the registry of all services and components in your application. tdom-svcs uses `HopscotchRegistry` and `HopscotchContainer` from svcs-di.
+The **service container** is the registry of all services and components in
+your application. tdom-svcs uses `HopscotchRegistry` and `HopscotchContainer`
+from `svcs-hopscotch`.
 
 ### Registry vs Container
 
-- **HopscotchRegistry:** Extends `svcs.Registry` with built-in `ServiceLocator` for multi-implementation support
-- **HopscotchContainer:** Extends `svcs.Container` with built-in `inject()` method for dependency injection
+- **HopscotchRegistry:** Extends `svcs.Registry` with built-in `ServiceLocator`
+  for multi-implementation support.
+- **HopscotchContainer:** Extends `svcs.Container` with built-in `inject()`
+  method for dependency injection.
 
 ```python
-from svcs_di import HopscotchContainer, HopscotchRegistry
+from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
 
 # Create registry and define services
 registry = HopscotchRegistry()
@@ -166,6 +170,27 @@ with HopscotchContainer(registry) as container:
     # Or inject with automatic dependency resolution
     component = container.inject(MyComponent)
 ```
+
+### The Container as Source of Truth for Rendering
+
+`tdom_svcs.html()` uses the container as the source of truth for its rendering
+pipeline. On the first call for a given container, it lazily registers a
+`TemplateProcessor` as a local value so subsequent calls reuse it without
+re-allocating. This means the container lifecycle governs the processor
+lifecycle — the processor is cleaned up when the container exits.
+
+```python
+from tdom_svcs import html
+
+with HopscotchContainer(registry) as container:
+    # First call: constructs and registers TemplateProcessor on the container.
+    result1 = html(t"<{MyComponent} />", container=container)
+    # Second call: reuses the registered TemplateProcessor.
+    result2 = html(t"<{OtherComponent} />", container=container)
+```
+
+When `container=None`, `html()` delegates directly to `tdom.html()` with no DI
+overhead.
 
 ### Registration Patterns
 
@@ -203,10 +228,13 @@ Here's a complete example showing all concepts:
 
 ```python
 from dataclasses import dataclass
+from string.templatelib import Template
 
-from svcs_di import HopscotchContainer, HopscotchRegistry, Inject
-from svcs_di.injectors.decorators import injectable
-from svcs_di.injectors.locator import scan
+from svcs_di import Inject
+from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
+from svcs_hopscotch.injectors.decorators import injectable
+from svcs_hopscotch.injectors.scanning import scan
+from tdom_svcs import html
 
 
 # 1. Define services
@@ -226,9 +254,9 @@ class Button:
     theme: Inject[ThemeService]  # Dependency injection
     label: str = "Click"          # Regular parameter
 
-    def __call__(self) -> str:
+    def __call__(self) -> Template:
         color = self.theme.get_button_color()
-        return f'<button style="color: {color}">{self.label}</button>'
+        return t'<button style="color: {color}">{self.label}</button>'
 
 
 # 3. Set up container
@@ -248,9 +276,9 @@ def setup_application() -> HopscotchContainer:
 # 4. Use the application
 if __name__ == "__main__":
     with setup_application() as container:
-        # Resolve component with inject() and render
-        button = container.inject(Button)
-        print(button())  # <button style="color: #007bff">Click</button>
+        # Render via html() — TemplateProcessor is lazily registered on the container
+        result = html(t"<{Button} label='Click Me' />", container=container)
+        print(result)  # <button style="color: #007bff">Click Me</button>
 ```
 
 ## Next Steps

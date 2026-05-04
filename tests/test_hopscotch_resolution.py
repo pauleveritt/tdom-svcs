@@ -14,7 +14,7 @@ from svcs_hopscotch import Get, Resource
 from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
 
 from tdom_svcs import html
-from tdom_svcs.processor import DIComponentProcessor, _di_context
+from tdom_svcs.processor import DIComponentProcessor
 
 
 # Module-level classes for scenario 5 (Inject[Protocol] locator-aware resolution).
@@ -291,25 +291,20 @@ def test_component_object_capture_factory():
     # Build a custom TemplateProcessor with the recording subclass.
     from tdom.processor import ProcessContext, TemplateProcessor
 
-    custom_tp = TemplateProcessor(
-        component_processor_api=RecordingProcessor(),
-        slash_void=True,
-        uppercase_doctype=True,
-    )
-
     registry = HopscotchRegistry()
     registry.register_value(Service, Service(value="test_value"))
 
     with HopscotchContainer(registry) as container:
-        token = _di_context.set(container)
-        try:
-            custom_tp.process(
-                t"<{FactoryComponent} />",
-                ProcessContext(),
-                app_state=None,
-            )
-        finally:
-            _di_context.reset(token)
+        custom_tp = TemplateProcessor(
+            component_processor_api=RecordingProcessor(container=container),
+            slash_void=True,
+            uppercase_doctype=True,
+        )
+        custom_tp.process(
+            t"<{FactoryComponent} />",
+            ProcessContext(),
+            app_state=None,
+        )
 
     # Find the FactoryComponent instance in captured component_objects.
     factory_instances = [c for c in captured if isinstance(c, FactoryComponent)]

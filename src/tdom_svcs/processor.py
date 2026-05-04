@@ -1,20 +1,22 @@
 """Dependency injection processor for tdom templates.
 
-Option C architecture: resolves DI fields through Hopscotch's full pipeline,
-then delegates to super().process() via provided_attrs. Container flows via
-ContextVar, leaving app_state free for user-defined state.
+Resolves DI fields through Hopscotch's full pipeline, then delegates to
+super().process() via provided_attrs. The container is carried as a field on
+DIComponentProcessor — svcs is the source of truth, no ContextVar.
+
+TemplateProcessor lifecycle: constructed lazily on the first html() call for a
+given container and stored as a local value so subsequent calls reuse it.
 """
 
-from contextvars import ContextVar
 from dataclasses import dataclass
+from string.templatelib import Template
 
 import svcs
+import tdom
 from svcs_di.injector_helpers import FieldResolverWithKwargs, build_resolved_kwargs
 from svcs_hopscotch.auto import hopscotch_get_field_infos
 from svcs_hopscotch.injectors.hopscotch import HopscotchInjector
-from string.templatelib import Template
 from tdom.parser import TAttribute
-
 from tdom.processor import (
     Attribute,
     ComponentObject,
@@ -26,8 +28,6 @@ from tdom.processor import (
     _resolve_t_attrs,
     get_callable_info,
 )
-
-_di_context: ContextVar[svcs.Container | None] = ContextVar("_di_context", default=None)
 
 
 def _get_implementation[T](container: svcs.Container, cls: type[T]) -> type[T]:
@@ -63,7 +63,7 @@ def _make_resolver(container: svcs.Container) -> FieldResolverWithKwargs:
 
 
 def needs_dependency_injection(value: object) -> bool:
-    """Check if a callable has Inject[T], Resource[T], or Get[T, Attr] fields."""
+    """Check if callable has ``Inject[T]``, Resource[T], or Get[T, Attr] fields."""
     if not callable(value):
         return False
     field_infos = hopscotch_get_field_infos(value)
@@ -75,7 +75,14 @@ def needs_dependency_injection(value: object) -> bool:
 
 @dataclass(frozen=True)
 class DIComponentProcessor(ComponentProcessor):
-    """Resolves DI fields through Hopscotch; delegates the call to super()."""
+    """Resolves DI fields through Hopscotch; delegates the call to super().
+
+    The container is a frozen field rather than a ContextVar: svcs is the
+    source of truth, and each processor instance is bound to exactly one
+    container at construction time.
+    """
+
+    container: svcs.Container | None = None
 
     def process(
         self,
@@ -87,7 +94,7 @@ class DIComponentProcessor(ComponentProcessor):
         component_template: Template,
         provided_attrs: tuple[Attribute, ...] = (),
     ) -> tuple[Template, ComponentObject | None]:
-        container = _di_context.get()
+        container = self.container
         if container is None:
             return super().process(
                 template,
@@ -152,12 +159,13 @@ class DIComponentProcessor(ComponentProcessor):
         )
 
 
-_tp = TemplateProcessor(
-    component_processor_api=DIComponentProcessor(),
-    slash_void=True,
-    uppercase_doctype=True,
-)
-_default_ctx = ProcessContext()
+def _make_processor(container: svcs.Container) -> TemplateProcessor:
+    """Construct a TemplateProcessor pre-wired to the given container."""
+    return TemplateProcessor(
+        component_processor_api=DIComponentProcessor(container=container),
+        slash_void=True,
+        uppercase_doctype=True,
+    )
 
 
 def html(
@@ -167,15 +175,22 @@ def html(
 ) -> str:
     """Process a template string into HTML with DI support.
 
-    Threads ``container`` to components that accept it, and resolves
-    Inject[T], Resource[T], and Get[T, Attr] fields via HopscotchInjector
-    when ``container`` is provided.
+    When ``container`` is None, delegates to tdom.html() — no DI overhead.
+
+    When ``container`` is provided, resolves a TemplateProcessor from the
+    container (lazy-initialising and registering it as a local value on first
+    call) so subsequent html() calls on the same container reuse the processor.
 
     Examples:
         >>> result = html(t"<div>Hello</div>")
     """
-    token = _di_context.set(container)
+    if container is None:
+        return tdom.html(template)
+
     try:
-        return _tp.process(template, _default_ctx, app_state=None)
-    finally:
-        _di_context.reset(token)
+        tp = container.get(TemplateProcessor)
+    except svcs.exceptions.ServiceNotFoundError:
+        tp = _make_processor(container)
+        container.register_local_value(TemplateProcessor, tp)
+
+    return tp.process(template, ProcessContext(), app_state=None)

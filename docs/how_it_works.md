@@ -35,7 +35,7 @@ class Button:
     db: Inject[DatabaseService]  # Automatically injected
     label: str = "Click"  # Regular parameter with default
 
-    def __call__(self) -> str:
+    def __call__(self) -> Template:
         # Access injected dependency
         data = self.db.get_button_config()
         return f"<button>{self.label}</button>"
@@ -244,7 +244,7 @@ class UserProfile:
     cache: Inject[CacheService]     # Injected from container
     user_id: int                     # Regular parameter (from context)
 
-    def __call__(self) -> str:
+    def __call__(self) -> Template:
         # Access injected dependencies
         user = self.db.get_user(self.user_id)
         cached = self.cache.get(f"user_{self.user_id}")
@@ -278,7 +278,7 @@ class Button:
     label: str = "Click"         # Provided from context or default
     disabled: bool = False       # Provided from context or default
 
-    def __call__(self) -> str:
+    def __call__(self) -> Template:
         config = self.db.get_button_config()
         disabled_attr = " disabled" if self.disabled else ""
         return f"<button{disabled_attr}>{self.label}</button>"
@@ -314,7 +314,7 @@ class CustomerDashboard:
     """Dashboard for customers."""
     analytics: Inject[AnalyticsService]
 
-    def __call__(self) -> str:
+    def __call__(self) -> Template:
         return "<div>Customer Dashboard</div>"
 
 @injectable(resource=AdminContext)
@@ -323,7 +323,7 @@ class AdminDashboard:
     """Dashboard for admins."""
     analytics: Inject[AnalyticsService]
 
-    def __call__(self) -> str:
+    def __call__(self) -> Template:
         return "<div>Admin Dashboard</div>"
 
 # Resolution happens based on context
@@ -345,7 +345,7 @@ class HomePage:
     """Home page component."""
     content: Inject[ContentService]
 
-    def __call__(self) -> str:
+    def __call__(self) -> Template:
         return "<div>Home Page</div>"
 
 @injectable(location=PurePath("/admin"))
@@ -354,7 +354,7 @@ class AdminPanel:
     """Admin panel component."""
     auth: Inject[AuthService]
 
-    def __call__(self) -> str:
+    def __call__(self) -> Template:
         if not self.auth.is_admin():
             return "<div>Access Denied</div>"
         return "<div>Admin Panel</div>"
@@ -374,7 +374,7 @@ Components with async `__call__` methods are automatically detected:
 class AsyncAlert:
     message: str = "Alert"
 
-    async def __call__(self) -> str:
+    async def __call__(self) -> Template:
         """Async rendering."""
         return f"<div>{self.message}</div>"
 
@@ -410,7 +410,7 @@ Override a component everywhere in your application by registering the custom im
 class Button:
     label: str = "Click"
 
-    def __call__(self) -> str:
+    def __call__(self) -> Template:
         return f"<button>{self.label}</button>"
 
 # Site-specific override
@@ -419,7 +419,7 @@ class Button:
 class CustomButton(Button):  # Inherit interface
     theme: Inject[ThemeService]
 
-    def __call__(self) -> str:
+    def __call__(self) -> Template:
         color = self.theme.get_brand_color()
         return f"<button style='color: {color}'>{self.label}</button>"
 
@@ -440,7 +440,7 @@ Use different implementations based on the current resource context (e.g., custo
 class Dashboard:
     analytics: Inject[AnalyticsService]
 
-    def __call__(self) -> str:
+    def __call__(self) -> Template:
         return "<div>Generic Dashboard</div>"
 
 # Customer-specific implementation
@@ -449,7 +449,7 @@ class Dashboard:
 class CustomerDashboard:
     analytics: Inject[AnalyticsService]
 
-    def __call__(self) -> str:
+    def __call__(self) -> Template:
         return "<div>Customer Dashboard with Limited Features</div>"
 
 # Admin-specific implementation
@@ -458,7 +458,7 @@ class CustomerDashboard:
 class AdminDashboard:
     analytics: Inject[AnalyticsService]
 
-    def __call__(self) -> str:
+    def __call__(self) -> Template:
         return "<div>Admin Dashboard with Full Access</div>"
 
 # HopscotchInjector selects implementation based on resource context
@@ -482,7 +482,7 @@ Use different implementations based on URL path or location:
 class PageLayout:
     content: Inject[ContentService]
 
-    def __call__(self) -> str:
+    def __call__(self) -> Template:
         return "<div>Standard Page Layout</div>"
 
 # Admin area override
@@ -492,7 +492,7 @@ class AdminPageLayout:
     content: Inject[ContentService]
     auth: Inject[AuthService]
 
-    def __call__(self) -> str:
+    def __call__(self) -> Template:
         if not self.auth.is_admin():
             return "<div>Access Denied</div>"
         return "<div>Admin Page Layout</div>"

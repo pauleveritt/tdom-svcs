@@ -80,7 +80,7 @@ with svcs.Container(registry) as container:
     db = container.get(Database)
 
     # Use in components
-    result = html(t"<{MyComponent} />", context=container)
+    result = html(t"<{MyComponent} />", container=container)
 ```
 
 ### Injectable Services

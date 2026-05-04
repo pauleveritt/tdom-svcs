@@ -283,6 +283,95 @@ the rest of Hopscotch's resolution pipeline via regression tests.
     `docs/research/port-tstring-html-integrations-revisited.md` ("Open questions /
     risks" item 2 and Stage 3 verification step). `S`
 
+32. [x] Eliminate `_tp` and `_default_ctx` Module Globals — Construct
+    `TemplateProcessor` and `ProcessContext` per `html()` call rather than holding
+    them at module level. Matches tdom's own test idioms (`_make_html()` closure
+    capture in `processor_integration_test.py`, factory pattern in
+    `processor_test.py`). Purely structural — no behavior change, no test changes
+    expected. Verify byte-identical output for the existing test suite. This is
+    the uncontroversial first step of the resolution-strategy alignment with svcs.
+    See `docs/research/di-context-threading.md` ("Comparison: tdom's Own Patterns"
+    and "Tradeoff Deep Dive"). `S`
+
+33. [x] Move Container onto `DIComponentProcessor` (Option B) — Add
+    `container: svcs.Container | None = None` as a frozen field on
+    `DIComponentProcessor`. Replace every `_di_context.get()` read with
+    `self.container`. Update `html()` to construct
+    `DIComponentProcessor(container=container)` per call. Delete the
+    `_di_context` ContextVar and its `set(...)/reset(token)` plumbing in `html()`.
+    Update tests in `tests/test_processor_unit.py` and `tests/test_di_injection.py`
+    that currently rely on the ContextVar transport (they should construct
+    processors directly with the container, which simplifies the test setup).
+    See `docs/research/di-context-threading.md` ("Decision: Option B + svcs as
+    source of truth", step 1). `M`
+
+34. [x] Register `TemplateProcessor` Per-Container via `svcs_container` — Define a
+    `svcs_container(container)` setup function in tdom-svcs that the Hopscotch
+    scanner discovers automatically. The function registers a `TemplateProcessor`
+    (with `component_processor_api=DIComponentProcessor(container=container)`,
+    plus `slash_void=True` and `uppercase_doctype=True`) as a local value on the
+    container. Refactor `html()` to a thin dispatcher:
+
+    - When `container is None`: delegate to plain `tdom.html(template)` — no DI
+      pipeline needed.
+    - When `container` is provided: resolve the registered `TemplateProcessor`
+      via `container.get(TemplateProcessor)` and call
+      `tp.process(template, ProcessContext(), app_state=None)`.
+
+    End-state: zero module-level mutable state in `processor.py`. svcs is the
+    single source of truth for the rendering pipeline. Allocation cost is
+    mitigated — `TemplateProcessor` is constructed once per container and reused
+    across all `html()` calls on that container. Verify the scanner picks up the
+    setup function automatically (no explicit registration required at app
+    startup). See `docs/research/di-context-threading.md` ("Decision: Option B +
+    svcs as source of truth", steps 2 and 3). `M`
+
+35. [ ] Workspace Member Audit and Verification — Items 32–34 preserve the public
+    `html(template, *, container=None) -> str | Markup` signature, but eliminate
+    module-level `_di_context`, `_tp`, and `_default_ctx`. Verify downstream
+    consumers still work:
+
+    - **themester**: 3 example apps import `html` (`examples/get_operator/`,
+      `examples/layouts/multi_layer/`, plus production `views/`/`layouts/`).
+      Run `just test` and confirm any rendered output is byte-identical.
+    - **tdom-layout**: production code in `src/tdom_layout/config_based.py`
+      and tests in `tests/test_placeholder_processor.py`,
+      `tests/test_integration.py`. Run `just test`.
+    - **storyville**: 30+ example components and stories that import
+      `html` from `tdom_svcs`. Run example smoke tests; visual outputs unchanged.
+    - **tdom-svcs itself**: `tests/test_processor_unit.py`,
+      `tests/test_hopscotch_resolution.py`, `tests/test_di_injection.py`, plus
+      all examples in `examples/`.
+
+    Workspace-wide grep for `_di_context` after the refactor — no remaining
+    references should exist outside tdom-svcs's git history. Same for any docs
+    or comments in other packages that describe the ContextVar transport. The
+    workspace `README.md` reference to `from tdom_svcs import html` continues to
+    be the canonical pattern. `S`
+
+36. [ ] Documentation Refresh for the svcs-as-Source-of-Truth Architecture —
+    Update tdom-svcs documentation to reflect items 32–34:
+
+    - **`docs/core_concepts.md`**: Add a section explaining the `svcs_container`
+      setup function pattern; note that `TemplateProcessor` lifecycle is managed
+      by svcs and is overridable via container registration.
+    - **`docs/getting_started.md`**: Verify the basic `html()` usage example
+      still works without modification (it should — public API unchanged). Add
+      a short note about how DI is wired internally for readers curious about
+      the mechanism.
+    - **`docs/research/di-context-threading.md`**: Already updated with the
+      decision; mark Phase 8 items 32–34 as the implementation.
+    - **`CLAUDE.md`** (project- and workspace-level): If guidance describes the
+      ContextVar transport, update to describe the registry-based approach.
+    - **`processor.py` module docstring**: Replace the current "ContextVar leaves
+      app_state free for user-defined state" rationale with a note describing
+      the `svcs_container` setup function and the registry-as-source-of-truth
+      design.
+
+    Add an example file (`examples/basic/svcs_container_setup/`) showing how an
+    application with a custom `TemplateProcessor` configuration would override
+    the default via its own `svcs_container` setup function. `S`
+
 ## Backlog
 
 - [ ] Fix stale `register_component` docs — several docs pages still use the old name
@@ -331,4 +420,4 @@ the rest of Hopscotch's resolution pipeline via regression tests.
 > - Phase 5: Performance and developer experience enhancements
 > - Phase 6: Dependency modernization (workspace, rename, API migration)
 > - Phase 7: Port to pluggable component processor (cleanup, Template migration, ian/integrations port, workspace adoption)
-> - Phase 8: Resolution strategy refactor (ContextVar container transport + Hopscotch resolution through `super()`, responding to upstream's `6fb4227` flags-based subclassing surface)
+> - Phase 8: Resolution strategy refactor (Hopscotch resolution through `super()` per upstream's `6fb4227` flags-based subclassing surface; subsequently, eliminate module-level globals in `processor.py` and make svcs the source of truth for the rendering pipeline via per-container `TemplateProcessor` registration — see `docs/research/di-context-threading.md`)

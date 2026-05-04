@@ -429,6 +429,33 @@ and optional `assume_ctx` on `html()` / `svg()`.
     `app_state=` on `TemplateProcessor.process()`, or component-object capture in
     executable code. `M`
 
+## Phase 10: Component Decision Evidence
+
+After Phase 9 rebaselines the processor against merged `tstring-html`, tdom-svcs
+should expose component-rendering decisions in the same style as Hopscotch
+resolution evidence. This is a consumer of `svcs-di`/`svcs-hopscotch` decision
+algebra, not a separate router.
+
+38. [ ] P1 Component Invocation Decision Packets — Add an internal typed packet
+    describing component render decisions: native tag vs component, protocol →
+    implementation swap, template-provided attrs, DI-filled attrs, `children`,
+    and final invocation target. Acceptance: unit tests can assert the packet for
+    a component with no DI, a component with `Inject[T]`, and a Protocol component
+    overridden through Hopscotch. `M`
+
+39. [ ] P1 DI Evidence Propagation — When Hopscotch supplies field values during
+    component rendering, preserve resolver evidence so downstream Themester/Tainie
+    can see whether a value came from template attrs, `Get[T, Attr]`, `Resource[T]`,
+    container lookup, locator, adapter, or default. Acceptance: `Get[T, Attr]` and
+    resource-driven component examples expose evidence without changing rendered
+    output. `M`
+
+40. [ ] P2 TypeForm and Sentinel Deferral — Keep component typing on the supported
+    `ty` surface (`TypeIs`, `Literal`, `TypedDict`, `ReadOnly`, `ParamSpec`) and
+    avoid public `TypeForm` or typed `Sentinel` APIs until Tainie's conformance
+    watch says they pass. Acceptance: docs name the gate and link to the current
+    probe results. `S`
+
 ## Backlog
 
 - [x] Fix stale `register_component` docs — several docs pages still use the old name

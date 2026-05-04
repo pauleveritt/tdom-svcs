@@ -189,6 +189,42 @@ Update protocol-satisfaction coverage:
 _: IComponentProcessor = DIComponentProcessor()
 ```
 
+## Workspace Impact Audit
+
+The rebaseline touches a workspace dependency, not only `tdom-svcs`. After moving the
+workspace `tstring-html/` member to merged `tdom` main and updating `tdom-svcs`,
+audit the whole `/Users/pauleveritt/projects/t-strings` workspace for code that still
+assumes the old processor API.
+
+Search all workspace members for removed or suspicious API usage:
+
+```bash
+rg "DefaultAppState|IComponentProcessor\\[|TemplateProcessor\\[|app_state=|ComponentObject|component_object|processor_integration_test" ..
+```
+
+Classify each hit:
+
+- **Executable code:** must be updated or deleted in the same item.
+- **Tests:** must either be updated to the PR #118 API or intentionally rewritten as
+  behavioral tests.
+- **Research/docs:** may keep historical references, but should clearly say when the
+  old API was superseded by PR #118.
+
+Run local package checks where the search shows meaningful hits, and do not rely on
+`tdom-svcs` tests alone. Expected packages to inspect:
+
+- `tdom-svcs`: full `just quality` and `just test`.
+- `themester`: run its test or smoke target because it is the primary downstream
+  consumer of `tdom_svcs.html()`.
+- `storyville`: inspect and smoke-test examples if they import `tdom_svcs.html()` or
+  instantiate `TemplateProcessor` directly.
+- `tdom-assets`, `aria-testing`, `tainie`, `svcs-di`, and `svcs-hopscotch`: grep
+  should be enough unless they have direct hits for the removed processor API.
+
+If a workspace-wide test command is available from the root workspace, run it after
+the targeted checks. If the root command is blocked by a known unrelated failure,
+record the blocker explicitly and include the targeted package results instead.
+
 ## Documentation
 
 Refresh docs as part of the same item:
@@ -223,7 +259,8 @@ uv run sphinx-build -W -b html docs docs/_build/html
 ```
 
 Run targeted downstream smoke checks in `themester` after the workspace `tdom`
-member moves to merged main.
+member moves to merged main, plus any package identified by the Workspace Impact
+Audit.
 
 Run grep checks to confirm executable code no longer references removed API:
 

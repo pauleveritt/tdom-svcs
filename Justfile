@@ -1,3 +1,5 @@
+import '../shared.just'
+
 # Default recipe - show available commands
 default:
     @just --list
@@ -62,7 +64,7 @@ docs-build:
 
 # Serve documentation with auto-reload
 docs-serve:
-    uv run sphinx-autobuild docs docs/_build/html --open-browser --watch examples
+    PYTHON_GIL=1 BROWSER="{{ docs-live-browser }}" uv run sphinx-autobuild docs docs/_build/html --open-browser --watch examples
 
 # Clean build artifacts
 clean:

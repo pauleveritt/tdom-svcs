@@ -3,12 +3,12 @@
 This example demonstrates:
 - Using @middleware and @hookable decorators with additional categories
 - Imperative registration with register_middleware() and register_hookable()
-- Querying items by category
+- Querying role groups by kind and user facets by category
 - Building organizational structures with categories
 """
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
 from svcs_hopscotch.types import Middleware, Props, PropsResult, Target
@@ -89,7 +89,7 @@ class PublicPage:
 
 
 def main() -> list[str]:
-    """Demonstrate both decorator and imperative category usage."""
+    """Demonstrate kind-based role discovery and category facets."""
     registry = HopscotchRegistry()
     results = []
 
@@ -104,18 +104,21 @@ def main() -> list[str]:
     all_categories = sorted(registry.list_categories())
     results.append(f"All categories: {all_categories}")
 
-    # Query middleware
-    all_middleware = list(registry.get_by_category("middleware"))
+    # Query middleware by role kind
+    all_middleware = list(registry.get_by_kind("middleware"))
     results.append(f"Total middleware: {len(all_middleware)}")
 
-    security_middleware = list(registry.get_by_category("security"))
+    security_middleware = [
+        cast(type[Middleware], mw_type)
+        for mw_type in registry.get_by_category("security")
+    ]
     results.append(f"Security middleware: {[m.__name__ for m in security_middleware]}")
 
-    # Query hookables
-    all_hookables = list(registry.get_by_category("hookable"))
+    # Query hookables by role kind
+    all_hookables = list(registry.get_by_kind("hookable"))
     results.append(f"Total hookables: {len(all_hookables)}")
 
-    page_items = list(registry.get_by_category("page"))
+    page_items = [cast(type, item) for item in registry.get_by_category("page")]
     results.append(f"Page items: {[c.__name__ for c in page_items]}")
 
     # Check specific item categories
@@ -124,13 +127,16 @@ def main() -> list[str]:
 
     # Execute security middleware example
     with HopscotchContainer(registry) as container:
-        security_middleware = list(registry.get_by_category("security"))
+        security_middleware = [
+            cast(type[Middleware], mw_type)
+            for mw_type in registry.get_by_category("security")
+        ]
         props: dict[str, object] = {"component": "TestComponent"}
 
         resolved = [container.get(mw_type) for mw_type in security_middleware]
         resolved.sort(key=lambda m: m.priority)
         for mw in resolved:
-            result = mw(Button, props, container)  # ty: ignore[call-non-callable]
+            result = mw(Button, props, container)
             if result is not None:
                 props = result
 

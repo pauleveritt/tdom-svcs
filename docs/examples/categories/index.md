@@ -1,6 +1,6 @@
 # Category Organization
 
-Categories are tags that help organize and filter middleware and hookable targets in tdom-svcs. Every middleware automatically gets the `"middleware"` category, and every hookable target gets the `"hookable"` category. You can add additional categories to organize your application.
+Categories are user tags that help organize and filter middleware and hookable targets in tdom-svcs. Middleware and hookable roles are discovered by kind; categories remain for application-specific facets.
 
 ## What are Categories?
 
@@ -96,7 +96,7 @@ Add categories to middleware:
 @dataclass
 class MyMiddleware:
     priority: int = 0
-    # Has categories: ("middleware", "cat1", "cat2")
+    # Has kind "middleware" and categories: ("cat1", "cat2")
 ```
 
 Add categories to hookable targets:
@@ -105,7 +105,7 @@ Add categories to hookable targets:
 @hookable(categories=["cat1", "cat2"])
 @dataclass
 class MyComponent:
-    # Has categories: ("hookable", "cat1", "cat2")
+    # Has kind "hookable" and categories: ("cat1", "cat2")
     pass
 
 # Hookable targets can have both middleware config and categories

@@ -1,4 +1,4 @@
-"""Integration tests for categories support in middleware and hookable decorators."""
+"""Integration tests for kind and category support in middleware decorators."""
 
 from dataclasses import dataclass
 from typing import Any
@@ -10,8 +10,8 @@ from svcs_hopscotch.types import Middleware, Props, PropsResult, Target
 from tdom_svcs import hookable, middleware, register_hookable, register_middleware, scan
 
 
-def test_middleware_sets_category_metadata():
-    """Verify @middleware re-export sets categories in injectable metadata."""
+def test_middleware_sets_kind_metadata():
+    """Verify @middleware re-export sets kind in injectable metadata."""
 
     @middleware
     @dataclass
@@ -23,12 +23,12 @@ def test_middleware_sets_category_metadata():
 
     assert hasattr(MyMiddleware, "__injectable_metadata__")
     metadata = MyMiddleware.__injectable_metadata__
-    assert "middleware" in metadata["categories"]
-    assert metadata["categories"] == ("middleware",)
+    assert metadata["kind"] == "middleware"
+    assert metadata["categories"] is None
 
 
 def test_middleware_with_additional_categories():
-    """Test @middleware decorator accepts and merges additional categories."""
+    """Test @middleware keeps additional categories as user facets."""
 
     @middleware(categories=["security", "auth"])
     @dataclass
@@ -39,16 +39,13 @@ def test_middleware_with_additional_categories():
             return props
 
     metadata = AuthMiddleware.__injectable_metadata__  # ty: ignore[unresolved-attribute]
-    categories = metadata["categories"]
 
-    assert "middleware" in categories
-    assert "security" in categories
-    assert "auth" in categories
-    assert len(categories) == 3
+    assert metadata["kind"] == "middleware"
+    assert metadata["categories"] == ("security", "auth")
 
 
-def test_hookable_sets_category_and_middleware_attr():
-    """Verify @hookable re-export sets categories and middleware attribute when middleware is provided."""
+def test_hookable_sets_kind_and_middleware_attr():
+    """Verify @hookable sets kind and middleware attribute when middleware is provided."""
 
     @middleware
     @dataclass
@@ -65,8 +62,8 @@ def test_hookable_sets_category_and_middleware_attr():
 
     assert hasattr(MyHookable, "__injectable_metadata__")
     metadata = MyHookable.__injectable_metadata__
-    assert "hookable" in metadata["categories"]
-    assert metadata["categories"] == ("hookable",)
+    assert metadata["kind"] == "hookable"
+    assert metadata["categories"] is None
 
     assert hasattr(MyHookable, HOOKABLE_MIDDLEWARE_ATTR)
     mw_map = getattr(MyHookable, HOOKABLE_MIDDLEWARE_ATTR)
@@ -74,8 +71,8 @@ def test_hookable_sets_category_and_middleware_attr():
     assert TestMiddleware in mw_map["pre_resolution"]
 
 
-def test_middleware_found_by_all_categories():
-    """Test scan() discovers middleware by categories."""
+def test_middleware_found_by_kind_and_user_categories():
+    """Test scan() discovers middleware by kind and user categories."""
 
     @middleware(categories=["security", "logging"])
     @dataclass
@@ -88,13 +85,14 @@ def test_middleware_found_by_all_categories():
     registry = HopscotchRegistry()
     scan(registry, locals_dict=locals())
 
-    assert SecurityLogger in registry.get_by_category("middleware")
+    assert SecurityLogger in registry.get_by_kind("middleware")
+    assert SecurityLogger not in registry.get_by_category("middleware")
     assert SecurityLogger in registry.get_by_category("security")
     assert SecurityLogger in registry.get_by_category("logging")
 
 
-def test_hookable_found_by_all_categories():
-    """Test scan() discovers hookable items by categories."""
+def test_hookable_found_by_kind_and_user_categories():
+    """Test scan() discovers hookable items by kind and user categories."""
 
     @hookable(categories=["widget", "interactive"])
     @dataclass
@@ -104,7 +102,8 @@ def test_hookable_found_by_all_categories():
     registry = HopscotchRegistry()
     scan(registry, locals_dict=locals())
 
-    assert Button in registry.get_by_category("hookable")
+    assert Button in registry.get_by_kind("hookable")
+    assert Button not in registry.get_by_category("hookable")
     assert Button in registry.get_by_category("widget")
     assert Button in registry.get_by_category("interactive")
 
@@ -130,7 +129,7 @@ def test_list_middlewares_with_categories():
 
 
 def test_register_middleware_with_categories():
-    """Test imperative register_middleware() with additional categories."""
+    """Test register_middleware() stores kind and user categories."""
 
     @dataclass
     class ImperativeMiddleware(Middleware):
@@ -144,13 +143,14 @@ def test_register_middleware_with_categories():
         registry, ImperativeMiddleware, categories=["security", "audit"]
     )
 
-    assert ImperativeMiddleware in registry.get_by_category("middleware")
+    assert ImperativeMiddleware in registry.get_by_kind("middleware")
+    assert ImperativeMiddleware not in registry.get_by_category("middleware")
     assert ImperativeMiddleware in registry.get_by_category("security")
     assert ImperativeMiddleware in registry.get_by_category("audit")
 
 
 def test_register_hookable_with_categories():
-    """Test imperative register_hookable() with additional categories."""
+    """Test register_hookable() stores kind and user categories."""
 
     @dataclass
     class ImperativeHookable:
@@ -159,6 +159,7 @@ def test_register_hookable_with_categories():
     registry = HopscotchRegistry()
     register_hookable(registry, ImperativeHookable, categories=["page", "settings"])
 
-    assert ImperativeHookable in registry.get_by_category("hookable")
+    assert ImperativeHookable in registry.get_by_kind("hookable")
+    assert ImperativeHookable not in registry.get_by_category("hookable")
     assert ImperativeHookable in registry.get_by_category("page")
     assert ImperativeHookable in registry.get_by_category("settings")

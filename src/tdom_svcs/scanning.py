@@ -1,7 +1,7 @@
 """Package scanning for tdom-svcs decorators.
 
-This module provides scan() which wraps svcs_di's scan() and uses injectable
-categories to discover @middleware and @component decorated classes.
+This module provides scan() which wraps svcs_hopscotch's scan() and uses
+injectable metadata to discover @middleware and @hookable decorated classes.
 
 Example:
     from tdom_svcs import scan
@@ -21,10 +21,10 @@ def scan(
     *packages: str | ModuleType | None,
     locals_dict: dict[str, Any] | None = None,
 ) -> Any:
-    """Scan packages for services, middleware, and component middleware.
+    """Scan packages for services, middleware, and hookable targets.
 
-    Wraps svcs_di's scan() which discovers all @injectable subclasses
-    (including @middleware and @component) in a single pass.
+    Wraps svcs_hopscotch's scan() which discovers all @injectable subclasses
+    (including @middleware and @hookable) in a single pass.
 
     Returns the registry instance for method chaining.
 

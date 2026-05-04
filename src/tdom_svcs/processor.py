@@ -19,9 +19,7 @@ from svcs_hopscotch.injectors.hopscotch import HopscotchInjector
 from tdom.parser import TAttribute
 from tdom.processor import (
     Attribute,
-    ComponentObject,
     ComponentProcessor,
-    DefaultAppState,
     ProcessContext,
     TemplateProcessor,
     _prep_component_kwargs,
@@ -88,25 +86,23 @@ class DIComponentProcessor(ComponentProcessor):
         self,
         template: Template,
         last_ctx: ProcessContext,
-        app_state: DefaultAppState,
         component_callable: object,
         attrs: tuple[TAttribute, ...],
         component_template: Template,
         provided_attrs: tuple[Attribute, ...] = (),
-    ) -> tuple[Template, ComponentObject | None]:
+    ) -> Template:
         container = self.container
         if container is None:
             return super().process(
                 template,
                 last_ctx,
-                app_state,
                 component_callable,
                 attrs,
                 component_template,
                 provided_attrs,
             )
 
-        # Component-level locator override (Protocol → impl).
+        # Component-level locator override (Protocol -> impl).
         if isinstance(component_callable, type):
             component_callable = _get_implementation(container, component_callable)
 
@@ -114,7 +110,6 @@ class DIComponentProcessor(ComponentProcessor):
             return super().process(
                 template,
                 last_ctx,
-                app_state,
                 component_callable,
                 attrs,
                 component_template,
@@ -132,7 +127,7 @@ class DIComponentProcessor(ComponentProcessor):
             raise_on_requires_positional=False,
         )
 
-        # Phase 2: full Hopscotch resolution — Get[T, Attr], locator, adapters, defaults.
+        # Phase 2: full Hopscotch resolution: Get[T, Attr], locator, adapters, defaults.
         field_infos = hopscotch_get_field_infos(component_callable)  # ty: ignore[invalid-argument-type]
         resolved = build_resolved_kwargs(
             field_infos,
@@ -140,18 +135,17 @@ class DIComponentProcessor(ComponentProcessor):
             partial_kwargs,
         )
 
-        # Phase 3: the DI-fill delta — only fields Hopscotch resolved that weren't in kwargs.
+        # Phase 3: the DI-fill delta: fields Hopscotch resolved that were not in kwargs.
         di_fill = tuple(
             (name, value)
             for name, value in resolved.items()
             if name not in partial_kwargs
         )
 
-        # Phase 4: delegate. super().process() captures component_object via factory branch.
+        # Phase 4: delegate invocation to upstream's component processor.
         return super().process(
             template,
             last_ctx,
-            app_state,
             component_callable,
             attrs,
             component_template,
@@ -193,4 +187,4 @@ def html(
         tp = _make_processor(container)
         container.register_local_value(TemplateProcessor, tp)
 
-    return tp.process(template, ProcessContext(), app_state=None)
+    return tp.process(template, ProcessContext())

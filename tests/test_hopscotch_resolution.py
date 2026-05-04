@@ -204,7 +204,7 @@ def test_inject_container_self_injection():
     with HopscotchContainer(registry) as container:
         result = html(t"<{PageWithContainer} />", container=container)
 
-    # We can't directly access component_object from html(), so this test
+    # We can't directly access the constructed component from html(), so this test
     # verifies the component receives a container (indirectly via side effect).
     assert "ok" in result
 

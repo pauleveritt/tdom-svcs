@@ -1,5 +1,10 @@
 # DI Context Threading: Architecture Analysis
 
+**PR #118 update (2026-05-04):** The container-as-field and per-container
+`TemplateProcessor` decision still stands. tdom PR #118 removed the `app_state`
+argument from `TemplateProcessor.process()`, so final code snippets should call
+`tp.process(template, ProcessContext())` rather than passing `app_state=None`.
+
 ## Problem
 
 tdom-svcs exists to integrate svcs dependency injection with tdom template rendering.
@@ -242,7 +247,7 @@ def html(template, *, container=None):
     return TemplateProcessor(
         component_processor_api=DIComponentProcessor(container=container),
         slash_void=True, uppercase_doctype=True,
-    ).process(template, ProcessContext(), app_state=None)
+    ).process(template, ProcessContext())
 ```
 
 **Eliminates:** `_di_context`, `_tp`, `_default_ctx` — all three.
@@ -273,7 +278,7 @@ def html(template, *, container=None):
     if container is None:
         return tdom.html(template)  # plain path, no DI
     tp = container.get(TemplateProcessor)
-    return tp.process(template, ProcessContext(), app_state=None)
+    return tp.process(template, ProcessContext())
 ```
 
 The Hopscotch scanner can register this via a setup function discovered by
@@ -320,7 +325,7 @@ def html(template):
     return TemplateProcessor(
         component_processor_api=DIComponentProcessor(container=container),
         slash_void=True, uppercase_doctype=True,
-    ).process(template, ProcessContext(), app_state=None)
+    ).process(template, ProcessContext())
 ```
 
 **Eliminates:** `_tp`, `_default_ctx` from this module. The ContextVar moves to
@@ -486,7 +491,7 @@ The chosen end-state:
        if container is None:
            return tdom.html(template)  # plain path, no DI
        tp = container.get(TemplateProcessor)
-       return tp.process(template, ProcessContext(), app_state=None)
+       return tp.process(template, ProcessContext())
    ```
 
 **Result:**
@@ -521,7 +526,7 @@ module-level mutable state.
   - `container=None` → delegates to `tdom.html(template)`.
   - `container` provided → resolves `TemplateProcessor` from the container
     (registering it lazily on first call via `container.register_local_value`),
-    then calls `tp.process(template, ProcessContext(), app_state=None)`.
+    then calls `tp.process(template, ProcessContext())`.
 
 **Implementation note — lazy registration vs explicit `svcs_container`:**
 

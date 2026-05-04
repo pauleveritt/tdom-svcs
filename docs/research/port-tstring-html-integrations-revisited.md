@@ -2,6 +2,13 @@
 
 *Date: 2026-04-26 (revision)*
 
+**Superseded API note (2026-05-04):** tdom PR #118 merged after this analysis
+and removed `app_state`, `DefaultAppState`, generic `IComponentProcessor[T]`, and
+component-object capture from the current processor extension API. The Option C
+Hopscotch resolution strategy remains the chosen tdom-svcs approach, but current
+implementation must target PR #118's non-generic `ComponentProcessor.process()`
+signature and `Template` return value.
+
 *Supersedes: `port-tstring-html-integrations.md`*
 
 ## Why this revision

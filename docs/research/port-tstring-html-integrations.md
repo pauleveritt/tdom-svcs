@@ -122,7 +122,7 @@ should still run identically.
 Goal: make every component return `Template` and accept `Template` children, so
 Stage 3's port can be a trivial subclass.
 
-Scope: themester (production, examples, tests, lat.md, docs); tdom-svcs's own
+Scope: themester (production, examples, tests, docs); tdom-svcs's own
 examples and tests.
 
 This stage requires tdom-svcs to support BOTH `Template` and `str | Markup`
@@ -146,8 +146,7 @@ Sub-steps (each independently committable):
    `static_site/`, `request/`, `container/`, `ssg/`. One commit per group.
 4. **Migrate themester tests** to match. Many tests assert against rendered HTML
    strings; only the component shapes change.
-5. **Migrate themester docs and lat.md** sections. Update code refs (`@lat:`)
-   only after the corresponding code is in place.
+5. **Migrate themester docs** after the corresponding code is in place.
 6. **Migrate tdom-svcs own examples and tests** — `examples/basic/`, `hopscotch/`,
    `middleware/`, `tests/test_*.py`.
 

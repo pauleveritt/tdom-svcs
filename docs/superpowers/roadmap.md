@@ -134,7 +134,7 @@
     (`themester/views/decorators.py:View`, `themester/layouts/types.py:Layout`) to
     require `__call__(self) -> Template`. Migrate themester production code
     (`cli/layout_generate.py`, `layouts/decorators.py`, `views/decorators.py`,
-    `views/__init__.py:get_view`), all examples, tests, docs, and lat.md sections.
+    `views/__init__.py:get_view`), all examples, tests, and docs.
     Migrate tdom-svcs own examples and tests. Drop manual `context=` threading and
     `Markup(children)` wrapping; components return `t"..."` directly and let the
     processor recurse via `app_state`. tdom-svcs continues to support both
@@ -276,8 +276,8 @@ the rest of Hopscotch's resolution pipeline via regression tests.
     add a themester example demonstrating the `Get[T, Attr]` pattern as a
     replacement for dataclass `__post_init__`. Show side-by-side: a component with
     `Inject[Settings] + __post_init__` deriving `site_title` vs. the same component
-    using `site_title: Get[Settings, "site_title"]` directly. Include lat.md
-    sections explaining when each pattern is preferred. The user has flagged
+    using `site_title: Get[Settings, "site_title"]` directly. Include docs
+    explaining when each pattern is preferred. The user has flagged
     `Get[T, Attr]` as a load-bearing feature ("usually makes the postinit pattern
     unnecessary"); this example locks in the recommended pattern. See
     `docs/research/port-tstring-html-integrations-revisited.md` ("Open questions /

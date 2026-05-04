@@ -1,10 +1,10 @@
 # Additional Categories
 
-Both `@middleware` and `@hookable` decorators (and their imperative counterparts) support additional categories for organizing and filtering your middleware and hookable targets.
+Both `@middleware` and `@hookable` decorators (and their imperative counterparts) support categories for organizing and filtering middleware and hookable targets.
 
 ## Overview
 
-Every middleware automatically gets the `"middleware"` category, and every hookable target gets the `"hookable"` category. You can add additional categories to tag items for:
+Every middleware records kind `"middleware"`, and every hookable target records kind `"hookable"`. Add categories to tag items for:
 
 - **Organization**: Group related items together
 - **Filtering**: Query subsets of middleware/hookables
@@ -18,7 +18,7 @@ Every middleware automatically gets the `"middleware"` category, and every hooka
 ```python
 from tdom_svcs import middleware
 
-# Basic usage - only "middleware" category
+# Basic usage - kind "middleware", no user categories
 @middleware
 @dataclass
 class LoggingMiddleware:
@@ -32,7 +32,7 @@ class LoggingMiddleware:
 class AuthMiddleware:
     priority: int = -10
     def __call__(self, target, props, context):
-        # Categories: ("middleware", "security", "auth")
+        # Categories: ("security", "auth")
         return props
 ```
 
@@ -41,7 +41,7 @@ class AuthMiddleware:
 ```python
 from tdom_svcs import hookable
 
-# Basic usage - only "hookable" category
+# Basic usage - kind "hookable", no user categories
 @hookable
 @dataclass
 class Button:
@@ -51,7 +51,7 @@ class Button:
 @hookable(categories=["page", "admin"])
 @dataclass
 class AdminDashboard:
-    # Categories: ("hookable", "page", "admin")
+    # Categories: ("page", "admin")
     title: str = "Admin"
 
 # With both middleware config and categories
@@ -72,7 +72,7 @@ class SecurePage:
 ```python
 from tdom_svcs import register_middleware
 
-# Basic registration - only "middleware" category
+# Basic registration - kind "middleware", no user categories
 register_middleware(registry, LoggingMiddleware)
 
 # With additional categories
@@ -81,7 +81,7 @@ register_middleware(
     AuthMiddleware,
     categories=["security", "compliance"]
 )
-# Categories: ("middleware", "security", "compliance")
+# Categories: ("security", "compliance")
 ```
 
 ### Register Hookable
@@ -89,7 +89,7 @@ register_middleware(
 ```python
 from tdom_svcs import register_hookable
 
-# Basic registration - only "hookable" category
+# Basic registration - kind "hookable", no user categories
 register_hookable(registry, Button)
 
 # With additional categories
@@ -110,12 +110,16 @@ register_hookable(
 
 ## Querying by Category
 
-Once items are registered with categories, you can query them:
+Use kind for role groups and category for user facets:
 
 ```python
 # List all category names in the registry
 all_categories = registry.list_categories()
-# Returns: ["middleware", "hookable", "security", "page", ...]
+# Returns: ["security", "page", ...]
+
+# Get all middleware or hookable targets by role kind
+middleware_types = list(registry.get_by_kind("middleware"))
+hookable_types = list(registry.get_by_kind("hookable"))
 
 # Get all items in a specific category
 security_items = list(registry.get_by_category("security"))
@@ -126,7 +130,7 @@ admin_pages = list(registry.get_by_category("admin"))
 
 # Get all categories for a specific item
 categories = registry.get_categories(AuthMiddleware)
-# Returns: frozenset(["middleware", "security", "auth"])
+# Returns: frozenset(["security", "auth"])
 
 # Check if an item has a specific category
 is_secure = registry.has_category(AuthMiddleware, "security")

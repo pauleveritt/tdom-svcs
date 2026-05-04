@@ -78,8 +78,8 @@ def middleware(
     """
     Decorator to mark a class as middleware.
 
-    Automatically registers the class as middleware and assigns categories.
-    The 'middleware' category is always added automatically.
+    Automatically records kind "middleware". User categories are optional
+    facets for organization.
 
     Args:
         cls: The middleware class to decorate
@@ -109,8 +109,8 @@ def hookable(
     """
     Decorator to mark a class as a hookable target with optional per-target middleware.
 
-    Automatically assigns categories and attaches middleware configuration.
-    The 'hookable' category is always added automatically.
+    Automatically records kind "hookable" and attaches middleware configuration.
+    User categories are optional facets for organization.
 
     Args:
         cls: The hookable class to decorate
@@ -145,7 +145,7 @@ def register_middleware(
     Imperatively register a middleware type with the registry.
 
     Automatically registers a factory for the middleware if one doesn't exist.
-    Assigns the 'middleware' category plus any additional categories.
+    Records kind "middleware" plus any additional user categories.
 
     Args:
         registry: Registry to register in
@@ -175,7 +175,7 @@ def register_hookable(
     Imperatively register a hookable target type with the registry.
 
     Automatically registers a factory for the hookable target if one doesn't exist.
-    Assigns the 'hookable' category plus any additional categories.
+    Records kind "hookable" plus any additional user categories.
     Attaches middleware configuration to the hookable class.
 
     Args:
@@ -306,8 +306,8 @@ def list_categories(self) -> set[str]:
 
     Example:
         >>> categories = registry.list_categories()
-        >>> assert "middleware" in categories
-        >>> assert "component" in categories
+        >>> assert "security" in categories
+        >>> assert "page" in categories
     """
 ```
 
@@ -318,7 +318,7 @@ Available on `HopscotchRegistry`:
 ```python
 def get_by_category(self, category: str) -> Iterator[type]:
     """
-    Get all items (middleware/components) in a specific category.
+    Get all items tagged with a specific user category.
 
     Args:
         category: Category name to query
@@ -349,7 +349,6 @@ def get_categories(self, item_type: type) -> tuple[str, ...]:
 
     Example:
         >>> categories = registry.get_categories(AuthMiddleware)
-        >>> assert "middleware" in categories
         >>> assert "security" in categories
     """
 ```
@@ -388,7 +387,7 @@ def list_middlewares(registry: HopscotchRegistry) -> tuple[MiddlewareInfo, ...]:
     List all registered middleware with metadata.
 
     Returns immutable tuple of MiddlewareInfo objects containing
-    middleware type, priority, and categories.
+    middleware type and priority.
 
     Args:
         registry: Registry to introspect

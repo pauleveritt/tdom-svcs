@@ -22,41 +22,41 @@ class AuthenticationMiddleware:
 Define middleware with multiple categories:
 
 ```{literalinclude} ../../../examples/categories/categories_example.py
-:lines: 21-42
+:lines: 23-44
 ```
 
 Each middleware gets:
-- The automatic `"middleware"` category
-- Any additional categories you specify
-- For example: `("middleware", "security", "auth")`
+- The automatic `"middleware"` kind
+- Any user categories you specify
+- For example: `("security", "auth")`
 
 ## Hookable Targets with Categories
 
 Define hookable targets with categories:
 
 ```{literalinclude} ../../../examples/categories/categories_example.py
-:lines: 45-58
+:lines: 47-60
 ```
 
 Hookable targets get:
-- The automatic `"hookable"` category
-- Any additional categories you specify
-- For example: `("hookable", "page", "admin")`
+- The automatic `"hookable"` kind
+- Any user categories you specify
+- For example: `("page", "admin")`
 
 ## Querying by Category
 
 The registry provides methods to query items by category:
 
 ```{literalinclude} ../../../examples/categories/categories_example.py
-:lines: 101-117
+:lines: 103-122
 ```
 
 ### Get Items in a Category
 
-Retrieve all middleware or components tagged with a specific category:
+Retrieve all middleware or components tagged with a specific user category:
 
 ```{literalinclude} ../../../examples/categories/categories_example.py
-:lines: 105-117
+:lines: 107-122
 ```
 
 ### Get Categories for an Item
@@ -64,7 +64,7 @@ Retrieve all middleware or components tagged with a specific category:
 Find out which categories are assigned to a specific item:
 
 ```{literalinclude} ../../../examples/categories/categories_example.py
-:lines: 119-121
+:lines: 124-126
 ```
 
 ## Dynamic Execution by Category
@@ -72,7 +72,7 @@ Find out which categories are assigned to a specific item:
 You can execute only middleware from specific categories:
 
 ```{literalinclude} ../../../examples/categories/categories_example.py
-:lines: 123-138
+:lines: 128-146
 ```
 
 This allows you to:
@@ -97,6 +97,7 @@ The example will:
 - Categories help organize middleware and components by concern
 - Use decorators to declare categories: `@middleware(categories=[...])`
 - Query by category: `registry.get_by_category("security")`
+- Query role groups by kind: `registry.get_by_kind("middleware")`
 - Items can have multiple categories for flexible organization
 - Categories enable dynamic execution patterns
 

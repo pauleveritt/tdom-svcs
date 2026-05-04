@@ -25,13 +25,13 @@ This is useful when:
 Register middleware with categories using `register_middleware()`:
 
 ```{literalinclude} ../../../examples/categories/categories_example.py
-:lines: 66-74
+:lines: 68-76
 ```
 
 Then register them:
 
 ```{literalinclude} ../../../examples/categories/categories_example.py
-:lines: 97-99
+:lines: 99-101
 ```
 
 ## Imperative Hookable Registration
@@ -39,13 +39,13 @@ Then register them:
 Register hookable targets with categories using `register_hookable()`:
 
 ```{literalinclude} ../../../examples/categories/categories_example.py
-:lines: 77-81
+:lines: 79-83
 ```
 
 Then register them:
 
 ```{literalinclude} ../../../examples/categories/categories_example.py
-:lines: 97-99
+:lines: 99-101
 ```
 
 ## Querying Results
@@ -53,7 +53,7 @@ Then register them:
 After registration, query the registry:
 
 ```{literalinclude} ../../../examples/categories/categories_example.py
-:lines: 101-121
+:lines: 103-126
 ```
 
 ## Running the Example

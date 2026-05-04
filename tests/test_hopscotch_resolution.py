@@ -196,16 +196,14 @@ def test_inject_container_self_injection():
         container: Inject[svcs.Container]
 
         def __call__(self) -> Template:
-            # Record the received container for assertion
-            self.received_container = self.container
+            assert isinstance(self.container, svcs.Container)
             return t"<p>ok</p>"
 
     registry = HopscotchRegistry()
     with HopscotchContainer(registry) as container:
         result = html(t"<{PageWithContainer} />", container=container)
 
-    # We can't directly access the constructed component from html(), so this test
-    # verifies the component receives a container (indirectly via side effect).
+    # Rendering verifies the required Inject field was populated before __call__.
     assert "ok" in result
 
 

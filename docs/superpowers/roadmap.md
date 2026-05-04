@@ -385,7 +385,7 @@ public processor extension shape. The remaining intentional integration surface 
 `raise_on_missing` / `raise_on_requires_positional` flags, `_resolve_t_attrs()`,
 and optional `assume_ctx` on `html()` / `svg()`.
 
-37. [ ] Rebaseline tdom-svcs Processor for PR #118 — Move the workspace
+37. [x] Rebaseline tdom-svcs Processor for PR #118 — Move the workspace
     `tstring-html/` member from local `ian/integrations` to merged `tdom` `main`
     (`b2287f1` / `v0.1.15`) and update `tdom-svcs` to the final non-generic
     processor API:
@@ -428,6 +428,11 @@ and optional `assume_ctx` on `html()` / `svg()`.
     remaining imports or references to `DefaultAppState`, `IComponentProcessor[...]`,
     `app_state=` on `TemplateProcessor.process()`, or component-object capture in
     executable code. `M`
+
+    Completed 2026-05-04: `tdom-svcs` now targets merged `tdom` main at
+    `b2287f1`; `just quality`, `just test`, and Sphinx `-W` pass in
+    `tdom-svcs`; `just quality` and `just test` pass in `themester`; executable
+    stale-API searches are clean.
 
 ## Phase 10: Component Decision Evidence
 

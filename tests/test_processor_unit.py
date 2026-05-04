@@ -16,8 +16,8 @@ from tdom_svcs.processor import (
 from .conftest import DatabaseService
 
 # Protocol-satisfaction assertion: ty verifies DIComponentProcessor satisfies
-# IComponentProcessor[None] (DefaultAppState) at type-check time.
-_: IComponentProcessor[None] = DIComponentProcessor()
+# tdom's non-generic IComponentProcessor protocol.
+_: IComponentProcessor = DIComponentProcessor()
 
 
 def _plain_function():

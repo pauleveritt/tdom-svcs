@@ -258,11 +258,11 @@ def test_component_level_protocol_impl_override():
     assert "Registered Title" in result
 
 
-# Scenario 7: component_object capture under DI (factory class)
+# Scenario 7: factory component rendering under DI
 
 
-def test_component_object_capture_factory():
-    """Factory component with Inject[T] fields captures the instance."""
+def test_factory_component_with_di_renders():
+    """Factory component with Inject[T] fields renders via upstream invocation."""
 
     @dataclass
     class Service:
@@ -275,41 +275,13 @@ def test_component_object_capture_factory():
         def __call__(self) -> Template:
             return t"<p>{self.svc.value}</p>"
 
-    captured: list[object] = []
-
-    @dataclass(frozen=True)
-    class RecordingProcessor(DIComponentProcessor):
-        """Subclass that records the (Template, ComponentObject) tuple."""
-
-        def process(self, *args, **kwargs):
-            result = super().process(*args, **kwargs)
-            # result is (Template, ComponentObject | None)
-            if isinstance(result, tuple) and len(result) == 2:
-                captured.append(result[1])
-            return result
-
-    # Build a custom TemplateProcessor with the recording subclass.
-    from tdom.processor import ProcessContext, TemplateProcessor
-
     registry = HopscotchRegistry()
     registry.register_value(Service, Service(value="test_value"))
 
     with HopscotchContainer(registry) as container:
-        custom_tp = TemplateProcessor(
-            component_processor_api=RecordingProcessor(container=container),
-            slash_void=True,
-            uppercase_doctype=True,
-        )
-        custom_tp.process(
-            t"<{FactoryComponent} />",
-            ProcessContext(),
-            app_state=None,
-        )
+        result = html(t"<{FactoryComponent} />", container=container)
 
-    # Find the FactoryComponent instance in captured component_objects.
-    factory_instances = [c for c in captured if isinstance(c, FactoryComponent)]
-    assert len(factory_instances) == 1
-    assert factory_instances[0].svc.value == "test_value"
+    assert result == "<p>test_value</p>"
 
 
 # Scenario 8: Required-DI-field fallback (no template attr)

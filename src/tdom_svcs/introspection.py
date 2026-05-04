@@ -25,7 +25,8 @@ from dataclasses import dataclass
 from pathlib import PurePath
 from typing import Any
 
-from svcs_hopscotch.middleware import AnyMiddleware, get_middleware_types
+from svcs_hopscotch.middleware import get_middleware_types
+from svcs_hopscotch.types import AnyMiddleware
 
 type ComponentMap = dict[type, "ComponentInfo"]
 """Mapping from service type to its complete registration info."""

@@ -12,6 +12,13 @@ wheels/
 # Sphinx
 _build
 
+# Local assistant state and machine-specific config
+.claude/
+.codex/
+.mcp.json
+.junie/
+.aiassistant/
+
 /profile.stats
 .coverage
 *.md.bak

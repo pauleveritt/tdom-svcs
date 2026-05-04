@@ -66,6 +66,7 @@ templates_path = ["_templates"]
 # directories to ignore when looking for source files.
 exclude_patterns = [
     "_build",
+    "superpowers/**",
     "Thumbs.db",
     ".DS_Store",
     "functions.md",  # Internal development notes

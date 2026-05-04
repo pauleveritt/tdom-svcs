@@ -49,7 +49,6 @@ fail_under = 80
 
 [tool.ty.src]
 include = ["examples", "src", "tests"]
-exclude = ["agent-os"]
 
 [tool.ty.environment]
 extra-paths = ["./examples"]

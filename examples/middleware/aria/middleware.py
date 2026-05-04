@@ -17,10 +17,9 @@ from typing import Any
 from markupsafe import Markup
 from svcs_di import Inject
 from svcs_hopscotch.injectors import injectable
-from svcs_hopscotch.middleware import Props, PropsResult, Target
 
 from examples.middleware.aria.services import Logger
-from tdom_svcs import html
+from tdom_svcs import Props, PropsResult, Target, html
 
 
 class _ImgAltChecker(HTMLParser):

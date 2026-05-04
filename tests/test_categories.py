@@ -4,10 +4,19 @@ from dataclasses import dataclass
 from typing import Any
 
 from svcs_hopscotch.injectors import HopscotchRegistry
-from svcs_hopscotch.middleware import HOOKABLE_MIDDLEWARE_ATTR
-from svcs_hopscotch.types import Middleware, Props, PropsResult, Target
 
-from tdom_svcs import hookable, middleware, register_hookable, register_middleware, scan
+from tdom_svcs import (
+    HOOKABLE_MIDDLEWARE_ATTR,
+    Middleware,
+    Props,
+    PropsResult,
+    Target,
+    hookable,
+    middleware,
+    register_hookable,
+    register_middleware,
+    scan,
+)
 
 
 def test_middleware_sets_kind_metadata():

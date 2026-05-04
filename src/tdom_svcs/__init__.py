@@ -1,8 +1,8 @@
 """tdom-svcs: Dependency injection for tdom templates."""
 
-# Re-export middleware machinery from svcs-di
-from svcs_hopscotch.middleware import (
+from tdom_svcs.middleware import (
     AsyncMiddleware,
+    HOOKABLE_MIDDLEWARE_ATTR,
     Middleware,
     execute_middleware,
     execute_middleware_async,
@@ -11,6 +11,13 @@ from svcs_hopscotch.middleware import (
     middleware,
     register_hookable,
     register_middleware,
+)
+from tdom_svcs.types import (
+    AnyMiddleware,
+    MiddlewareMap,
+    Props,
+    PropsResult,
+    Target,
 )
 
 # Local tdom-specific functionality
@@ -27,7 +34,13 @@ from tdom_svcs.scanning import scan
 
 __all__ = [
     "AsyncMiddleware",
+    "AnyMiddleware",
+    "HOOKABLE_MIDDLEWARE_ATTR",
     "Middleware",
+    "MiddlewareMap",
+    "Props",
+    "PropsResult",
+    "Target",
     "execute_middleware",
     "execute_middleware_async",
     "execute_target_middleware",

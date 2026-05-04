@@ -11,9 +11,18 @@ from dataclasses import dataclass
 from typing import Any, cast
 
 from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
-from svcs_hopscotch.types import Middleware, Props, PropsResult, Target
 
-from tdom_svcs import hookable, middleware, register_hookable, register_middleware, scan
+from tdom_svcs import (
+    Middleware,
+    Props,
+    PropsResult,
+    Target,
+    hookable,
+    middleware,
+    register_hookable,
+    register_middleware,
+    scan,
+)
 
 # =============================================================================
 # Decorator Approach

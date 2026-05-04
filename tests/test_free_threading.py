@@ -16,9 +16,11 @@ from typing import Any
 import pytest
 from svcs_di.types import Inject
 from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
-from svcs_hopscotch.middleware import Props, PropsResult, Target
 
 from tdom_svcs import (
+    Props,
+    PropsResult,
+    Target,
     execute_middleware,
     html,
     middleware,

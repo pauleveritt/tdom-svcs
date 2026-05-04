@@ -12,8 +12,7 @@ What does `Greeting` *really* need from the outside world in order to render? Le
 a *lot* more specific:
 
 ```{literalinclude} ../../../examples/basic/props_priority.py
-:start-after: A component that injects the Users service
-:end-at: return html(
+:lines: 46-60
 ```
 
 We're now saying two things:
@@ -28,15 +27,13 @@ With this change, we can now use the component in two ways. First, by passing in
 here's the value:
 
 ```{literalinclude} ../../../examples/basic/props_priority.py
-:start-after: Override the user_name prop
-:end-at: assert "Mary"
+:lines: 77-80
 ```
 
 Otherwise, if the caller doesn't pass in a prop, the component will get it from the container:
 
 ```{literalinclude} ../../../examples/basic/props_priority.py
-:start-after: Let the injector
-:end-at: assert "Alice"
+:lines: 82-85
 ```
 
 ## Useful...but magical

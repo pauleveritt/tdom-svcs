@@ -92,7 +92,6 @@ Cross-cutting concerns handled declaratively:
 
 See the middleware examples:
 
-- {doc}`examples/middleware/basic_middleware` - Chain execution, priority, and logging
 - {doc}`examples/middleware/aria` - ARIA validation that collects accessibility warnings
 
 ### Framework Integration

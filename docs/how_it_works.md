@@ -635,7 +635,7 @@ def test_component_resolution_integration():
     assert "Submit" in output or "<button" in output
 ```
 
-For complete testing examples, see the [dependencies middleware example](examples/middleware/dependencies), which demonstrates testing with fakes.
+For a complete tdom-specific middleware example, see the {doc}`examples/middleware/aria` accessibility validator.
 
 ## Complete Setup Example
 

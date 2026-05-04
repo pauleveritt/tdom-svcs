@@ -1,9 +1,11 @@
 """Integration tests for categories support in middleware and hookable decorators."""
 
 from dataclasses import dataclass
+from typing import Any
 
 from svcs_hopscotch.injectors import HopscotchRegistry
 from svcs_hopscotch.middleware import HOOKABLE_MIDDLEWARE_ATTR
+from svcs_hopscotch.types import Middleware, Props, PropsResult, Target
 
 from tdom_svcs import hookable, middleware, register_hookable, register_middleware, scan
 
@@ -16,7 +18,7 @@ def test_middleware_sets_category_metadata():
     class MyMiddleware:
         priority: int = 0
 
-        def __call__(self, target, props, context):
+        def __call__(self, target: Target, props: Props, context: Any) -> PropsResult:
             return props
 
     assert hasattr(MyMiddleware, "__injectable_metadata__")
@@ -131,10 +133,10 @@ def test_register_middleware_with_categories():
     """Test imperative register_middleware() with additional categories."""
 
     @dataclass
-    class ImperativeMiddleware:
+    class ImperativeMiddleware(Middleware):
         priority: int = 0
 
-        def __call__(self, target, props, context):
+        def __call__(self, target: Target, props: Props, context: Any) -> PropsResult:
             return props
 
     registry = HopscotchRegistry()

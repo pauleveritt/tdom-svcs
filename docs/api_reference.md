@@ -97,28 +97,28 @@ def middleware(
 
 **See also:** {doc}`services/middleware` for middleware documentation.
 
-### @component
+### @hookable
 
 ```python
-def component(
+def hookable(
     cls: type | None = None,
     *,
     middleware: dict[str, list[type]] | None = None,
     categories: list[str] | None = None,
 ) -> type:
     """
-    Decorator to mark a class as a component with optional per-component middleware.
+    Decorator to mark a class as a hookable target with optional per-target middleware.
 
     Automatically assigns categories and attaches middleware configuration.
-    The 'component' category is always added automatically.
+    The 'hookable' category is always added automatically.
 
     Args:
-        cls: The component class to decorate
-        middleware: Per-component middleware configuration
+        cls: The hookable class to decorate
+        middleware: Per-target middleware configuration
         categories: Additional categories for organization
 
     Example:
-        >>> @component(
+        >>> @hookable(
         ...     middleware={"pre_resolution": [ValidationMiddleware]},
         ...     categories=["page", "admin"]
         ... )
@@ -161,31 +161,31 @@ def register_middleware(
     """
 ```
 
-### register_component()
+### register_hookable()
 
 ```python
-def register_component(
+def register_hookable(
     registry: HopscotchRegistry,
-    component_type: type,
+    hookable_type: type,
     *,
     middleware: dict[str, list[type]] | None = None,
     categories: list[str] | None = None,
 ) -> None:
     """
-    Imperatively register a component type with the registry.
+    Imperatively register a hookable target type with the registry.
 
-    Automatically registers a factory for the component if one doesn't exist.
-    Assigns the 'component' category plus any additional categories.
-    Attaches middleware configuration to the component class.
+    Automatically registers a factory for the hookable target if one doesn't exist.
+    Assigns the 'hookable' category plus any additional categories.
+    Attaches middleware configuration to the hookable class.
 
     Args:
         registry: Registry to register in
-        component_type: The component class type
-        middleware: Per-component middleware configuration
+        hookable_type: The hookable class type
+        middleware: Per-target middleware configuration
         categories: Additional categories for organization
 
     Example:
-        >>> register_component(
+        >>> register_hookable(
         ...     registry,
         ...     SecurePage,
         ...     middleware={"pre_resolution": [AuthMiddleware]},
@@ -256,23 +256,23 @@ async def execute_middleware_async(
     """
 ```
 
-### execute_component_middleware()
+### execute_target_middleware()
 
 ```python
-def execute_component_middleware(
-    component_type: type,
+def execute_target_middleware(
+    target_type: type,
     props: dict[str, Any],
     container: svcs.Container,
     phase: str = "pre_resolution",
 ) -> dict[str, Any] | None:
     """
-    Execute per-component middleware for a specific lifecycle phase.
+    Execute per-target middleware for a specific lifecycle phase.
 
-    Reads middleware configuration from the component class's
-    COMPONENT_MIDDLEWARE_ATTR and executes specified middleware.
+    Reads middleware configuration from the hookable target class and executes
+    specified middleware.
 
     Args:
-        component_type: Component class with middleware config
+        target_type: Hookable target class with middleware config
         props: Props to pass through middleware
         container: DI container for resolving middleware
         phase: Lifecycle phase ("pre_resolution", "post_resolution", etc.)
@@ -281,7 +281,7 @@ def execute_component_middleware(
         Modified props, or None if middleware halts execution
 
     Example:
-        >>> result = execute_component_middleware(
+        >>> result = execute_target_middleware(
         ...     AdminDashboard,
         ...     props,
         ...     container,

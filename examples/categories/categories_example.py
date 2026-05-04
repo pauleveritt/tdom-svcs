@@ -8,8 +8,10 @@ This example demonstrates:
 """
 
 from dataclasses import dataclass
+from typing import Any
 
 from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
+from svcs_hopscotch.types import Middleware, Props, PropsResult, Target
 
 from tdom_svcs import hookable, middleware, register_hookable, register_middleware, scan
 
@@ -64,12 +66,12 @@ class Button:
 
 
 @dataclass
-class AuditMiddleware:
+class AuditMiddleware(Middleware):
     """Middleware for audit logging - registered imperatively."""
 
     priority: int = 0
 
-    def __call__(self, target, props, context):
+    def __call__(self, target: Target, props: Props, context: Any) -> PropsResult:
         props["audited"] = True
         return props
 

@@ -15,8 +15,7 @@ This example demonstrates:
 We start with a simple database service that stores users:
 
 ```{literalinclude} ../../../examples/basic/svcs_container.py
-:start-at: @dataclass
-:end-at: return list(self._users.values())
+:lines: 32-46
 ```
 
 ## A Service with Dependencies
@@ -24,8 +23,7 @@ We start with a simple database service that stores users:
 The `Service` class demonstrates injecting one service into another:
 
 ```{literalinclude} ../../../examples/basic/svcs_container.py
-:start-after: def list_users
-:end-at: timeout: int = 30
+:lines: 49-54
 ```
 
 Notice the `Inject[Database]` annotation - this tells the container to inject the `Database` service.
@@ -35,8 +33,7 @@ Notice the `Inject[Database]` annotation - this tells the container to inject th
 A function component that receives the injected `Service`:
 
 ```{literalinclude} ../../../examples/basic/svcs_container.py
-:start-at: def Greeting
-:end-at: return html
+:lines: 57-62
 ```
 
 The `service: Inject[Service]` parameter is automatically resolved from the container.
@@ -46,8 +43,7 @@ The `service: Inject[Service]` parameter is automatically resolved from the cont
 The `main()` function sets up the registry and renders the component:
 
 ```{literalinclude} ../../../examples/basic/svcs_container.py
-:start-at: def main
-:end-at: return result
+:lines: 65-80
 ```
 
 Key points:

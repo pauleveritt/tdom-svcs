@@ -64,7 +64,8 @@ verify that docs do not depend on `agent-os/`. If Sphinx discovers
 `docs/superpowers/**` as orphan pages, exclude that tree from source discovery
 until the future Superpowers Sphinx plugin exists.
 
-`docs/conf.py` now excludes `superpowers/**` from Sphinx source discovery.
+`docs/conf.py` now excludes `superpowers/**` and `research/**` from Sphinx
+source discovery.
 
 ## Task 6: Remove Agent OS Tooling Residue
 
@@ -92,17 +93,15 @@ just test
 If a recipe is absent, use the closest package-local recipe and record the
 exception.
 
-Known exception: `just docs-build` currently fails due pre-existing
-example/research warnings unrelated to Agent OS. The migration resolved the
-additional `docs/superpowers/**` orphan warnings by excluding that tree from
-Sphinx source discovery.
+The migration resolved the additional `docs/superpowers/**` orphan warnings by
+excluding that tree from Sphinx source discovery. Pre-existing stale category
+example links and research orphan warnings were cleaned up during final
+verification.
 
 Verification status on 2026-05-04:
 
-- `just docs-build`: fails with pre-existing example/research warnings.
-- `just quality`: Ruff check and format check pass; `ty check` fails with two
-  pre-existing `register_middleware(...)` argument diagnostics in
-  `examples/categories/categories_example.py` and `tests/test_categories.py`.
+- `just docs-build`: passes.
+- `just quality`: passes.
 - `just test`: passes with 93 passed and 18 skipped.
 
 Follow-up cleanup: removed the stale `agent-os` exclusion from `pyproject.toml`

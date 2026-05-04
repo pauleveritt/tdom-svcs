@@ -46,12 +46,11 @@ Advanced features: automatic scanning with `@injectable`, component overrides, a
 
 ## Categories Examples
 
-Organize and filter middleware and components using additional categories for better structure and dynamic configuration.
+Organize and filter middleware and hookable targets using additional categories for better structure and dynamic configuration.
 
 | Example | Description |
 |---------|-------------|
-| [organizing_with_categories.py](../../examples/categories/organizing_with_categories.py) | Decorator approach with @middleware and @component |
-| [imperative_categories.py](../../examples/categories/imperative_categories.py) | Imperative registration with register_middleware/register_component |
+| [categories_example.py](../../examples/categories/categories_example.py) | Decorator and imperative category registration with @middleware/@hookable and register_middleware/register_hookable |
 
 [Browse Categories Examples](categories/index)
 
@@ -61,10 +60,7 @@ Cross-cutting concerns: intercepting and modifying component rendering for loggi
 
 | Example | Description |
 |---------|-------------|
-| [basic/](middleware/basic_middleware) | Chain execution, priority ordering, halting |
-| [dependencies/](../../examples/middleware/dependencies/) | Middleware with injected services, testing with fakes |
-| [error_handling/](../../examples/middleware/error_handling/) | Exception handling, fallback rendering, circuit breaker |
-| [scoping/](../../examples/middleware/scoping/) | Global vs per-component middleware, async support |
+| [Aria](middleware/aria) | Per-target accessibility validation using aria-testing |
 
 [Browse Middleware Examples](middleware/index)
 

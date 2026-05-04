@@ -105,24 +105,23 @@ Pilot status: deleted after Superpowers history preservation.
 `tdom-svcs` does not have `docs/specifications/` wrappers, so there is no Sphinx
 mirror to repoint.
 
-`docs/research/` exists and should be preserved as a separate research stream.
-Do not migrate research docs as Agent OS specs.
+`docs/research/` exists and is preserved as a separate research stream. Do not
+migrate research docs as Agent OS specs.
 
 ## Docs Integration
 
-Pilot status: `docs/conf.py` excludes `superpowers/**` from Sphinx source
-discovery so the preserved history does not become a set of orphan pages before
-the future Superpowers Sphinx plugin exists.
+Pilot status: `docs/conf.py` excludes `superpowers/**` and `research/**` from
+Sphinx source discovery so the preserved history and separate research stream do
+not become orphan pages before the future Superpowers Sphinx plugin exists.
 
 Active tooling config cleanup: removed the stale `agent-os` entry from
 `pyproject.toml`'s `tool.ty.src.exclude` list.
 
-`just docs-build` still fails because of pre-existing example/research warnings
-unrelated to Agent OS. The migration-added orphan warnings are resolved by the
-`superpowers/**` exclusion.
+`just docs-build` passes after resolving pre-existing stale category example
+links and excluding the separate research stream from Sphinx source discovery.
 
-`just quality` also has pre-existing `ty check` diagnostics unrelated to the
-migration. `just test` passes.
+`just quality` passes after adding explicit protocol annotations to the
+imperatively registered category middleware examples. `just test` passes.
 
 ## Open Questions
 

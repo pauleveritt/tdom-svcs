@@ -1,6 +1,6 @@
 # Category Organization
 
-Categories are tags that help organize and filter middleware and components in tdom-svcs. Every middleware automatically gets the `"middleware"` category, and every component gets the `"component"` category. You can add additional categories to organize your application.
+Categories are tags that help organize and filter middleware and hookable targets in tdom-svcs. Every middleware automatically gets the `"middleware"` category, and every hookable target gets the `"hookable"` category. You can add additional categories to organize your application.
 
 ## What are Categories?
 
@@ -42,14 +42,14 @@ security_middleware = registry.get_by_category("security")
 
 ### Component Organization
 
-Organize components by page type or access level:
+Organize hookable targets by page type or access level:
 
 ```python
-@component(categories=["page", "admin"])
+@hookable(categories=["page", "admin"])
 class AdminDashboard:
     pass
 
-@component(categories=["widget", "interactive"])
+@hookable(categories=["widget", "interactive"])
 class Button:
     pass
 
@@ -99,17 +99,17 @@ class MyMiddleware:
     # Has categories: ("middleware", "cat1", "cat2")
 ```
 
-Add categories to components:
+Add categories to hookable targets:
 
 ```python
-@component(categories=["cat1", "cat2"])
+@hookable(categories=["cat1", "cat2"])
 @dataclass
 class MyComponent:
-    # Has categories: ("component", "cat1", "cat2")
+    # Has categories: ("hookable", "cat1", "cat2")
     pass
 
-# Components can have both middleware config and categories
-@component(
+# Hookable targets can have both middleware config and categories
+@hookable(
     middleware={"pre_resolution": [SomeMiddleware]},
     categories=["cat1"]
 )
@@ -130,10 +130,10 @@ register_middleware(
 )
 ```
 
-Register components with categories:
+Register hookable targets with categories:
 
 ```python
-register_component(
+register_hookable(
     registry,
     MyComponent,
     middleware={...},  # optional
@@ -162,7 +162,7 @@ register_component(
 - **Performance**: `caching`, `performance`, `optimization`
 - **Error handling**: `error-handling`, `retry`, `fallback`
 
-### Component Categories
+### Hookable Categories
 
 - **Structure**: `page`, `widget`, `layout`, `form`
 - **Access level**: `admin`, `public`, `protected`, `authenticated`

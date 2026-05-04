@@ -8,18 +8,10 @@ That works for *components*. What about *services*? In this example, we'll look 
 
 ## The `Users` needs the `Database`
 
-We have an underlying `Database` service:
-
-```{literalinclude} ../../../examples/basic/inject_service.py
-:start-after: The underlying service
-:end-at: self.users
-```
-
 Our `Users` service needs the database, so it injects the `Database` service:
 
 ```{literalinclude} ../../../examples/basic/inject_service.py
-:start-at: A service that depends on the database
-:end-at: return list(self.db.users.values())
+:lines: 22-43
 ```
 
 Notice `get_current_user`? How does `Users` know what is "current"? The container knows! It has the `Request`.
@@ -32,8 +24,7 @@ our way, ready for use.
 For example, by a `Greeting` component:
 
 ```{literalinclude} ../../../examples/basic/inject_service.py
-:start-at: A component that injects the Users service
-:end-at: return html(
+:lines: 46-55
 ```
 
 This is a nice use of injection. Instead of grabbing the entire context, we make it clear, right on the dataclass
@@ -47,8 +38,7 @@ place, grab the username, leaving the template rendering function with no logic.
 With these three services and one component in place, time to wire things up:
 
 ```{literalinclude} ../../../examples/basic/inject_service.py
-:start-at: registry.register_factory(Database
-:end-at: registry.register_factory(Users
+:lines: 58-64
 ```
 
 Here we see the use of `auto()`, as `Users` injects a dependency from `Database`.
@@ -56,15 +46,13 @@ Here we see the use of `auto()`, as `Users` injects a dependency from `Database`
 Then a request comes in, so we put it in the container:
 
 ```{literalinclude} ../../../examples/basic/inject_service.py
-:start-at: request =
-:end-at:  container.register_local_value(Request
+:lines: 66-70
 ```
 
 Our `html()` call passes in the container as the "context" value:
 
 ```{literalinclude} ../../../examples/basic/inject_service.py
-:start-at: response = html(
-:end-at: response = html(
+:lines: 72-75
 ```
 
 Our modified `tdom_svcs.html()` function checks for any injection and passes in the `Users` service.

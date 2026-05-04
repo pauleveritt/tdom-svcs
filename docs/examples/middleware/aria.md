@@ -1,9 +1,9 @@
 # Aria Verifier
 
-This example demonstrates per-component middleware that validates accessibility by checking for missing `alt` attributes on images.
+This example demonstrates per-target middleware that validates accessibility by checking for missing `alt` attributes on images.
 
 ```{note}
-This example uses Hopscotch patterns (`@component`, `@injectable`, `scan()`) for convenience.
+This example uses Hopscotch patterns (`@hookable`, `@injectable`, `scan()`) for convenience.
 You can also use imperative registration if preferred.
 ```
 
@@ -12,7 +12,7 @@ You can also use imperative registration if preferred.
 ```
 aria/
 ├── app.py              # Main entry point
-├── components.py       # ImageWithAlt, ImageWithoutAlt with @component
+├── components.py       # ImageWithAlt, ImageWithoutAlt with @hookable
 ├── middleware.py       # AriaVerifierMiddleware with Inject[Logger]
 └── services.py         # Logger service
 ```
@@ -43,7 +43,7 @@ First, we define a simple logging service that collects warnings:
 
 ## Defining the verifier middleware
 
-The `AriaVerifierMiddleware` uses `@injectable` (not `@middleware`) because it's attached to specific components via `@component`, not registered globally:
+The `AriaVerifierMiddleware` uses `@injectable` (not `@middleware`) because it's attached to specific targets via `@hookable`, not registered globally:
 
 ```{literalinclude} ../../../examples/middleware/aria/middleware.py
 :start-after: The aria verifier middleware
@@ -61,34 +61,32 @@ The `_check_images` method uses aria-testing's query functions:
 :end-at: self.logger.warn
 ```
 
-## Components with per-component middleware
+## Components with per-target middleware
 
-Components use the `@component` decorator to attach the middleware for the `rendering` phase:
+Components use the `@hookable` decorator to attach the middleware for the `rendering` phase:
 
 ```{literalinclude} ../../../examples/middleware/aria/components.py
-:start-after: ImageWithAlt component with per-component middleware
+:start-after: ImageWithAlt component with per-target middleware
 :end-at: class ImageWithAlt:
 ```
 
 A component with proper accessibility:
 
 ```{literalinclude} ../../../examples/middleware/aria/components.py
-:start-at: class ImageWithAlt:
-:end-at: return html
+:lines: 18-22
 ```
 
 A component missing the `alt` attribute:
 
 ```{literalinclude} ../../../examples/middleware/aria/components.py
-:start-at: class ImageWithoutAlt:
-:end-at: return html
+:lines: 25-30
 ```
 
 The middleware detects the missing `alt` by inspecting the rendered Node tree—no markers or special annotations needed.
 
 ## Verifying warnings
 
-The app uses `execute_component_middleware` to run the per-component middleware and verifies warnings via the Logger:
+The app uses `execute_target_middleware` to run the per-target middleware and verifies warnings via the Logger:
 
 ```{literalinclude} ../../../examples/middleware/aria/app.py
 :start-at: logger = container.get(Logger)

@@ -67,6 +67,7 @@ templates_path = ["_templates"]
 exclude_patterns = [
     "_build",
     "superpowers/**",
+    "research/**",
     "Thumbs.db",
     ".DS_Store",
     "functions.md",  # Internal development notes

@@ -1,6 +1,6 @@
 # Organizing with Categories (Decorator Approach)
 
-This example demonstrates using the `@middleware` and `@component` decorators with additional categories to organize and query your application structure.
+This example demonstrates using the `@middleware` and `@hookable` decorators with additional categories to organize and query your application structure.
 
 ## Overview
 
@@ -12,7 +12,7 @@ The decorator approach lets you declare categories directly on your classes:
 class AuthenticationMiddleware:
     priority: int = -20
 
-    def __call__(self, component, props, context):
+    def __call__(self, target, props, context):
         props["authenticated"] = True
         return props
 ```
@@ -21,9 +21,8 @@ class AuthenticationMiddleware:
 
 Define middleware with multiple categories:
 
-```{literalinclude} ../../../examples/categories/organizing_with_categories.py
-:start-after: # Middleware examples with categories
-:end-before: # Component examples with categories
+```{literalinclude} ../../../examples/categories/categories_example.py
+:lines: 21-42
 ```
 
 Each middleware gets:
@@ -31,54 +30,49 @@ Each middleware gets:
 - Any additional categories you specify
 - For example: `("middleware", "security", "auth")`
 
-## Components with Categories
+## Hookable Targets with Categories
 
-Define components with categories:
+Define hookable targets with categories:
 
-```{literalinclude} ../../../examples/categories/organizing_with_categories.py
-:start-after: # Component examples with categories
-:end-before: def main()
+```{literalinclude} ../../../examples/categories/categories_example.py
+:lines: 45-58
 ```
 
-Components get:
-- The automatic `"component"` category
+Hookable targets get:
+- The automatic `"hookable"` category
 - Any additional categories you specify
-- For example: `("component", "page", "admin")`
+- For example: `("hookable", "page", "admin")`
 
 ## Querying by Category
 
 The registry provides methods to query items by category:
 
-```{literalinclude} ../../../examples/categories/organizing_with_categories.py
-:start-after: # Query all categories
-:end-before: # Query by specific category
+```{literalinclude} ../../../examples/categories/categories_example.py
+:lines: 101-117
 ```
 
 ### Get Items in a Category
 
 Retrieve all middleware or components tagged with a specific category:
 
-```{literalinclude} ../../../examples/categories/organizing_with_categories.py
-:start-after: # Query by specific category
-:end-before: # Check categories for specific items
+```{literalinclude} ../../../examples/categories/categories_example.py
+:lines: 105-117
 ```
 
 ### Get Categories for an Item
 
 Find out which categories are assigned to a specific item:
 
-```{literalinclude} ../../../examples/categories/organizing_with_categories.py
-:start-after: # Check categories for specific items
-:end-before: # Demonstrate execution
+```{literalinclude} ../../../examples/categories/categories_example.py
+:lines: 119-121
 ```
 
 ## Dynamic Execution by Category
 
 You can execute only middleware from specific categories:
 
-```{literalinclude} ../../../examples/categories/organizing_with_categories.py
-:start-after: # Execute only security middleware
-:end-before: print(f"   Result:
+```{literalinclude} ../../../examples/categories/categories_example.py
+:lines: 123-138
 ```
 
 This allows you to:
@@ -89,7 +83,7 @@ This allows you to:
 ## Running the Example
 
 ```bash
-uv run python examples/categories/organizing_with_categories.py
+uv run python examples/categories/categories_example.py
 ```
 
 The example will:
@@ -108,5 +102,5 @@ The example will:
 
 ## Full Source Code
 
-```{literalinclude} ../../../examples/categories/organizing_with_categories.py
+```{literalinclude} ../../../examples/categories/categories_example.py
 ```

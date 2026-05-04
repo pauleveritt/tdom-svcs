@@ -3,67 +3,43 @@
 In `tdom`, components can be functions, dataclasses, or plain old class objects (POCOs). This is also true for the
 features shown in this project.
 
-Let's see `context` getting "injected" in all three component flavors.
+Let's see the same greeting component expressed in all three component flavors.
 
 ## Function component
 
-As we saw in the [previous example](pure_tdom), a function component can ask for `context` as a parameter:
+As we saw in the [previous example](pure_tdom), a function component can be rendered directly:
 
 ```{literalinclude} ../../../examples/basic/function_dataclass_poco.py
-:start-at: def Greeting
-:end-at: return
+:lines: 33-35
 ```
 
-When rendered, the `context` argument value is passed into the function:
+When rendered, props from the template are passed into the function:
 
 ```{literalinclude} ../../../examples/basic/function_dataclass_poco.py
-:start-at: Function component:
-:end-at: in result1
+:lines: 38-41
 ```
 
-We can see this in dataclass components. They receive the `context` as a parameter and the `__call__` does the
-rendering:
+The same shape works with a dataclass component. The template props initialize the dataclass and `__call__` renders it:
 
 ```{literalinclude} ../../../examples/basic/function_dataclass_poco.py
-:start-at: Dataclass component:
-:end-at: in result2
+:lines: 17-22
 ```
-
-Finally, a plain old class component:
 
 ```{literalinclude} ../../../examples/basic/function_dataclass_poco.py
-:start-at: Class component:
-:end-at: in result3
+:lines: 43-45
 ```
 
-## `__post_init__` pattern
-
-Perhaps you noticed the curious `__post_init__` pattern in the dataclass component. What's that about?
+Finally, a plain old class object can expose the same callable component shape:
 
 ```{literalinclude} ../../../examples/basic/function_dataclass_poco.py
-:start-at: @dataclass
-:end-at: return html
-:emphasize-lines: 3, 5-6
+:lines: 25-30
 ```
 
-The `__post_init__` pattern is a way to initialize a dataclass after it's been created. It's useful here:
+```{literalinclude} ../../../examples/basic/function_dataclass_poco.py
+:lines: 47-49
+```
 
-- Our component actually depends on the `user`
-- Which is in the `context`
-- We can't get to `user` until *after* we've been passed in the `context`
-- The `__post_init__` pattern allows us to do that
-- We mark context as `InitVar` to indicate it is *only* used during construction
-- The `context` is then passed into `__post_init__`
-
-We get to put `user: str` as a field, which helps signify the contract. The field says `field(init=False)` to signify
-that we aren't getting it during construction -- it is assigned in `__post_init__`.
-
-There's a larger pattern: get *all* of your template data resolved *before* calling the render function. This does two
-things:
-
-- Makes it clear *which* parts of a possibly-huge `context` you actually need
-- You can get all our data set up, with the logic to make it, and then...
-- More easily test the data part of your template
+Each form receives the same `name` prop and renders the same template output.
 
 ## Full source code
 

@@ -374,7 +374,7 @@ the rest of Hopscotch's resolution pipeline via regression tests.
 
 ## Backlog
 
-- [ ] Fix stale `register_component` docs — several docs pages still use the old name
+- [x] Fix stale `register_component` docs — several docs pages still use the old name
   (`register_component`) that was renamed to `register_hookable` in a prior refactor. Files
   affected: `docs/api_reference.md` (function signature and examples), `docs/examples/categories/
   imperative_categories.md` (description, code examples, and a broken `literalinclude` path

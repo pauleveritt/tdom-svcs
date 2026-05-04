@@ -14,7 +14,6 @@ from svcs_hopscotch import Get, Resource
 from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
 
 from tdom_svcs import html
-from tdom_svcs.processor import DIComponentProcessor
 
 
 # Module-level classes for scenario 5 (Inject[Protocol] locator-aware resolution).

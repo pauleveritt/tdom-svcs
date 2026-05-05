@@ -6,6 +6,10 @@ TDOM integration with svcs dependency injection.
 
 **tdom-svcs** provides a powerful integration layer between TDOM (Template DOM) and the svcs dependency injection library. It enables component-based template rendering with automatic dependency resolution, making it easy to build maintainable, testable applications using Python 3.14+ and PEP 750 template strings.
 
+The integration keeps the simple `html(...)` path first. Authors and agents can
+render ordinary t-string templates without service setup, then opt into context,
+containers, and injection when the application needs those affordances.
+
 ### Key Features
 
 - **Type-safe component resolution:** Resolve components directly by type from the container

@@ -29,6 +29,18 @@ This package is a fork of [tdom](https://github.com/pauleveritt/tdom) that adds 
 `html()` function. The context flows automatically through the component tree. (The goal is to contribute this upstream
 to tdom.)
 
+The plain rendering path is still the contract. Import `html`, render a
+template, and add context only when the component tree needs it:
+
+```python
+from tdom_svcs import html
+
+result = html(t"<h1>Hello, Alice!</h1>")
+```
+
+Dependency injection is an additive path for larger applications, not a
+prerequisite for rendering HTML.
+
 Context is simply a mapping. Pass it at the top level:
 
 ```python

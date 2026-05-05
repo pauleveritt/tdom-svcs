@@ -7,11 +7,11 @@ and verifies that protocols work correctly without inheritance.
 
 import sys
 from collections import ChainMap
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from string.templatelib import Template
-from typing import Any, Callable
+from typing import Any
 
 # Add tdom to path for testing
 tdom_path = Path(__file__).parent.parent.parent.parent.parent / "tdom"

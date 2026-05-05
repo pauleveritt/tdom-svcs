@@ -46,7 +46,7 @@ class hookable(injectable):
         location: Any = None,
         categories: CategoryInput = None,
         middleware: MiddlewareMap | None = None,
-    ) -> "hookable": ...
+    ) -> hookable: ...
 
     def __new__[T: InjectableTarget](
         cls,
@@ -57,7 +57,7 @@ class hookable(injectable):
         location: Any = None,
         categories: CategoryInput = None,
         middleware: MiddlewareMap | None = None,
-    ) -> T | "hookable":
+    ) -> T | hookable:
         instance = cast(
             hookable,
             super().__new__(

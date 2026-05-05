@@ -21,17 +21,20 @@ aria/
 
 Accessibility validation is a common cross-cutting concern. Rather than checking each component manually, middleware can inspect rendered output and collect warnings centrally.
 
-This example uses [aria-testing](https://github.com/pauleveritt/aria-testing) to query the Node tree for `<img>` elements missing `alt` attributes. The middleware renders each component, inspects the output, and logs warnings via an injected Logger service.
+The middleware renders each component, inspects the HTML output for `<img>`
+elements missing `alt` attributes, and logs warnings via an injected Logger
+service.
 
 ```{note}
 This example demonstrates the pattern with a single check (missing alt on images). A production implementation would include a full tree walker checking for multiple ARIA violations: missing labels, invalid roles, keyboard accessibility issues, and more.
 ```
 
-## Node standards help middleware
+## Rendered output helps middleware
 
-This middleware will work in any tdom site on any component that returns a `tdom.Node`. That's great and real value for a broad ecosystem of tdom components and middleware.
-
-But why limit this to tdom? What if the entire Python ecosystem could agree on some interoperability standards, such as a common Node interface? Like with WSGI middleware, such standards could help Python pool together its web story, instead of fragmenting.
+This middleware works with any tdom-svcs component that returns a template or
+rendered HTML string. A broader Node standard could make richer tree inspection
+possible later, but this example keeps the current implementation concrete and
+boring.
 
 ## The Logger service
 
@@ -50,11 +53,13 @@ The `AriaVerifierMiddleware` uses `@injectable` (not `@middleware`) because it's
 :end-at: return props
 ```
 
-The middleware injects the `Logger` service and uses it to log warnings. It renders the component, then uses `query_all_by_tag_name` from aria-testing to find all `<img>` elements.
+The middleware injects the `Logger` service and uses it to log warnings. It
+renders the component, then parses the rendered HTML to find all `<img>`
+elements.
 
-### Inspecting the Node tree
+### Inspecting the rendered HTML
 
-The `_check_images` method uses aria-testing's query functions:
+The `_check_images` method uses a tiny `HTMLParser` helper:
 
 ```{literalinclude} ../../../examples/middleware/aria/middleware.py
 :start-at: def _check_images
@@ -82,7 +87,8 @@ A component missing the `alt` attribute:
 :lines: 25-30
 ```
 
-The middleware detects the missing `alt` by inspecting the rendered Node tree—no markers or special annotations needed.
+The middleware detects the missing `alt` by inspecting rendered HTML, with no
+markers or special annotations needed.
 
 ## Verifying warnings
 

@@ -34,6 +34,7 @@ tdom-svcs provides core services:
 - {doc}`node` - The Node standard for ecosystem interoperability
 - {doc}`how_it_works` - Deep dive into architecture and patterns
 - {doc}`examples/index` - Browse working examples
+- {doc}`domain/index` - Package-local domain vocabulary and verified facts
 - {doc}`api_reference` - API documentation
 
 ### Services Documentation
@@ -53,6 +54,7 @@ how_it_works
 services/index
 categories
 examples/index
+domain/index
 api_reference
 ```
 

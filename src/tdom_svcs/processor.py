@@ -10,10 +10,12 @@ given container and stored as a local value so subsequent calls reuse it.
 
 from dataclasses import dataclass
 from string.templatelib import Template
+from typing import Literal
 
 import svcs
 import tdom
 from svcs_di.injector_helpers import FieldResolverWithKwargs, build_resolved_kwargs
+from svcs_di.types import FieldInfo, KwargsDict
 from svcs_hopscotch.auto import hopscotch_get_field_infos
 from svcs_hopscotch.injectors.hopscotch import HopscotchInjector
 from tdom.parser import TAttribute
@@ -26,6 +28,43 @@ from tdom.processor import (
     _resolve_t_attrs,
     get_callable_info,
 )
+
+
+type ComponentResolutionKind = Literal["native-tag", "component"]
+type ComponentFieldSource = Literal[
+    "template-attr",
+    "injected-dependency",
+    "field-operator",
+    "resource",
+    "default",
+]
+
+
+@dataclass(frozen=True, slots=True)
+class ComponentResolutionDecision:
+    """Lean description of which callable, if any, rendering will use."""
+
+    kind: ComponentResolutionKind
+    requested: object
+    final_callable: object | None
+    implementation_swapped: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class ComponentFieldEvidence:
+    """Evidence for one resolved component field."""
+
+    name: str
+    source: ComponentFieldSource
+    value: object
+
+
+@dataclass(frozen=True, slots=True)
+class ComponentFieldResolution:
+    """Resolved component kwargs plus lean per-field source evidence."""
+
+    kwargs: KwargsDict
+    evidence: tuple[ComponentFieldEvidence, ...]
 
 
 def _get_implementation[T](container: svcs.Container, cls: type[T]) -> type[T]:
@@ -44,6 +83,30 @@ def _get_implementation[T](container: svcs.Container, cls: type[T]) -> type[T]:
     return impl if impl is not None else cls
 
 
+def _inspect_component_resolution(
+    container: svcs.Container | None,
+    candidate: object,
+) -> ComponentResolutionDecision:
+    """Inspect native-tag vs component choice and any implementation swap."""
+    if isinstance(candidate, str):
+        return ComponentResolutionDecision(
+            kind="native-tag",
+            requested=candidate,
+            final_callable=None,
+        )
+
+    final_callable = candidate
+    if container is not None and isinstance(candidate, type):
+        final_callable = _get_implementation(container, candidate)
+
+    return ComponentResolutionDecision(
+        kind="component",
+        requested=candidate,
+        final_callable=final_callable,
+        implementation_swapped=final_callable is not candidate,
+    )
+
+
 def _make_resolver(container: svcs.Container) -> FieldResolverWithKwargs:
     """Typed seam for HopscotchInjector._resolve_field_value_sync.
 
@@ -58,6 +121,45 @@ def _make_resolver(container: svcs.Container) -> FieldResolverWithKwargs:
         location=location,
     )
     return injector._resolve_field_value_sync
+
+
+def _component_field_source(
+    field_info: FieldInfo,
+    partial_kwargs: KwargsDict,
+) -> ComponentFieldSource:
+    if field_info.name in partial_kwargs:
+        return "template-attr"
+    if field_info.operator is not None:
+        return "field-operator"
+    if field_info.is_resource:
+        return "resource"
+    if field_info.is_injectable:
+        return "injected-dependency"
+    return "default"
+
+
+def _resolve_component_field_fills(
+    container: svcs.Container,
+    component_callable: object,
+    partial_kwargs: KwargsDict,
+) -> ComponentFieldResolution:
+    """Resolve component fields and preserve lean source evidence."""
+    field_infos = hopscotch_get_field_infos(component_callable)  # ty: ignore[invalid-argument-type]
+    resolved_kwargs = build_resolved_kwargs(
+        field_infos,
+        _make_resolver(container),
+        partial_kwargs,
+    )
+    evidence = tuple(
+        ComponentFieldEvidence(
+            name=field_info.name,
+            source=_component_field_source(field_info, partial_kwargs),
+            value=resolved_kwargs[field_info.name],
+        )
+        for field_info in field_infos
+        if field_info.name in resolved_kwargs
+    )
+    return ComponentFieldResolution(kwargs=resolved_kwargs, evidence=evidence)
 
 
 def needs_dependency_injection(value: object) -> bool:
@@ -103,8 +205,9 @@ class DIComponentProcessor(ComponentProcessor):
             )
 
         # Component-level locator override (Protocol -> impl).
-        if isinstance(component_callable, type):
-            component_callable = _get_implementation(container, component_callable)
+        decision = _inspect_component_resolution(container, component_callable)
+        if decision.kind == "component" and decision.final_callable is not None:
+            component_callable = decision.final_callable
 
         if not needs_dependency_injection(component_callable):
             return super().process(
@@ -128,17 +231,16 @@ class DIComponentProcessor(ComponentProcessor):
         )
 
         # Phase 2: full Hopscotch resolution: Get[T, Attr], locator, adapters, defaults.
-        field_infos = hopscotch_get_field_infos(component_callable)  # ty: ignore[invalid-argument-type]
-        resolved = build_resolved_kwargs(
-            field_infos,
-            _make_resolver(container),
+        field_resolution = _resolve_component_field_fills(
+            container,
+            component_callable,
             partial_kwargs,
         )
 
         # Phase 3: the DI-fill delta: fields Hopscotch resolved that were not in kwargs.
         di_fill = tuple(
             (name, value)
-            for name, value in resolved.items()
+            for name, value in field_resolution.kwargs.items()
             if name not in partial_kwargs
         )
 

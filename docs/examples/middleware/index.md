@@ -1,6 +1,7 @@
 # Middleware Examples
 
-tdom-svcs middleware enables operating on rendered Node trees for tdom-specific use cases like accessibility checking.
+tdom-svcs middleware enables operating on rendered component output for
+tdom-specific use cases like accessibility checking.
 
 ## Overview
 
@@ -10,11 +11,12 @@ These examples demonstrate **tdom-specific** middleware patterns:
 
 | Example | Description |
 |---------|-------------|
-| [Aria](aria) | Accessibility validation using aria-testing to inspect Node trees |
+| [Aria](aria) | Accessibility validation by inspecting rendered HTML |
 
 ## Key tdom Patterns
 
-**Node Tree Inspection:** Middleware can render targets and inspect the resulting Node tree using tools like aria-testing.
+**Rendered Output Inspection:** Middleware can render targets and inspect the
+resulting output.
 
 **Container Context:** Middleware receives the DI container, enabling access to services like loggers, configuration, and application state.
 

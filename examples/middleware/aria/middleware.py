@@ -53,13 +53,13 @@ class AriaVerifierMiddleware:
         target_name = getattr(target, "__name__", type(target).__name__)
 
         # Render the target to inspect its output
-        node = self._render_target(target)
-        if node is not None:
-            self._check_images(node, target_name)
+        output = self._render_target(target, target_name)
+        if output is not None:
+            self._check_images(output, target_name)
 
         return props
 
-    def _render_target(self, target: Target) -> str | Markup | None:
+    def _render_target(self, target: Target, target_name: str) -> str | Markup | None:
         """Render the target to get its HTML output."""
         try:
             # For dataclass targets, instantiate then call
@@ -73,8 +73,8 @@ class AriaVerifierMiddleware:
             if isinstance(result, Template):
                 return html(result)
             return result
-        except Exception:
-            # If rendering fails, skip inspection
+        except Exception as exc:
+            self.logger.warn(f"{target_name}: skipped accessibility check: {exc}")
             return None
 
     def _check_images(self, node: str | Markup, target_name: str) -> None:

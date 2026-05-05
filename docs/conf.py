@@ -20,6 +20,7 @@ extensions = [
     "sphinx.ext.viewcode",  # Add links to source code
     "sphinx.ext.todo",  # Support for to do items
     "sphinx.ext.napoleon",  # Support for NumPy and Google style docstrings
+    "tainie_tools.sphinx",  # DomainPack authoring directives
     # "sphinxcontrib.mermaid",  # Mermaid diagram support - commented out, not in dependencies
 ]
 
@@ -73,6 +74,15 @@ exclude_patterns = [
     "functions.md",  # Internal development notes
     "initial_spec.md",  # Internal development notes
 ]
+
+# The provisional tainie_tools.sphinx domain currently implements directives
+# only. MyST asks custom domains about cross-reference resolution during builds;
+# suppress that adapter warning while keeping tainie domain validation active.
+suppress_warnings = ["myst.domains"]
+
+# Emit the package-local domain inventory as part of the docs build. The
+# tainie_tools extension validates the records before writing this file.
+tainie_domain_inventory_path = "domain-inventory.json"
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

@@ -441,7 +441,7 @@ should expose component-rendering decisions in the same style as Hopscotch
 resolution evidence. This is a consumer of `svcs-di`/`svcs-hopscotch` decision
 algebra, not a separate router.
 
-38. [ ] P1 Lean Component Resolution Inspection — Add a small internal inspection
+38. [x] P1 Lean Component Resolution Inspection — Add a small internal inspection
     helper for the component resolution choice only: native tag vs component,
     Protocol → implementation swap, and final callable target. Do not include
     per-field DI fills, children provenance, or Hopscotch resolver evidence in
@@ -449,18 +449,132 @@ algebra, not a separate router.
     component and a Protocol component overridden through Hopscotch; rendered
     output is unchanged. `S`
 
-39. [ ] P1 DI Fill Evidence Propagation — After Hopscotch has adopted the
+    Completed 2026-05-05: `ComponentResolutionDecision` and
+    `_inspect_component_resolution()` now describe native tags, plain
+    components, and Hopscotch implementation swaps without collecting DI fill
+    evidence. `DIComponentProcessor.process()` uses the same decision object for
+    its final callable choice. `tests/test_processor_unit.py` covers native
+    tags, plain components, class overrides, Protocol overrides, and verifies
+    Protocol override rendering still produces the same output.
+
+39. [x] P1 DI Fill Evidence Propagation — After Hopscotch has adopted the
     svcs-di resolver algebra and lean locator inspection, preserve limited
     per-field source evidence during component rendering: template attr,
     injected dependency, `Get[T, Attr]`, `Resource[T]`, or default. Acceptance:
     `Get[T, Attr]` and resource-driven component examples expose evidence without
     changing rendered output. `M`
 
+    Completed 2026-05-05: Hopscotch roadmap items 34 and 35 are done, so this
+    package now resolves component fields through `_resolve_component_field_fills()`.
+    The helper returns resolved kwargs plus `ComponentFieldEvidence` records with
+    lean source labels for template attrs, injected dependencies, field
+    operators, resources, and defaults. `DIComponentProcessor.process()` uses the
+    same helper for rendering, preserving output behavior. Regression tests cover
+    `Get[T, Attr]`, `Resource[T]`, template override, injected dependency, and
+    default evidence.
+
 40. [ ] P2 TypeForm and Sentinel Deferral — Keep component typing on the supported
     `ty` surface (`TypeIs`, `Literal`, `TypedDict`, `ReadOnly`, `ParamSpec`) and
     avoid public `TypeForm` or typed `Sentinel` APIs until Tainie's conformance
     watch says they pass. Acceptance: docs name the gate and link to the current
     probe results. `S`
+
+## Phase 11: Package-Local Domain Source
+
+This phase makes `tdom-svcs` the next consumer of the `tainie-tools` domain
+authoring work after `svcs-hopscotch`. The goal is not to invent a
+tdom-svcs-specific domain system. The goal is to prove that the shared
+DomainPack authoring policy, directive vocabulary, validation expectations, and
+future inventory export are reusable across a second package with different
+native concepts.
+
+tdom-svcs is a good second consumer because its package-local domain sits at a
+different boundary from Hopscotch: t-string component rendering, optional DI
+context, component implementation overrides, injected props, field operators,
+and the plain no-container rendering path. Those concepts should stress the
+policy without needing Storyville-specific witness metadata yet.
+
+41. [x] P0 Align With `tainie-tools` Domain Authoring Policy — Wait for the
+    `tainie-tools` Domain Authoring Policy spec to define the advisory rules for
+    `planned` vs. `verified`, concept/rule/witness usage, prose-vs-directive
+    boundaries, drift-resistance expectations, and when docs should defer to
+    derived facts. Acceptance: this roadmap item points at the accepted
+    `tainie-tools` policy spec, and no tdom-svcs-specific convention contradicts
+    it. `S`
+
+    Completed 2026-05-05: `tainie-tools` published
+    `docs/domain-authoring-policy.md` and marked Domain Authoring Policy done in
+    its roadmap. tdom-svcs now follows that policy in `docs/domain/index.md`
+    rather than inventing a package-local convention.
+
+42. [x] P0 Draft tdom-svcs Package-Local Domain Source — Add
+    `docs/domain/index.md` as a friendly package-local domain source and link it
+    from `docs/index.md`. Start advisory-first: prose for intent and small
+    `domain:concept`, `domain:rule`, and `domain:witness` directives for
+    checkable facts. Candidate concepts: `html()` render entry point,
+    `DIComponentProcessor`, container context, component implementation
+    override, injected component field, `Resource[T]`, `Get[T, Attr]`, template
+    kwargs override, and no-container rendering. Acceptance: docs build with
+    `tainie_tools.sphinx` enabled, the page remains readable as documentation,
+    and verified facts use symbol paths or package path strings where possible.
+    `M`
+
+    Completed 2026-05-05: added `docs/domain/index.md`, linked it from
+    `docs/index.md`, enabled `tainie_tools.sphinx`, and verified the docs build.
+    The first facts cover `html()`, `DIComponentProcessor`, `Inject[T]`,
+    `Resource[T]`, `Get[T, Attr]`, no-container rendering, template override
+    precedence, Hopscotch-backed component DI, downstream-owned resource shape,
+    and the testing boundary between string assertions and HTML-aware
+    structural assertions.
+
+43. [x] P0 Promote Existing Examples And Tests As Witnesses — Use existing
+    examples and regression tests as the first tdom-svcs witnesses instead of
+    inventing sidecar metadata. Start with examples and tests that already cover
+    no-container rendering, `Inject[T]`, `Resource[T]`, `Get[T, Attr]`,
+    template-override precedence, locator-aware component overrides, and
+    required DI fallback behavior. Acceptance: each verified rule has at least
+    one checkable witness target, witness links reference known concepts or
+    rules, and Storyville-specific witness semantics remain deferred. `M`
+
+    Completed 2026-05-05: `docs/domain/index.md` now uses existing regression
+    tests and the pure tdom example as verified witnesses. Witnesses cover
+    no-container rendering, `Inject[T]`, `Resource[T]`, `Get[T, Attr]`,
+    template override precedence, component implementation override, and
+    required DI fallback behavior. Storyville-specific witness metadata remains
+    deferred.
+
+44. [x] P1 Add Package-Local Domain Validation To CI — After `tainie-tools`
+    provides the shared package-local validation path, configure tdom-svcs
+    through project configuration rather than custom glue code. Keep only a
+    small package-local test that invokes the shared validator against
+    `docs/domain/`. Acceptance: CI validates syntax, target resolution,
+    duplicate ids, and verified-link structure without copying validation logic
+    from `tainie-tools` or `svcs-hopscotch`. `S`
+
+    Completed 2026-05-05: `docs/conf.py` enables
+    `tainie_domain_inventory_path`, and `tests/test_domain_inventory.py` runs a
+    warning-as-error docs build. Validation issues are emitted by the shared
+    `tainie_tools.sphinx` extension and asserted empty from the generated
+    inventory.
+
+45. [x] P1 Exercise Domain Inventory Export — After `tainie-tools` adds stable
+    JSON inventory export, make tdom-svcs the second integration target after
+    svcs-hopscotch. Acceptance: the exported inventory includes tdom-svcs
+    concepts, rules, witnesses, source provenance, statuses, and resolved target
+    metadata, and the export does not require running Tainie. `M`
+
+    Completed 2026-05-05: the docs build now writes
+    `domain-inventory.json`, and `tests/test_domain_inventory.py` asserts the
+    schema version, empty validation issues, `domain/index` source provenance,
+    verified concept status, resolved symbol metadata, resolved witness target
+    metadata, and the resource witness link to
+    `resource-shape-is-downstream-owned`.
+
+46. [ ] P2 Revisit Storyville Witnesses Later — Once Storyville's package-local
+    story metadata shape is settled, decide whether tdom-svcs component stories
+    should become richer witnesses than plain examples/tests. Acceptance: any
+    Storyville integration builds on the generic witness model rather than
+    changing the tdom-svcs domain source format retroactively. `S`
 
 ## Backlog
 
@@ -473,11 +587,13 @@ algebra, not a separate router.
   `docs/examples/categories/index.md` (code example). Mechanical rename only — no behavior
   changes. `S`
 
-- [ ] Fix storyville pytest plugin breakage — `storyville` registers a `pytest11` entrypoint
-  in the workspace venv that imports `from tdom import Node`. Since `Node` was removed from
-  tdom (now `tstring-html`), pytest fails to start without `-p no:storyville`. Fix by updating
-  storyville to drop the `Node` import, or configure `pytest.ini`/`pyproject.toml` in tdom-svcs
-  to suppress the broken plugin via `addopts = -p no:storyville`. `S`
+- [x] Retire stale storyville pytest plugin breakage note — `storyville` registered a
+  `pytest11` entrypoint that previously imported `from tdom import Node`, causing
+  `tdom-svcs` pytest startup to fail unless the plugin was disabled. Verified
+  2026-05-05: `tdom-svcs` no longer needs a local `-p no:storyville` workaround;
+  `just test` starts pytest with the workspace plugins available and passes.
+  Storyville's own package migration remains tracked in the Storyville roadmap,
+  not here. `S`
 
 - [ ] Optional upstream ask: drop the `_` prefix on `_prep_component_kwargs` and
   `_resolve_t_attrs` in `tstring-html/tdom/processor.py`. Since `6fb4227`'s flags
@@ -501,6 +617,9 @@ algebra, not a separate router.
   confirmed: none required" section, second nice-to-have). `S`
 
 > Notes
+> - Maintain roadmap entries using
+>   [Roadmap Standards](roadmap-standards.md): priority, context, acceptance,
+>   size, explicit dependencies, and clear deferrals.
 > - Order items by technical dependencies and product architecture
 > - Each item should represent an end-to-end (frontend + backend) functional and testable feature
 > - Phase 1: Foundation (tdom hooks + svcs integration)
@@ -512,3 +631,4 @@ algebra, not a separate router.
 > - Phase 7: Port to pluggable component processor (cleanup, Template migration, ian/integrations port, workspace adoption)
 > - Phase 8: Resolution strategy refactor (Hopscotch resolution through `super()` per upstream's `6fb4227` flags-based subclassing surface; subsequently, eliminate module-level globals in `processor.py` and make svcs the source of truth for the rendering pipeline via per-container `TemplateProcessor` registration — see `docs/research/di-context-threading.md`)
 > - Phase 9: Rebaseline against merged `tdom` main after PR #118 (`b2287f1`), adapting tdom-svcs from the local `ian/integrations` API to the final non-generic processor extension shape with no `app_state`, no `DefaultAppState`, and no component-object capture
+> - Phase 11: Package-local DomainPack source, using tdom-svcs as the second `tainie-tools` domain authoring consumer after svcs-hopscotch

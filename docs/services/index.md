@@ -14,7 +14,8 @@ tdom-svcs extends the [svcs](https://svcs.hynek.me/) service locator pattern wit
 
 ### Middleware System
 
-The middleware system (from svcs-di) enables cross-cutting concerns. tdom-svcs adds tdom-specific middleware for Node tree inspection:
+The middleware system (from svcs-di) enables cross-cutting concerns. tdom-svcs
+adds tdom-specific middleware for rendered component output:
 
 ```python
 from tdom_svcs import middleware, execute_middleware

@@ -1,6 +1,6 @@
 # Middleware
 
-The **middleware system** in tdom-svcs is powered by [svcs-di's middleware framework](https://github.com/hynek/svcs-di). tdom-svcs re-exports all middleware symbols and adds tdom-specific middleware for working with Node trees.
+The **middleware system** in tdom-svcs is powered by [svcs-di's middleware framework](https://github.com/hynek/svcs-di). tdom-svcs re-exports all middleware symbols and adds tdom-specific middleware for working with rendered component output.
 
 ## Generic Middleware (from svcs-di)
 
@@ -21,14 +21,14 @@ For complete middleware documentation, see the [svcs-di middleware guide](https:
 
 ## tdom-Specific Middleware
 
-tdom-svcs provides middleware for operating on rendered Node trees:
+tdom-svcs provides middleware for operating on rendered component output:
 
 ### ARIA/Accessibility Middleware
 
-Inspects rendered Node trees for accessibility issues:
+Inspects rendered HTML for accessibility issues:
 
 ```python
-from aria_testing import query_all_by_tag_name
+from html.parser import HTMLParser
 from svcs_di import Inject, injectable
 from svcs_di.middleware import Props, PropsResult, Target
 from typing import Any
@@ -41,9 +41,9 @@ class AriaVerifierMiddleware:
     priority: int = 10
 
     def __call__(self, target: Target, props: Props, context: Any) -> PropsResult:
-        # Render target and inspect Node tree
-        node = self._render(target)
-        images = query_all_by_tag_name(node, "img")
+        # Render target and inspect HTML
+        output = self._render(target)
+        images = parse_img_tags(output)
 
         for img in images:
             if "alt" not in img.attrs:
@@ -52,7 +52,7 @@ class AriaVerifierMiddleware:
         return props
 ```
 
-This pattern works for any Node tree analysis:
+This pattern works for output analysis such as:
 - Link validation
 - Security scanning
 - i18n injection

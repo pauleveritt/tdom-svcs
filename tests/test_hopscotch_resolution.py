@@ -14,6 +14,7 @@ from svcs_hopscotch import Get, Resource
 from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
 
 from tdom_svcs import html
+from tdom_svcs.processor import _resolve_component_field_fills
 
 
 # Module-level classes for scenario 5 (Inject[Protocol] locator-aware resolution).
@@ -102,6 +103,34 @@ def test_inject_t_with_template_override():
     assert "Template Override" in result
 
 
+def test_inject_and_default_field_fill_evidence():
+    @dataclass
+    class Settings:
+        title: str = "Injected Title"
+
+    @dataclass
+    class Header:
+        settings: Inject[Settings]
+        prefix: str = "Site"
+
+        def __call__(self) -> Template:
+            return t"<h1>{self.prefix}: {self.settings.title}</h1>"
+
+    registry = HopscotchRegistry()
+    registry.register_value(Settings, Settings())
+    with HopscotchContainer(registry) as container:
+        resolution = _resolve_component_field_fills(container, Header, {})
+        result = html(t"<{Header} />", container=container)
+
+    assert result == "<h1>Site: Injected Title</h1>"
+    assert [(item.name, item.source) for item in resolution.evidence] == [
+        ("settings", "injected-dependency"),
+        ("prefix", "default"),
+    ]
+    assert resolution.evidence[0].value == Settings()
+    assert resolution.evidence[1].value == "Site"
+
+
 # Scenario 2: Resource[T] from container.resource
 
 
@@ -126,6 +155,31 @@ def test_resource_t_from_container_resource():
         result = html(t"<{Page} />", container=container)
 
     assert "User: 99" in result
+
+
+def test_resource_t_field_fill_evidence():
+    @dataclass
+    class RequestObj:
+        user_id: int = 42
+
+    @dataclass
+    class Page:
+        request: Resource[RequestObj]
+
+        def __call__(self) -> Template:
+            return t"<p>User: {self.request.user_id}</p>"
+
+    registry = HopscotchRegistry()
+    with HopscotchContainer(registry) as container:
+        container.resource = RequestObj(user_id=99)
+        resolution = _resolve_component_field_fills(container, Page, {})
+        result = html(t"<{Page} />", container=container)
+
+    assert result == "<p>User: 99</p>"
+    assert [(item.name, item.source) for item in resolution.evidence] == [
+        ("request", "resource")
+    ]
+    assert resolution.evidence[0].value == RequestObj(user_id=99)
 
 
 # Scenario 3: Get[T, Attr] with counter
@@ -183,6 +237,58 @@ def test_get_t_attr_template_override_no_di():
 
     assert get_count["calls"] == 0
     assert "Template Override" in result
+
+
+def test_get_t_attr_field_fill_evidence():
+    @dataclass
+    class Settings:
+        site_title: str = "My Site"
+
+    @dataclass
+    class Page:
+        title: Annotated[str, Get[Settings, "site_title"]]  # ty: ignore[unresolved-reference]
+
+        def __call__(self) -> Template:
+            return t"<h1>{self.title}</h1>"
+
+    registry = HopscotchRegistry()
+    registry.register_value(Settings, Settings())
+    with HopscotchContainer(registry) as container:
+        resolution = _resolve_component_field_fills(container, Page, {})
+        result = html(t"<{Page} />", container=container)
+
+    assert result == "<h1>My Site</h1>"
+    assert [(item.name, item.source, item.value) for item in resolution.evidence] == [
+        ("title", "field-operator", "My Site")
+    ]
+
+
+def test_template_override_field_fill_evidence():
+    @dataclass
+    class Settings:
+        site_title: str = "DI Value"
+
+    @dataclass
+    class Page:
+        title: Annotated[str, Get[Settings, "site_title"]]  # ty: ignore[unresolved-reference]
+
+        def __call__(self) -> Template:
+            return t"<h1>{self.title}</h1>"
+
+    registry = HopscotchRegistry()
+    registry.register_value(Settings, Settings())
+    with HopscotchContainer(registry) as container:
+        resolution = _resolve_component_field_fills(
+            container,
+            Page,
+            {"title": "Template Override"},
+        )
+        result = html(t'<{Page} title="Template Override" />', container=container)
+
+    assert result == "<h1>Template Override</h1>"
+    assert [(item.name, item.source, item.value) for item in resolution.evidence] == [
+        ("title", "template-attr", "Template Override")
+    ]
 
 
 # Scenario 4: Inject[svcs.Container] self-injection

@@ -2,7 +2,7 @@
 
 Demonstrates:
 - Per-target middleware that checks for accessibility issues
-- Using aria-testing to inspect rendered Node trees
+- Inspecting rendered HTML strings for missing alt attributes
 - Dependency injection for logging service
 
 This example uses Hopscotch patterns (decorators, scanning) for convenience.

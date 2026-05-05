@@ -29,6 +29,7 @@ dev = [
     "pyright>=1.1.407",
     "pytest-cov>=4.1.0",
     "sybil[pytest]>=8.4.2",
+    "tainie-tools",
 ]
 
 [tool.pytest.ini_options]
@@ -36,6 +37,8 @@ testpaths = ["tests", "examples"]
 python_files = ["test_*.py", "test_example.py"]
 addopts = "-p no:doctest -m \"not slow\""
 pythonpath = ["examples"]
+tainie_tools_examples_dir = "examples"
+tainie_tools_examples_max_depth = "2"
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
 ]

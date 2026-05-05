@@ -441,19 +441,20 @@ should expose component-rendering decisions in the same style as Hopscotch
 resolution evidence. This is a consumer of `svcs-di`/`svcs-hopscotch` decision
 algebra, not a separate router.
 
-38. [ ] P1 Component Invocation Decision Packets — Add an internal typed packet
-    describing component render decisions: native tag vs component, protocol →
-    implementation swap, template-provided attrs, DI-filled attrs, `children`,
-    and final invocation target. Acceptance: unit tests can assert the packet for
-    a component with no DI, a component with `Inject[T]`, and a Protocol component
-    overridden through Hopscotch. `M`
+38. [ ] P1 Lean Component Resolution Inspection — Add a small internal inspection
+    helper for the component resolution choice only: native tag vs component,
+    Protocol → implementation swap, and final callable target. Do not include
+    per-field DI fills, children provenance, or Hopscotch resolver evidence in
+    this first item. Acceptance: unit tests can inspect the helper for a plain
+    component and a Protocol component overridden through Hopscotch; rendered
+    output is unchanged. `S`
 
-39. [ ] P1 DI Evidence Propagation — When Hopscotch supplies field values during
-    component rendering, preserve resolver evidence so downstream Themester/Tainie
-    can see whether a value came from template attrs, `Get[T, Attr]`, `Resource[T]`,
-    container lookup, locator, adapter, or default. Acceptance: `Get[T, Attr]` and
-    resource-driven component examples expose evidence without changing rendered
-    output. `M`
+39. [ ] P1 DI Fill Evidence Propagation — After Hopscotch has adopted the
+    svcs-di resolver algebra and lean locator inspection, preserve limited
+    per-field source evidence during component rendering: template attr,
+    injected dependency, `Get[T, Attr]`, `Resource[T]`, or default. Acceptance:
+    `Get[T, Attr]` and resource-driven component examples expose evidence without
+    changing rendered output. `M`
 
 40. [ ] P2 TypeForm and Sentinel Deferral — Keep component typing on the supported
     `ty` surface (`TypeIs`, `Literal`, `TypedDict`, `ReadOnly`, `ParamSpec`) and

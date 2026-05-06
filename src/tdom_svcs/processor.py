@@ -272,6 +272,34 @@ def inspect_component_evidence_packet(
     )
 
 
+def component_evidence_packet_to_mapping(
+    packet: ComponentEvidencePacket,
+) -> dict[str, object]:
+    """Project a detailed tdom-svcs packet into a trusted component report shape."""
+    status = "blocked" if packet.status == "requires-di-container" else "observed"
+    selected = (
+        packet.selected_component if packet.selected_component is not None else "None"
+    )
+    evidence = [
+        f"requested={packet.requested_component}",
+        f"selected={selected}",
+        f"implementation_swapped={str(packet.implementation_swapped).lower()}",
+    ]
+    evidence.extend(
+        f"field:{field.name}:{field.source}" for field in packet.field_evidence
+    )
+    if packet.blocker is not None:
+        evidence.append(f"blocker={packet.blocker}")
+
+    return {
+        "schema_version": "component-evidence.v1",
+        "source": packet.source,
+        "status": status,
+        "component": packet.requested_component,
+        "evidence": evidence,
+    }
+
+
 def needs_dependency_injection(value: object) -> bool:
     """Check if callable has ``Inject[T]``, Resource[T], or Get[T, Attr] fields."""
     if not callable(value):

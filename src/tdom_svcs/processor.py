@@ -31,6 +31,12 @@ from tdom.processor import (
 
 
 type ComponentResolutionKind = Literal["native-tag", "component"]
+type ComponentEvidenceStatus = Literal[
+    "selected",
+    "no-container",
+    "requires-di-container",
+]
+type ComponentEvidenceBlocker = Literal["container_required"]
 type ComponentFieldSource = Literal[
     "template-attr",
     "injected-dependency",
@@ -65,6 +71,28 @@ class ComponentFieldResolution:
 
     kwargs: KwargsDict
     evidence: tuple[ComponentFieldEvidence, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ComponentFieldEvidencePacket:
+    """Serializable evidence for one component field source."""
+
+    name: str
+    source: ComponentFieldSource
+
+
+@dataclass(frozen=True, slots=True)
+class ComponentEvidencePacket:
+    """Compact component evidence packet for downstream judge fixtures."""
+
+    schema_version: Literal["tdom-svcs.component-evidence.v1"]
+    source: Literal["tdom-svcs.processor"]
+    status: ComponentEvidenceStatus
+    requested_component: str
+    selected_component: str | None
+    implementation_swapped: bool
+    field_evidence: tuple[ComponentFieldEvidencePacket, ...]
+    blocker: ComponentEvidenceBlocker | None = None
 
 
 def _get_implementation[T](container: svcs.Container, cls: type[T]) -> type[T]:
@@ -105,6 +133,14 @@ def _inspect_component_resolution(
         final_callable=final_callable,
         implementation_swapped=final_callable is not candidate,
     )
+
+
+def _component_label(value: object) -> str:
+    module = getattr(value, "__module__", None)
+    name = getattr(value, "__name__", None)
+    if isinstance(module, str) and isinstance(name, str):
+        return f"{module}.{name}"
+    return repr(value)
 
 
 def _make_resolver(container: svcs.Container) -> FieldResolverWithKwargs:
@@ -160,6 +196,67 @@ def _resolve_component_field_fills(
         if field_info.name in resolved_kwargs
     )
     return ComponentFieldResolution(kwargs=resolved_kwargs, evidence=evidence)
+
+
+def _inspect_component_evidence_packet(
+    container: svcs.Container | None,
+    component_callable: object,
+    partial_kwargs: KwargsDict,
+) -> ComponentEvidencePacket:
+    """Build a compact component decision and field-fill evidence packet."""
+    decision = _inspect_component_resolution(container, component_callable)
+    requested_component = _component_label(decision.requested)
+
+    if container is None:
+        if needs_dependency_injection(component_callable):
+            return ComponentEvidencePacket(
+                schema_version="tdom-svcs.component-evidence.v1",
+                source="tdom-svcs.processor",
+                status="requires-di-container",
+                requested_component=requested_component,
+                selected_component=None,
+                implementation_swapped=False,
+                field_evidence=(),
+                blocker="container_required",
+            )
+        return ComponentEvidencePacket(
+            schema_version="tdom-svcs.component-evidence.v1",
+            source="tdom-svcs.processor",
+            status="no-container",
+            requested_component=requested_component,
+            selected_component=_component_label(component_callable),
+            implementation_swapped=False,
+            field_evidence=(),
+        )
+
+    selected_component = (
+        _component_label(decision.final_callable)
+        if decision.final_callable is not None
+        else None
+    )
+    field_evidence: tuple[ComponentFieldEvidencePacket, ...] = ()
+    if decision.final_callable is not None and needs_dependency_injection(
+        decision.final_callable
+    ):
+        field_resolution = _resolve_component_field_fills(
+            container,
+            decision.final_callable,
+            partial_kwargs,
+        )
+        field_evidence = tuple(
+            ComponentFieldEvidencePacket(name=item.name, source=item.source)
+            for item in field_resolution.evidence
+        )
+
+    return ComponentEvidencePacket(
+        schema_version="tdom-svcs.component-evidence.v1",
+        source="tdom-svcs.processor",
+        status="selected",
+        requested_component=requested_component,
+        selected_component=selected_component,
+        implementation_swapped=decision.implementation_swapped,
+        field_evidence=field_evidence,
+    )
 
 
 def needs_dependency_injection(value: object) -> bool:

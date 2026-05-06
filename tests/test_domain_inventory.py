@@ -46,6 +46,8 @@ def test_docs_build_validates_and_exports_domain_inventory(tmp_path: Path) -> No
         "component-di-flows-through-hopscotch",
         "tests-match-output-risk",
         "resource-field-witness",
+        "component-evidence-packet",
+        "component-evidence-packet-witness",
     } <= records.keys()
 
     resource_marker = records["resource-marker"]

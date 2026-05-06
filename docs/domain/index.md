@@ -38,6 +38,7 @@ The initial vocabulary is intentionally small:
 | Field operator | Field-level operator such as `Get[T, Attr]` resolved through Hopscotch. | `svcs_hopscotch.Get` |
 | Template attribute override | Explicit template attributes win over injected values. | t-string component attributes |
 | Component implementation override | Template names a base component or protocol while Hopscotch selects a registered implementation. | `HopscotchRegistry.register_implementation` |
+| Component evidence packet | Compact internal packet that combines component selection and field source evidence for downstream judge fixtures. | `tdom_svcs.processor.ComponentEvidencePacket` |
 | No-container rendering | Rendering with `container=None`, delegated to `tdom.html()`. | `tdom_svcs.html` |
 | String output testing | Direct string assertions for small or exact rendered output. | `tdom_svcs.html` |
 | Structured HTML testing | HTML-aware assertions for structure, roles, names, and accessibility. | `aria-testing` |
@@ -136,6 +137,18 @@ Hopscotch during component construction.
 
 A registry-level binding that lets a template name a base component or protocol
 while Hopscotch selects a registered implementation for rendering.
+:::
+
+:::{domain:concept} Component evidence packet
+:id: component-evidence-packet
+:status: verified
+:kind: evidence
+:ref: tdom_svcs.processor:ComponentEvidencePacket
+
+A compact internal packet for judge-confidence fixtures. It records the
+requested component, selected component, implementation swap flag, field source
+labels, and negative no-container or required-DI status without exposing field
+values.
 :::
 
 :::{domain:concept} String output testing
@@ -274,6 +287,17 @@ operator resolution.
 
 This regression test covers a template that names a protocol while Hopscotch
 selects the registered implementation.
+:::
+
+:::{domain:witness} ../../tests/test_judge_confidence_evidence.py
+:id: component-evidence-packet-witness
+:status: verified
+:kind: test
+:proves: component-evidence-packet, component-implementation-override, template-attributes-override-injection, component-di-flows-through-hopscotch, no-container-rendering-stays-plain
+
+This regression test covers the compact packet shape Tainie can consume for
+selected overrides, field source labels, no-container rendering, and missing
+container evidence for required DI.
 :::
 
 :::{domain:witness} ../../tests/test_hopscotch_resolution.py

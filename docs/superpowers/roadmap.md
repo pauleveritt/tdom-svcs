@@ -473,6 +473,13 @@ algebra, not a separate router.
     `Get[T, Attr]`, `Resource[T]`, template override, injected dependency, and
     default evidence.
 
+    2026-05-05 router-spike scheduling note: tdom-svcs already exposes the
+    component-resolution and field-fill evidence needed for Tainie's next
+    decision-evidence slice. Do not make TypeForm, Sentinel, or Storyville witness
+    work a prerequisite for the overnight router spike. The next cross-package
+    pressure should come from Tainie consuming a small selected/no-match artifact
+    and reporting whether component evidence needs another field.
+
 40. [ ] P2 TypeForm and Sentinel Deferral — Keep component typing on the supported
     `ty` surface (`TypeIs`, `Literal`, `TypedDict`, `ReadOnly`, `ParamSpec`) and
     avoid public `TypeForm` or typed `Sentinel` APIs until Tainie's conformance

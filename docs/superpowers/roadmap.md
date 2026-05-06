@@ -480,6 +480,13 @@ algebra, not a separate router.
     pressure should come from Tainie consuming a small selected/no-match artifact
     and reporting whether component evidence needs another field.
 
+    2026-05-06 judge-confidence scheduling note: keep the next overnight loop
+    focused on existing tdom-svcs component-resolution and field-fill evidence
+    paired with Hopscotch route artifacts. The useful work is a compact consumer
+    packet or fixture evidence shape for Tainie, plus negative/no-container or
+    required-DI cases. Do not start Storyville witness enrichment or unsupported
+    TypeForm/Sentinel API work before Tainie proves a concrete consumer need.
+
 40. [ ] P2 TypeForm and Sentinel Deferral — Keep component typing on the supported
     `ty` surface (`TypeIs`, `Literal`, `TypedDict`, `ReadOnly`, `ParamSpec`) and
     avoid public `TypeForm` or typed `Sentinel` APIs until Tainie's conformance

@@ -17,9 +17,7 @@ The example is split across multiple files:
 
 The `app.py` file sets up the registry, scans for injectables, then scans the site (which automatically calls `svcs_registry()`):
 
-```{literalinclude} ../../../examples/hopscotch/app_site/app.py
-:start-at: def main
-:end-at: scan(registry, app_common, site)
+```{example-snippet} hopscotch-app-site:app.py#app-scan
 ```
 
 Note how we scan both `app_common` (which registers all `@injectable` classes) and `site` in a single call.
@@ -28,9 +26,7 @@ Note how we scan both `app_common` (which registers all `@injectable` classes) a
 
 The `app_common.py` file contains services and components that any site can use:
 
-```{literalinclude} ../../../examples/hopscotch/app_site/app_common.py
-:start-at: A component that injects
-:end-at: Hello
+```{example-snippet} hopscotch-app-site:app_common.py#base-component
 ```
 
 The `Greeting` component uses `Inject[Users]` to get the current user from the database.
@@ -39,7 +35,7 @@ The `Greeting` component uses `Inject[Users]` to get the current user from the d
 
 The `site.py` file provides a `svcs_registry()` function that is called automatically during `scan()`:
 
-```{literalinclude} ../../../examples/hopscotch/app_site/site.py
+```{example-snippet} hopscotch-app-site:site.py#site-registry
 ```
 
 In this simple example, the site doesn't make any changes. But this is where a site would register
@@ -49,9 +45,7 @@ overrides, additional services, or custom implementations.
 
 Back in `app.py`, we create a container and render the component:
 
-```{literalinclude} ../../../examples/hopscotch/app_site/app.py
-:start-at: with HopscotchContainer
-:end-at: return result
+```{example-snippet} hopscotch-app-site:app.py#render-component
 ```
 
 The `Request` is registered as a local value (per-request data), then the `Greeting` component
@@ -59,17 +53,6 @@ is rendered with the container as context.
 
 ## Full source code
 
-### app.py
-
-```{literalinclude} ../../../examples/hopscotch/app_site/app.py
-```
-
-### app_common.py
-
-```{literalinclude} ../../../examples/hopscotch/app_site/app_common.py
-```
-
-### site.py
-
-```{literalinclude} ../../../examples/hopscotch/app_site/site.py
+```{example-source} hopscotch-app-site
+:files: app.py, app_common.py, site.py
 ```

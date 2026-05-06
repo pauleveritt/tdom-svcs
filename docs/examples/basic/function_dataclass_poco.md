@@ -9,39 +9,33 @@ Let's see the same greeting component expressed in all three component flavors.
 
 As we saw in the [previous example](pure_tdom), a function component can be rendered directly:
 
-```{literalinclude} ../../../examples/basic/function_dataclass_poco.py
-:lines: 33-35
+```{example-snippet} basic/function_dataclass_poco.py#function-component
 ```
 
 When rendered, props from the template are passed into the function:
 
-```{literalinclude} ../../../examples/basic/function_dataclass_poco.py
-:lines: 38-41
+```{example-snippet} basic/function_dataclass_poco.py#render-function
 ```
 
 The same shape works with a dataclass component. The template props initialize the dataclass and `__call__` renders it:
 
-```{literalinclude} ../../../examples/basic/function_dataclass_poco.py
-:lines: 17-22
+```{example-snippet} basic/function_dataclass_poco.py#dataclass-component
 ```
 
-```{literalinclude} ../../../examples/basic/function_dataclass_poco.py
-:lines: 43-45
+```{example-snippet} basic/function_dataclass_poco.py#render-dataclass
 ```
 
 Finally, a plain old class object can expose the same callable component shape:
 
-```{literalinclude} ../../../examples/basic/function_dataclass_poco.py
-:lines: 25-30
+```{example-snippet} basic/function_dataclass_poco.py#poco-component
 ```
 
-```{literalinclude} ../../../examples/basic/function_dataclass_poco.py
-:lines: 47-49
+```{example-snippet} basic/function_dataclass_poco.py#render-poco
 ```
 
 Each form receives the same `name` prop and renders the same template output.
 
 ## Full source code
 
-```{literalinclude} ../../../examples/basic/function_dataclass_poco.py
+```{example-source} basic/function_dataclass_poco
 ```

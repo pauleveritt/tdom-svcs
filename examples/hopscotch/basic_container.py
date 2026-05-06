@@ -40,6 +40,7 @@ DEFAULT_USERS: UsersDict = {
 }
 
 
+# docs: start database-service
 # The underlying service
 @injectable
 @dataclass
@@ -53,6 +54,10 @@ class Database:
         self.users = DEFAULT_USERS.copy()
 
 
+# docs: end database-service
+
+
+# docs: start users-service
 # A service that depends on the database
 @injectable
 @dataclass
@@ -78,6 +83,10 @@ class Users:
         return list(self.db.users.values())
 
 
+# docs: end users-service
+
+
+# docs: start greeting-component
 # A component that injects the Users service
 @dataclass
 class Greeting:
@@ -90,14 +99,23 @@ class Greeting:
         return t"<h1>Hello {current_user['name']}!</h1>"
 
 
+# docs: end greeting-component
+
+
 def main() -> str:
     # Set up the service registry
+    # docs: start registry-setup
     registry = HopscotchRegistry()
+    # docs: end registry-setup
 
     # Auto-discover and register all @injectable classes
+    # docs: start scan-call
     scan(registry, locals_dict=globals())
+    # docs: end scan-call
 
+    # docs: start container-context
     with HopscotchContainer(registry) as container:
+        # docs: end container-context
         # A request comes in, grab the user_id from the route and put
         # in the container.
         request = Request(user_id="1")

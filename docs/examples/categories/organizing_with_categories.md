@@ -21,8 +21,7 @@ class AuthenticationMiddleware:
 
 Define middleware with multiple categories:
 
-```{literalinclude} ../../../examples/categories/categories_example.py
-:lines: 23-44
+```{example-snippet} categories/categories_example.py#decorator-middleware
 ```
 
 Each middleware gets:
@@ -34,8 +33,7 @@ Each middleware gets:
 
 Define hookable targets with categories:
 
-```{literalinclude} ../../../examples/categories/categories_example.py
-:lines: 47-60
+```{example-snippet} categories/categories_example.py#decorator-hookables
 ```
 
 Hookable targets get:
@@ -43,36 +41,32 @@ Hookable targets get:
 - Any user categories you specify
 - For example: `("page", "admin")`
 
-## Querying by Category
+## Listing Categories
 
-The registry provides methods to query items by category:
+List the registered kind and user categories:
 
-```{literalinclude} ../../../examples/categories/categories_example.py
-:lines: 103-122
+```{example-snippet} categories/categories_example.py#category-listing
 ```
 
 ### Get Items in a Category
 
 Retrieve all middleware or components tagged with a specific user category:
 
-```{literalinclude} ../../../examples/categories/categories_example.py
-:lines: 107-122
+```{example-snippet} categories/categories_example.py#category-facet-query
 ```
 
 ### Get Categories for an Item
 
 Find out which categories are assigned to a specific item:
 
-```{literalinclude} ../../../examples/categories/categories_example.py
-:lines: 124-126
+```{example-snippet} categories/categories_example.py#item-category-query
 ```
 
 ## Dynamic Execution by Category
 
 You can execute only middleware from specific categories:
 
-```{literalinclude} ../../../examples/categories/categories_example.py
-:lines: 128-146
+```{example-snippet} categories/categories_example.py#middleware-execution
 ```
 
 This allows you to:
@@ -88,7 +82,7 @@ uv run python examples/categories/categories_example.py
 
 The example will:
 1. List all categories in the registry
-2. Show items in specific categories (security, interactive)
+2. Show items in selected categories (security, page)
 3. Display categories for specific items
 4. Execute filtered middleware
 
@@ -103,5 +97,5 @@ The example will:
 
 ## Full Source Code
 
-```{literalinclude} ../../../examples/categories/categories_example.py
+```{example-source} categories/categories_example
 ```

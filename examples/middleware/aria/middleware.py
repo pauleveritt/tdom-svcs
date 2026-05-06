@@ -37,6 +37,7 @@ class _ImgAltChecker(HTMLParser):
 
 
 # The aria verifier middleware
+# docs: start middleware-class
 @injectable
 @dataclass
 class AriaVerifierMiddleware:
@@ -59,6 +60,8 @@ class AriaVerifierMiddleware:
 
         return props
 
+    # docs: end middleware-class
+
     def _render_target(self, target: Target, target_name: str) -> str | Markup | None:
         """Render the target to get its HTML output."""
         try:
@@ -77,6 +80,7 @@ class AriaVerifierMiddleware:
             self.logger.warn(f"{target_name}: skipped accessibility check: {exc}")
             return None
 
+    # docs: start image-check
     def _check_images(self, node: str | Markup, target_name: str) -> None:
         """Check all img tags for alt attributes."""
         checker = _ImgAltChecker()
@@ -84,3 +88,5 @@ class AriaVerifierMiddleware:
         for img_attrs in checker.missing_alt:
             src = img_attrs.get("src", "<unknown>")
             self.logger.warn(f"{target_name}: img src='{src}' missing alt attribute")
+
+    # docs: end image-check

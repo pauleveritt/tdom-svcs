@@ -6,21 +6,19 @@ This example shows the smallest useful `tdom-svcs` component: a plain function w
 
 The component returns a PEP 750 template string:
 
-```{literalinclude} ../../../examples/basic/pure_tdom.py
-:lines: 15-17
+```{example-snippet} basic/pure_tdom.py#greeting-component
 ```
 
 ## Rendering
 
 Pass the component and props in the template expression:
 
-```{literalinclude} ../../../examples/basic/pure_tdom.py
-:lines: 20-26
+```{example-snippet} basic/pure_tdom.py#render-call
 ```
 
 This implementation is purely functional. No container is needed until you opt into dependency injection.
 
 ## Full source code
 
-```{literalinclude} ../../../examples/basic/pure_tdom.py
+```{example-source} basic/pure_tdom
 ```

@@ -1,0 +1,4 @@
+id = "hopscotch-app-site"
+title = "App And Site Scanning"
+summary = "Shows app/site module scanning with shared application components."
+entrypoint = "app.py"

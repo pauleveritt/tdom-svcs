@@ -25,6 +25,7 @@ def main() -> list[str]:
     results: list[str] = []
 
     # First request: default location (no special path)
+    # docs: start default-request
     with HopscotchContainer(registry, location=PurePath("/en/users/1")) as container:
         container.register_local_value(Request, Request(user_id="1"))
         response = html(t"<{Greeting} />", container=container)
@@ -33,8 +34,10 @@ def main() -> list[str]:
         # Default Greeting uses Hello
         assert "Hello Alice" in result
         results.append(result)
+    # docs: end default-request
 
     # Second request: French location
+    # docs: start french-request
     with HopscotchContainer(registry, location=PurePath("/fr/users/1")) as container:
         container.register_local_value(Request, Request(user_id="1"))
         response = html(t"<{Greeting} />", container=container)
@@ -43,6 +46,7 @@ def main() -> list[str]:
         # FrenchGreeting uses Bonjour
         assert "Bonjour Alice" in result
         results.append(result)
+    # docs: end french-request
 
     return results
 

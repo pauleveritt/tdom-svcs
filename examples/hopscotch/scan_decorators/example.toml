@@ -1,0 +1,4 @@
+id = "hopscotch-scan-decorators"
+title = "Scanning For Decorators"
+summary = "Shows decorator-based component override discovery through scan()."
+entrypoint = "app.py"

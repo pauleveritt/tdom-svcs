@@ -40,17 +40,14 @@ boring.
 
 First, we define a simple logging service that collects warnings:
 
-```{literalinclude} ../../../examples/middleware/aria/services.py
-:start-at: @injectable
+```{example-snippet} middleware-aria:services.py#logger-service
 ```
 
 ## Defining the verifier middleware
 
 The `AriaVerifierMiddleware` uses `@injectable` (not `@middleware`) because it's attached to specific targets via `@hookable`, not registered globally:
 
-```{literalinclude} ../../../examples/middleware/aria/middleware.py
-:start-after: The aria verifier middleware
-:end-at: return props
+```{example-snippet} middleware-aria:middleware.py#middleware-class
 ```
 
 The middleware injects the `Logger` service and uses it to log warnings. It
@@ -61,30 +58,19 @@ elements.
 
 The `_check_images` method uses a tiny `HTMLParser` helper:
 
-```{literalinclude} ../../../examples/middleware/aria/middleware.py
-:start-at: def _check_images
-:end-at: self.logger.warn
+```{example-snippet} middleware-aria:middleware.py#image-check
 ```
 
 ## Components with per-target middleware
 
 Components use the `@hookable` decorator to attach the middleware for the `rendering` phase:
 
-```{literalinclude} ../../../examples/middleware/aria/components.py
-:start-after: ImageWithAlt component with per-target middleware
-:end-at: class ImageWithAlt:
-```
-
-A component with proper accessibility:
-
-```{literalinclude} ../../../examples/middleware/aria/components.py
-:lines: 18-22
+```{example-snippet} middleware-aria:components.py#image-with-alt
 ```
 
 A component missing the `alt` attribute:
 
-```{literalinclude} ../../../examples/middleware/aria/components.py
-:lines: 25-30
+```{example-snippet} middleware-aria:components.py#image-without-alt
 ```
 
 The middleware detects the missing `alt` by inspecting rendered HTML, with no
@@ -94,9 +80,13 @@ markers or special annotations needed.
 
 The app uses `execute_target_middleware` to run the per-target middleware and verifies warnings via the Logger:
 
-```{literalinclude} ../../../examples/middleware/aria/app.py
-:start-at: logger = container.get(Logger)
-:end-at: assert "missing alt"
+```{example-snippet} middleware-aria:app.py#registry-setup
+```
+
+```{example-snippet} middleware-aria:app.py#middleware-checks
+```
+
+```{example-snippet} middleware-aria:app.py#render-target
 ```
 
 ## Running the example
@@ -115,22 +105,6 @@ The example uses assertions to verify that warnings are collected. The final ren
 
 ## Full source code
 
-### `app.py`
-
-```{literalinclude} ../../../examples/middleware/aria/app.py
-```
-
-### `middleware.py`
-
-```{literalinclude} ../../../examples/middleware/aria/middleware.py
-```
-
-### `components.py`
-
-```{literalinclude} ../../../examples/middleware/aria/components.py
-```
-
-### `services.py`
-
-```{literalinclude} ../../../examples/middleware/aria/services.py
+```{example-source} middleware-aria
+:files: app.py, middleware.py, components.py, services.py
 ```

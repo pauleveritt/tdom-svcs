@@ -19,11 +19,14 @@ from tdom_svcs import execute_target_middleware, html, scan
 
 def main() -> str:
     """Execute middleware chain and verify accessibility warnings."""
+    # docs: start registry-setup
     # Create registry and scan for @injectable and @hookable
     registry = HopscotchRegistry()
     scan(registry, middleware, components, services)
+    # docs: end registry-setup
 
     with HopscotchContainer(registry) as container:
+        # docs: start middleware-checks
         # Get logger service for checking warnings
         logger = container.get(Logger)
 
@@ -37,10 +40,13 @@ def main() -> str:
         assert result is not None
         assert len(logger.warnings) == 1
         assert "missing alt" in logger.warnings[0]
+        # docs: end middleware-checks
 
+        # docs: start render-target
         # Render target
         response = html(t"<{ImageWithAlt} />", container=container)
         return str(response)
+    # docs: end render-target
 
 
 if __name__ == "__main__":

@@ -12,11 +12,16 @@ from string.templatelib import Template
 from tdom_svcs import html
 
 
+# docs: start greeting-component
 def Greeting(name: str = "World") -> Template:
     """Render a greeting with the given name."""
     return t"<h1>Hello {name}!</h1>"
 
 
+# docs: end greeting-component
+
+
+# docs: start render-call
 def main() -> str:
     response = html(t"<{Greeting} name='Alice' />")
 
@@ -24,6 +29,9 @@ def main() -> str:
     assert "Alice" in result
 
     return result
+
+
+# docs: end render-call
 
 
 if __name__ == "__main__":

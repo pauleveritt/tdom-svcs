@@ -20,6 +20,7 @@ from tdom_svcs import html
 
 
 # A service that depends on the database
+# docs: start users-service
 @dataclass
 class Users:
     """Service that depends on Database."""
@@ -43,7 +44,11 @@ class Users:
         return list(self.db.users.values())
 
 
+# docs: end users-service
+
+
 # A component that injects the Users service
+# docs: start greeting-component
 @dataclass
 class Greeting:
     """Greeting component that displays welcome message for current user."""
@@ -60,13 +65,18 @@ class Greeting:
         return t"<h1>Hello {self.current_name}!</h1>"
 
 
+# docs: end greeting-component
+
+
 def main() -> tuple[str, str]:
+    # docs: start registry-setup
     # Set up the service registry
     registry = Registry()
 
     registry.register_factory(BaseDatabase, BaseDatabase)
     # User registration using auto(User) to wrap
     registry.register_factory(Users, auto(Users))
+    # docs: end registry-setup
 
     with Container(registry) as container:
         # A request comes in, grab the user_id from the route and put
@@ -74,15 +84,19 @@ def main() -> tuple[str, str]:
         request = Request(user_id="1")
         container.register_local_value(Request, request)
 
+        # docs: start explicit-prop
         # Override the user_name prop from here in this call
         response1 = html(t'<{Greeting} current_name="Mary" />', container=container)
         result1 = str(response1)
         assert "Mary" in result1
+        # docs: end explicit-prop
 
+        # docs: start injected-default
         # Let the injector derive the value
         response2 = html(t"<{Greeting} />", container=container)
         result2 = str(response2)
         assert "Alice" in result2
+        # docs: end injected-default
 
         return result1, result2
 

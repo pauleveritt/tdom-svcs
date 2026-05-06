@@ -8,9 +8,12 @@ from tdom_svcs import html, scan
 
 
 def main() -> str:
+    # docs: start app-scan
     registry = HopscotchRegistry()
     scan(registry, app_common, site)
+    # docs: end app-scan
 
+    # docs: start render-component
     with HopscotchContainer(registry) as container:
         request = Request(user_id="1")
         container.register_local_value(Request, request)
@@ -21,6 +24,7 @@ def main() -> str:
         assert "Alice" in result
 
         return result
+    # docs: end render-component
 
 
 if __name__ == "__main__":

@@ -22,4 +22,6 @@ class Greeting:
 
     def __call__(self) -> Template:
         return t"<h1>Hello {self.customer_name}!</h1>"
+
+
 # docs: end resource-greeting

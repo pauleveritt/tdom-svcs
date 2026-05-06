@@ -1,0 +1,6 @@
+id = "middleware-aria"
+title = "ARIA Verifier Middleware"
+summary = "Shows per-target middleware that inspects rendered HTML for missing image alt text."
+entrypoint = "app.py"
+concepts = []
+proves = []

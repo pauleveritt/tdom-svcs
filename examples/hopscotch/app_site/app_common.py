@@ -10,6 +10,7 @@ from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry, inje
 from tdom_svcs import html, scan
 
 
+# docs: start base-services
 @dataclass
 class Request:
     """Imagine a route of /user/{user_id}"""
@@ -70,6 +71,10 @@ class Users:
         return list(self.db.users.values())
 
 
+# docs: end base-services
+
+
+# docs: start base-component
 # A component that injects the Users service
 @dataclass
 class Greeting:
@@ -80,6 +85,9 @@ class Greeting:
     def __call__(self) -> Template:
         current_user = self.users.get_current_user()
         return t"<h1>Hello {current_user['name']}!</h1>"
+
+
+# docs: end base-component
 
 
 def main() -> str:

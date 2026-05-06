@@ -24,36 +24,31 @@ This is useful when:
 
 Register middleware with categories using `register_middleware()`:
 
-```{literalinclude} ../../../examples/categories/categories_example.py
-:lines: 68-76
+```{example-snippet} categories/categories_example.py#imperative-middleware
 ```
 
 Then register them:
 
-```{literalinclude} ../../../examples/categories/categories_example.py
-:lines: 99-101
+```{example-snippet} categories/categories_example.py#scan-and-register
 ```
 
 ## Imperative Hookable Registration
 
 Register hookable targets with categories using `register_hookable()`:
 
-```{literalinclude} ../../../examples/categories/categories_example.py
-:lines: 79-83
+```{example-snippet} categories/categories_example.py#imperative-hookable
 ```
 
 Then register them:
 
-```{literalinclude} ../../../examples/categories/categories_example.py
-:lines: 99-101
+```{example-snippet} categories/categories_example.py#scan-and-register
 ```
 
 ## Querying Results
 
 After registration, query the registry:
 
-```{literalinclude} ../../../examples/categories/categories_example.py
-:lines: 103-126
+```{example-snippet} categories/categories_example.py#category-queries
 ```
 
 ## Running the Example
@@ -64,7 +59,7 @@ uv run python examples/categories/categories_example.py
 
 The example will show:
 1. All categories registered
-2. Items in each category (security, compliance, page, public)
+2. Items in selected categories (security, page)
 3. Verification that imperative registration works correctly
 
 ## When to Use Imperative Registration
@@ -112,5 +107,5 @@ scan(registry, locals_dict=globals())  # Discovers decorated classes
 
 ## Full Source Code
 
-```{literalinclude} ../../../examples/categories/categories_example.py
+```{example-source} categories/categories_example
 ```

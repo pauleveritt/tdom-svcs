@@ -8,6 +8,7 @@ from svcs_hopscotch.hopscotch_registry import HopscotchRegistry
 from examples.hopscotch.override.app_common import Greeting
 
 
+# docs: start override-component
 @dataclass
 class FrenchGreeting(Greeting):
     """A unique Greeting for this site."""
@@ -18,6 +19,13 @@ class FrenchGreeting(Greeting):
         return t"<h1>Bonjour {current_user['name']}!</h1>"
 
 
+# docs: end override-component
+
+
+# docs: start register-override
 def svcs_registry(registry: HopscotchRegistry) -> None:
     """Called automatically during scan() - registers FrenchGreeting."""
     registry.register_implementation(Greeting, FrenchGreeting)
+
+
+# docs: end register-override

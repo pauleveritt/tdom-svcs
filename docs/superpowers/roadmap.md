@@ -638,7 +638,7 @@ existing strong guide, examples, services, and domain material.
     `docs/superpowers/policies/readme.md`, install uses `uv` first, Quick Start
     is compact and current, and GitHub/PyPI metadata is consistent. `M`
 
-48. [ ] P1 Complete Example Bundle Migration — `docs/examples/hopscotch/resource.md`
+48. [x] P1 Complete Example Bundle Migration — `docs/examples/hopscotch/resource.md`
     is the multi-file pilot, and `tainie-tools` Example Bundle Authoring is now
     done. Migrate the remaining `docs/examples/**` pages from brittle
     `literalinclude` anchors to named `example-snippet`/`example-source`
@@ -648,6 +648,13 @@ existing strong guide, examples, services, and domain material.
     import producer docs. Acceptance: `uv run pytest tests/test_examples.py -q`,
     Sphinx `-W`, generated `example-inventory.json` has no validation issues,
     and migrated pages no longer use `:start-at:` / `:end-at:` anchors. `M`
+
+    Completed 2026-05-06: Basic, Categories, Hopscotch, and Middleware example
+    docs now use `example-snippet` and `example-source` instead of brittle
+    `literalinclude`, `:start-at:`, or `:end-at:` anchors. Multi-file examples
+    have package-local `example.toml` manifests, Sphinx emits
+    `example-inventory.json`, and the migration is guarded by
+    `tests/test_example_docs_migration.py`.
 
 49. [ ] P2 Apply Shared Docs Outline — Restructure the published docs navigation
     after the example migration, so examples and inventories remain stable while

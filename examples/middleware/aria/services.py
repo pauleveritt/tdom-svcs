@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from svcs_hopscotch.injectors import injectable
 
 
+# docs: start logger-service
 @injectable
 @dataclass
 class Logger:
@@ -18,3 +19,6 @@ class Logger:
     def warn(self, message: str) -> None:
         """Log a warning message."""
         self.warnings.append(message)
+
+
+# docs: end logger-service

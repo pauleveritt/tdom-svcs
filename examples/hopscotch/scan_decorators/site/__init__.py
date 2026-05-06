@@ -6,6 +6,10 @@ from svcs_hopscotch.injectors import scan
 from examples.hopscotch.scan_decorators.site import components
 
 
+# docs: start site-registry
 def svcs_registry(registry: HopscotchRegistry) -> None:
     """Called automatically during scan() - registers site components."""
     scan(registry, components)
+
+
+# docs: end site-registry

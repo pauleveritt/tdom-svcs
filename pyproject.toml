@@ -36,7 +36,7 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests", "examples"]
 python_files = ["test_*.py", "test_example.py"]
-addopts = "-p no:doctest -m \"not slow\""
+addopts = "-p no:doctest -p no:storyville -m \"not slow\""
 pythonpath = ["examples"]
 tainie_tools_examples_dir = "examples"
 tainie_tools_examples_max_depth = "2"

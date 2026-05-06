@@ -596,7 +596,10 @@ policy without needing Storyville-specific witness metadata yet.
     overrides, and DI fills. Acceptance: Tainie can consume component evidence
     without duplicating processor internals; tests prove the trace matches
     rendered output for selected overrides, no-container components, required-DI
-    blockers, and field-source labels. `M`
+    blockers, and field-source labels. Do not broaden the producer surface until
+    Tainie's P3a Evidence Metrics Canary proves native eval metrics can observe
+    trusted evidence, missing evidence, and provider failures from public
+    deterministic eval entrypoints. `M`
 
 ## Backlog
 

@@ -584,11 +584,18 @@ policy without needing Storyville-specific witness metadata yet.
     metadata, and the resource witness link to
     `resource-shape-is-downstream-owned`.
 
-46. [ ] P2 Revisit Storyville Witnesses Later — Once Storyville's package-local
+46. [x] P2 Revisit Storyville Witnesses Later — Once Storyville's package-local
     story metadata shape is settled, decide whether tdom-svcs component stories
     should become richer witnesses than plain examples/tests. Acceptance: any
     Storyville integration builds on the generic witness model rather than
     changing the tdom-svcs domain source format retroactively. `S`
+
+    Completed 2026-05-06: Storyville settled a first typed domain evidence
+    shape with optional `DomainStory` and `DomainSubject` packets plus
+    `collect_domain_evidence()`. tdom-svcs now includes
+    `examples/domain_stories/` and `tests/examples/test_domain_stories.py`,
+    which prove two component stories can act as richer witnesses while the
+    authoritative domain rule source remains `docs/domain/index.md`.
 
 47. [ ] P2 Production Component Evidence Trace — Promote the judge-confidence
     packet from an inspection helper into evidence emitted by the same render

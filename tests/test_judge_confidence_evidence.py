@@ -7,7 +7,7 @@ from string.templatelib import Template
 from svcs_di import Inject
 from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
 
-from tdom_svcs.processor import _inspect_component_evidence_packet
+from tdom_svcs.processor import inspect_component_evidence_packet
 
 
 @dataclass
@@ -38,7 +38,7 @@ def test_component_evidence_packet_records_selected_override() -> None:
     registry.register_implementation(_Card, _CardOverride)
 
     with HopscotchContainer(registry) as container:
-        packet = _inspect_component_evidence_packet(
+        packet = inspect_component_evidence_packet(
             container,
             _Card,
             {"title": "Template"},
@@ -74,20 +74,32 @@ def test_component_evidence_packet_records_no_container_plain_component() -> Non
     def Greeting(name: str = "World") -> Template:
         return t"<p>Hello {name}</p>"
 
-    packet = _inspect_component_evidence_packet(None, Greeting, {"name": "Alice"})
+    packet = inspect_component_evidence_packet(None, Greeting, {"name": "Alice"})
 
     assert packet.status == "no-container"
-    assert packet.selected_component == f"{__name__}.Greeting"
+    assert packet.selected_component == f"{__name__}.{Greeting.__qualname__}"
     assert packet.implementation_swapped is False
     assert packet.field_evidence == ()
     assert packet.blocker is None
 
 
 def test_component_evidence_packet_records_required_di_without_container() -> None:
-    packet = _inspect_component_evidence_packet(None, _Card, {})
+    packet = inspect_component_evidence_packet(None, _Card, {})
 
     assert packet.status == "requires-di-container"
     assert packet.selected_component is None
     assert packet.implementation_swapped is False
     assert packet.field_evidence == ()
     assert packet.blocker == "container_required"
+
+
+def test_component_evidence_packet_uses_qualname_for_nested_components() -> None:
+    class Wrapper:
+        class Nested:
+            def __call__(self) -> Template:
+                return t"<p>Nested</p>"
+
+    packet = inspect_component_evidence_packet(None, Wrapper.Nested, {})
+
+    assert packet.requested_component == f"{__name__}.{Wrapper.Nested.__qualname__}"
+    assert packet.selected_component == f"{__name__}.{Wrapper.Nested.__qualname__}"

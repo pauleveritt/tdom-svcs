@@ -137,7 +137,7 @@ def _inspect_component_resolution(
 
 def _component_label(value: object) -> str:
     module = getattr(value, "__module__", None)
-    name = getattr(value, "__name__", None)
+    name = getattr(value, "__qualname__", None)
     if isinstance(module, str) and isinstance(name, str):
         return f"{module}.{name}"
     return repr(value)
@@ -256,6 +256,19 @@ def _inspect_component_evidence_packet(
         selected_component=selected_component,
         implementation_swapped=decision.implementation_swapped,
         field_evidence=field_evidence,
+    )
+
+
+def inspect_component_evidence_packet(
+    container: svcs.Container | None,
+    component_callable: object,
+    partial_kwargs: KwargsDict,
+) -> ComponentEvidencePacket:
+    """Build a compact evidence packet for the component renderer path."""
+    return _inspect_component_evidence_packet(
+        container,
+        component_callable,
+        partial_kwargs,
     )
 
 

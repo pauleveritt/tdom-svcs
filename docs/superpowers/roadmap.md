@@ -590,6 +590,14 @@ policy without needing Storyville-specific witness metadata yet.
     Storyville integration builds on the generic witness model rather than
     changing the tdom-svcs domain source format retroactively. `S`
 
+47. [ ] P2 Production Component Evidence Trace — Promote the judge-confidence
+    packet from an inspection helper into evidence emitted by the same render
+    path that resolves attrs, provided attrs, children, Hopscotch component
+    overrides, and DI fills. Acceptance: Tainie can consume component evidence
+    without duplicating processor internals; tests prove the trace matches
+    rendered output for selected overrides, no-container components, required-DI
+    blockers, and field-source labels. `M`
+
 ## Backlog
 
 - [x] Fix stale `register_component` docs — several docs pages still use the old name

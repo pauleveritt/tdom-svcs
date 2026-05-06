@@ -143,9 +143,9 @@ while Hopscotch selects a registered implementation for rendering.
 :id: component-evidence-packet
 :status: verified
 :kind: evidence
-:ref: tdom_svcs.processor:ComponentEvidencePacket
+:ref: tdom_svcs.processor:inspect_component_evidence_packet
 
-A compact internal packet for judge-confidence fixtures. It records the
+A compact packet for judge-confidence fixtures. It records the
 requested component, selected component, implementation swap flag, field source
 labels, and negative no-container or required-DI status without exposing field
 values.
@@ -296,8 +296,8 @@ selects the registered implementation.
 :proves: component-evidence-packet, component-implementation-override, template-attributes-override-injection, component-di-flows-through-hopscotch, no-container-rendering-stays-plain
 
 This regression test covers the compact packet shape Tainie can consume for
-selected overrides, field source labels, no-container rendering, and missing
-container evidence for required DI.
+selected overrides, field source labels, stable component provenance,
+no-container rendering, and missing container evidence for required DI.
 :::
 
 :::{domain:witness} ../../tests/test_hopscotch_resolution.py

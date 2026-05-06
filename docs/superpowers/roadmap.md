@@ -597,16 +597,74 @@ policy without needing Storyville-specific witness metadata yet.
     which prove two component stories can act as richer witnesses while the
     authoritative domain rule source remains `docs/domain/index.md`.
 
-47. [ ] P2 Production Component Evidence Trace — Promote the judge-confidence
-    packet from an inspection helper into evidence emitted by the same render
-    path that resolves attrs, provided attrs, children, Hopscotch component
-    overrides, and DI fills. Acceptance: Tainie can consume component evidence
-    without duplicating processor internals; tests prove the trace matches
-    rendered output for selected overrides, no-container components, required-DI
-    blockers, and field-source labels. Do not broaden the producer surface until
-    Tainie's P3a Evidence Metrics Canary proves native eval metrics can observe
-    trusted evidence, missing evidence, and provider failures from public
-    deterministic eval entrypoints. `M`
+47. [ ] P1 Tainie Component Evidence Provider Integration — Tainie's P3a-P5
+    evidence-provider gates have landed, including the native provider registry,
+    Pydantic Evals parity, svcs-hopscotch producer registration, and live
+    evidence classification. Promote the judge-confidence component packet from
+    an inspection helper into a package-owned producer that Tainie can call
+    through its provider contract. Acceptance: public Tainie native and
+    Pydantic eval entrypoints can attach trusted `tdom-svcs` component evidence
+    for selected overrides, no-container components, required-DI blockers, and
+    field-source labels; malformed provider output is quarantined as provider
+    drift; rendered output is unchanged; no Tainie module import requires
+    importing `tdom_svcs` unless the caller opts into the provider. `M`
+
+## Phase 12: Documentation Restructure
+
+Align tdom-svcs docs to the shared workspace outline while preserving the
+existing strong guide, examples, services, and domain material.
+
+- Add or sharpen "Why tdom-svcs?" around plain `html()` first and optional
+  container-aware rendering second.
+- Keep Getting Started, core concepts, Node, and How It Works in Concepts and
+  Guides.
+- Keep services and API under Reference.
+- Keep Domain as a first-class section.
+- Keep research and excluded Superpowers history under Development unless
+  intentionally published.
+
+48. [ ] README Overhaul — Rewrite `README.md` against the shared README policy.
+    Keep the plain `html()` first, optional container-aware rendering second
+    positioning; shorten extended examples; verify docs links, badges, project
+    URLs, and current imports; and move deeper DI/Hopscotch walkthroughs into
+    Sphinx docs. Acceptance: README follows
+    `docs/superpowers/policies/readme.md`, install uses `uv` first, Quick Start
+    is compact and current, and GitHub/PyPI metadata is consistent. `M`
+
+48. [ ] P1 Complete Example Bundle Migration — `docs/examples/hopscotch/resource.md`
+    is the multi-file pilot, and `tainie-tools` Example Bundle Authoring is now
+    done. Migrate the remaining `docs/examples/**` pages from brittle
+    `literalinclude` anchors to named `example-snippet`/`example-source`
+    directives, adding manifests where examples are multi-file bundles and
+    domain metadata where the example names known concepts or rules. This feeds
+    Tainie's future Example Inventory Evidence Input work without making Tainie
+    import producer docs. Acceptance: `uv run pytest tests/test_examples.py -q`,
+    Sphinx `-W`, generated `example-inventory.json` has no validation issues,
+    and migrated pages no longer use `:start-at:` / `:end-at:` anchors. `M`
+
+49. [ ] P2 Apply Shared Docs Outline — Restructure the published docs navigation
+    after the example migration, so examples and inventories remain stable while
+    pages move. Acceptance: docs expose a concise "Why tdom-svcs?" entry point,
+    Concepts/Guides/Reference/Domain/Development sections match the shared
+    workspace outline, redirects or links preserve existing high-value pages,
+    and Sphinx `-W` plus domain/example inventory tests pass. `M`
+
+## Phase 13: Tainie DomainSpec Producer Pilot
+
+Tainie owns the canonical DomainSpec/DomainPack compiler and consumer model.
+tdom-svcs should not invent that shape locally. Its role is to be a real
+producer fixture with validated package-local domain, example, Storyville, and
+component-evidence artifacts that Tainie can consume through public provider or
+inventory contracts.
+
+50. [ ] P1 DomainSpec Inventory Pilot For Tainie — Once Tainie schedules the
+    DomainSpec/DomainPack inventory consumer, use tdom-svcs as the first
+    package with both `domain-inventory.json` and `example-inventory.json`.
+    Acceptance: Tainie can read tdom-svcs inventories as trusted passive
+    evidence without importing Sphinx or producer docs; metrics distinguish
+    domain inventory evidence, example inventory evidence, Storyville witness
+    evidence, component provider evidence, and model-authored claims; tdom-svcs
+    keeps docs/domain as the authored source of truth. `M`
 
 ## Backlog
 
@@ -664,3 +722,5 @@ policy without needing Storyville-specific witness metadata yet.
 > - Phase 8: Resolution strategy refactor (Hopscotch resolution through `super()` per upstream's `6fb4227` flags-based subclassing surface; subsequently, eliminate module-level globals in `processor.py` and make svcs the source of truth for the rendering pipeline via per-container `TemplateProcessor` registration — see `docs/research/di-context-threading.md`)
 > - Phase 9: Rebaseline against merged `tdom` main after PR #118 (`b2287f1`), adapting tdom-svcs from the local `ian/integrations` API to the final non-generic processor extension shape with no `app_state`, no `DefaultAppState`, and no component-object capture
 > - Phase 11: Package-local DomainPack source, using tdom-svcs as the second `tainie-tools` domain authoring consumer after svcs-hopscotch
+> - Phase 12: Public docs and example inventory cleanup, sequenced before Tainie consumes package example inventories
+> - Phase 13: tdom-svcs as a DomainSpec/DomainPack producer pilot; Tainie owns the canonical consumer/compiler contract

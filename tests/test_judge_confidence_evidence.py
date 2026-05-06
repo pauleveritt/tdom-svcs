@@ -7,7 +7,10 @@ from string.templatelib import Template
 from svcs_di import Inject
 from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
 
-from tdom_svcs.processor import inspect_component_evidence_packet
+from tdom_svcs.processor import (
+    component_evidence_packet_to_mapping,
+    inspect_component_evidence_packet,
+)
 
 
 @dataclass
@@ -67,6 +70,50 @@ def test_component_evidence_packet_records_selected_override() -> None:
             {"name": "title", "source": "template-attr"},
         ],
         "blocker": None,
+    }
+
+
+def test_component_evidence_packet_maps_selected_override_to_report_shape() -> None:
+    registry = HopscotchRegistry()
+    registry.register_value(_Settings, _Settings())
+    registry.register_implementation(_Card, _CardOverride)
+
+    with HopscotchContainer(registry) as container:
+        packet = inspect_component_evidence_packet(
+            container,
+            _Card,
+            {"title": "Template"},
+        )
+
+    assert component_evidence_packet_to_mapping(packet) == {
+        "schema_version": "component-evidence.v1",
+        "source": "tdom-svcs.processor",
+        "status": "observed",
+        "component": f"{__name__}._Card",
+        "evidence": [
+            f"requested={__name__}._Card",
+            f"selected={__name__}._CardOverride",
+            "implementation_swapped=true",
+            "field:settings:injected-dependency",
+            "field:title:template-attr",
+        ],
+    }
+
+
+def test_component_evidence_packet_maps_required_di_blocker_to_report_shape() -> None:
+    packet = inspect_component_evidence_packet(None, _Card, {})
+
+    assert component_evidence_packet_to_mapping(packet) == {
+        "schema_version": "component-evidence.v1",
+        "source": "tdom-svcs.processor",
+        "status": "blocked",
+        "component": f"{__name__}._Card",
+        "evidence": [
+            f"requested={__name__}._Card",
+            "selected=None",
+            "implementation_swapped=false",
+            "blocker=container_required",
+        ],
     }
 
 

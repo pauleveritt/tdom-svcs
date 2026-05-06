@@ -597,7 +597,7 @@ policy without needing Storyville-specific witness metadata yet.
     which prove two component stories can act as richer witnesses while the
     authoritative domain rule source remains `docs/domain/index.md`.
 
-47. [ ] P1 Tainie Component Evidence Provider Integration — Tainie's P3a-P5
+47. [x] P1 Tainie Component Evidence Provider Integration — Tainie's P3a-P5
     evidence-provider gates have landed, including the native provider registry,
     Pydantic Evals parity, svcs-hopscotch producer registration, and live
     evidence classification. Promote the judge-confidence component packet from
@@ -608,6 +608,13 @@ policy without needing Storyville-specific witness metadata yet.
     field-source labels; malformed provider output is quarantined as provider
     drift; rendered output is unchanged; no Tainie module import requires
     importing `tdom_svcs` unless the caller opts into the provider. `M`
+
+    Completed 2026-05-06: `tdom-svcs` now projects component inspection packets
+    into Tainie's trusted component evidence report shape, and Tainie can attach
+    that evidence through an opt-in `component_provider` lane across native and
+    Pydantic Evals entrypoints. Provider drift is quarantined, missing producers
+    yield zero evidence, and Tainie imports stay free of `tdom_svcs` unless the
+    caller opts into the component producer registration helper.
 
 ## Phase 12: Documentation Restructure
 

@@ -9,6 +9,7 @@ from svcs_hopscotch.injectors import injectable
 from examples.hopscotch.location.components import Greeting
 
 
+# docs: start french-greeting
 @injectable(for_=Greeting, location=PurePath("/fr"))
 @dataclass
 class FrenchGreeting(Greeting):
@@ -16,3 +17,6 @@ class FrenchGreeting(Greeting):
 
     def __call__(self) -> Template:
         return t"<h1>Bonjour {self.user_name}!</h1>"
+
+
+# docs: end french-greeting

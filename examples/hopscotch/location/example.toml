@@ -1,0 +1,4 @@
+id = "hopscotch-location"
+title = "Location-Based Component Resolution"
+summary = "Shows component selection that varies by container location."
+entrypoint = "app.py"

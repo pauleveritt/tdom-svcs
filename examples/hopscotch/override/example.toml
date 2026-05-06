@@ -1,0 +1,4 @@
+id = "hopscotch-override"
+title = "Imperative Component Override"
+summary = "Shows explicit site-level component replacement with register_implementation."
+entrypoint = "app.py"

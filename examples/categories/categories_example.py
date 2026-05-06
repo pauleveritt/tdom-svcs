@@ -29,6 +29,7 @@ from tdom_svcs import (
 # =============================================================================
 
 
+# docs: start decorator-middleware
 @middleware(categories=["security", "auth"])
 @dataclass
 class AuthenticationMiddleware:
@@ -53,6 +54,10 @@ class ValidationMiddleware:
         return props
 
 
+# docs: end decorator-middleware
+
+
+# docs: start decorator-hookables
 @hookable(categories=["page", "admin"])
 @dataclass
 class AdminDashboard:
@@ -69,11 +74,14 @@ class Button:
     label: str = "Click me"
 
 
+# docs: end decorator-hookables
+
 # =============================================================================
 # Imperative Approach
 # =============================================================================
 
 
+# docs: start imperative-middleware
 @dataclass
 class AuditMiddleware(Middleware):
     """Middleware for audit logging - registered imperatively."""
@@ -85,12 +93,18 @@ class AuditMiddleware(Middleware):
         return props
 
 
+# docs: end imperative-middleware
+
+
+# docs: start imperative-hookable
 @dataclass
 class PublicPage:
     """A public page - registered imperatively."""
 
     title: str = "Public Area"
 
+
+# docs: end imperative-hookable
 
 # =============================================================================
 # Main Example
@@ -102,26 +116,33 @@ def main() -> list[str]:
     registry = HopscotchRegistry()
     results = []
 
+    # docs: start scan-and-register
     # Scan decorated classes
     scan(registry, locals_dict=globals())
 
     # Register additional items imperatively
     register_middleware(registry, AuditMiddleware, categories=["audit", "compliance"])
     register_hookable(registry, PublicPage, categories=["page", "public"])
+    # docs: end scan-and-register
 
+    # docs: start category-queries
     # List all categories
+    # docs: start category-listing
     all_categories = sorted(registry.list_categories())
     results.append(f"All categories: {all_categories}")
+    # docs: end category-listing
 
     # Query middleware by role kind
     all_middleware = list(registry.get_by_kind("middleware"))
     results.append(f"Total middleware: {len(all_middleware)}")
 
+    # docs: start category-facet-query
     security_middleware = [
         cast(type[Middleware], mw_type)
         for mw_type in registry.get_by_category("security")
     ]
     results.append(f"Security middleware: {[m.__name__ for m in security_middleware]}")
+    # docs: end category-facet-query
 
     # Query hookables by role kind
     all_hookables = list(registry.get_by_kind("hookable"))
@@ -131,9 +152,13 @@ def main() -> list[str]:
     results.append(f"Page items: {[c.__name__ for c in page_items]}")
 
     # Check specific item categories
+    # docs: start item-category-query
     auth_categories = sorted(registry.get_categories(AuthenticationMiddleware))
     results.append(f"AuthenticationMiddleware categories: {auth_categories}")
+    # docs: end item-category-query
+    # docs: end category-queries
 
+    # docs: start middleware-execution
     # Execute security middleware example
     with HopscotchContainer(registry) as container:
         security_middleware = [
@@ -153,6 +178,7 @@ def main() -> list[str]:
             f"Security execution: authenticated={props.get('authenticated')}, "
             f"validated={props.get('validated')}"
         )
+    # docs: end middleware-execution
 
     return results
 

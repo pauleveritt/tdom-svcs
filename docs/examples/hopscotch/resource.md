@@ -35,12 +35,12 @@ implementation is selected only for containers carrying a matching resource.
 
 The base app defines a `Customer` protocol and a `DefaultCustomer`:
 
-```{literalinclude} ../../../examples/hopscotch/resource/resources.py
+```{example-snippet} hopscotch-resource:resources.py#default-resource
 ```
 
 The site adds a `FrenchCustomer`:
 
-```{literalinclude} ../../../examples/hopscotch/resource/site/resources.py
+```{example-snippet} hopscotch-resource:site/resources.py#french-resource
 ```
 
 ## Injecting resources with `Resource[T]`

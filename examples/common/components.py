@@ -16,6 +16,7 @@ class SimpleComponent:
         return t"<div>Simple Component</div>"
 
 
+# docs: start greeting-component
 @dataclass
 class Greeting:
     """Greeting component that displays welcome message for current user."""
@@ -25,3 +26,6 @@ class Greeting:
     def __call__(self) -> Template:
         current_user = self.users.get_current_user()
         return t"<h1>Hello {current_user['name']}!</h1>"
+
+
+# docs: end greeting-component

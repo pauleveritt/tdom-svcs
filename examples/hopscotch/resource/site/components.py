@@ -17,4 +17,6 @@ class FrenchGreeting(Greeting):
 
     def __call__(self) -> Template:
         return t"<h1>Bonjour {self.customer_name}!</h1>"
+
+
 # docs: end french-greeting

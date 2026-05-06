@@ -10,20 +10,21 @@ This example demonstrates:
 - Service dependencies with `auto()`
 - Function components with injected services
 
+```{example-snippet} basic/svcs_container.py#user-types
+```
+
 ## The Database Service
 
 We start with a simple database service that stores users:
 
-```{literalinclude} ../../../examples/basic/svcs_container.py
-:lines: 32-46
+```{example-snippet} basic/svcs_container.py#database-service
 ```
 
 ## A Service with Dependencies
 
 The `Service` class demonstrates injecting one service into another:
 
-```{literalinclude} ../../../examples/basic/svcs_container.py
-:lines: 49-54
+```{example-snippet} basic/svcs_container.py#service-dependency
 ```
 
 Notice the `Inject[Database]` annotation - this tells the container to inject the `Database` service.
@@ -32,8 +33,7 @@ Notice the `Inject[Database]` annotation - this tells the container to inject th
 
 A function component that receives the injected `Service`:
 
-```{literalinclude} ../../../examples/basic/svcs_container.py
-:lines: 57-62
+```{example-snippet} basic/svcs_container.py#injected-component
 ```
 
 The `service: Inject[Service]` parameter is automatically resolved from the container.
@@ -42,8 +42,10 @@ The `service: Inject[Service]` parameter is automatically resolved from the cont
 
 The `main()` function sets up the registry and renders the component:
 
-```{literalinclude} ../../../examples/basic/svcs_container.py
-:lines: 65-80
+```{example-snippet} basic/svcs_container.py#registry-setup
+```
+
+```{example-snippet} basic/svcs_container.py#container-render
 ```
 
 Key points:
@@ -54,5 +56,5 @@ Key points:
 
 ## Full Source Code
 
-```{literalinclude} ../../../examples/basic/svcs_container.py
+```{example-source} basic/svcs_container
 ```

@@ -8,6 +8,7 @@ from svcs_di import Inject
 from examples.common.services import Users
 
 
+# docs: start base-greeting
 # A component that injects the Users service
 @dataclass
 class Greeting:
@@ -22,3 +23,6 @@ class Greeting:
 
     def __call__(self) -> Template:
         return t"<h1>Hello {self.user_name}!</h1>"
+
+
+# docs: end base-greeting

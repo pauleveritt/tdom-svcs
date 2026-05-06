@@ -20,6 +20,7 @@ from tdom_svcs import html
 
 
 # A service that depends on the database
+# docs: start users-service
 @dataclass
 class Users:
     """Service that depends on Database."""
@@ -43,7 +44,11 @@ class Users:
         return list(self.db.users.values())
 
 
+# docs: end users-service
+
+
 # A component that injects the Users service
+# docs: start greeting-component
 @dataclass
 class Greeting:
     """Greeting component that displays welcome message for current user."""
@@ -55,24 +60,33 @@ class Greeting:
         return t"<h1>Hello {current_user['name']}!</h1>"
 
 
+# docs: end greeting-component
+
+
 def main() -> str:
+    # docs: start registry-setup
     # Set up the service registry
     registry = Registry()
 
     registry.register_factory(BaseDatabase, BaseDatabase)
     # User registration using auto(User) to wrap
     registry.register_factory(Users, auto(Users))
+    # docs: end registry-setup
 
     with Container(registry) as container:
+        # docs: start request-context
         # A request comes in, grab the user_id from the route and put
         # in the container.
         request = Request(user_id="1")
         container.register_local_value(Request, request)
+        # docs: end request-context
 
+        # docs: start render-component
         # Dataclass component: pass context container into the rendering
         response = html(t"<{Greeting} />", container=container)
         result = str(response)
         assert "Alice" in result
+        # docs: end render-component
 
         return result
 

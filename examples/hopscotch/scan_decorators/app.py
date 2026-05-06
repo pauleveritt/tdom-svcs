@@ -17,8 +17,10 @@ from tdom_svcs import html, scan
 
 
 def main() -> str:
+    # docs: start scan-app-site
     registry = HopscotchRegistry()
     scan(registry, components, services, site)
+    # docs: end scan-app-site
 
     with HopscotchContainer(registry) as container:
         container.register_local_value(Request, Request(user_id="1"))

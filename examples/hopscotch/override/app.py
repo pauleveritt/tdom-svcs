@@ -16,9 +16,12 @@ from tdom_svcs import html, scan
 
 
 def main() -> str:
+    # docs: start app-scan
     registry = HopscotchRegistry()
     scan(registry, app_common, site)
+    # docs: end app-scan
 
+    # docs: start render-override
     with HopscotchContainer(registry) as container:
         container.register_local_value(Request, Request(user_id="1"))
 
@@ -31,6 +34,7 @@ def main() -> str:
         assert "Bonjour" in result
 
         return result
+    # docs: end render-override
 
 
 if __name__ == "__main__":

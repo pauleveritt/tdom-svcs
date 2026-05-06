@@ -10,8 +10,7 @@ That works for *components*. What about *services*? In this example, we'll look 
 
 Our `Users` service needs the database, so it injects the `Database` service:
 
-```{literalinclude} ../../../examples/basic/inject_service.py
-:lines: 22-43
+```{example-snippet} basic/inject_service.py#users-service
 ```
 
 Notice `get_current_user`? How does `Users` know what is "current"? The container knows! It has the `Request`.
@@ -23,8 +22,7 @@ our way, ready for use.
 
 For example, by a `Greeting` component:
 
-```{literalinclude} ../../../examples/basic/inject_service.py
-:lines: 46-55
+```{example-snippet} basic/inject_service.py#greeting-component
 ```
 
 This is a nice use of injection. Instead of grabbing the entire context, we make it clear, right on the dataclass
@@ -37,27 +35,24 @@ place, grab the username, leaving the template rendering function with no logic.
 
 With these three services and one component in place, time to wire things up:
 
-```{literalinclude} ../../../examples/basic/inject_service.py
-:lines: 58-64
+```{example-snippet} basic/inject_service.py#registry-setup
 ```
 
 Here we see the use of `auto()`, as `Users` injects a dependency from `Database`.
 
 Then a request comes in, so we put it in the container:
 
-```{literalinclude} ../../../examples/basic/inject_service.py
-:lines: 66-70
+```{example-snippet} basic/inject_service.py#request-context
 ```
 
 Our `html()` call passes in the container as the "context" value:
 
-```{literalinclude} ../../../examples/basic/inject_service.py
-:lines: 72-75
+```{example-snippet} basic/inject_service.py#render-component
 ```
 
 Our modified `tdom_svcs.html()` function checks for any injection and passes in the `Users` service.
 
 ## Full source code
 
-```{literalinclude} ../../../examples/basic/inject_service.py
+```{example-source} basic/inject_service
 ```

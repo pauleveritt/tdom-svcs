@@ -6,13 +6,17 @@ all it needed to render was the name of the current user.
 In this example, we'll show how to write dataclasses that minimize the dependency surface area, clearly showing
 specifically what is needed. This then allows a caller to override that single value by passing in a prop.
 
+The `Users` service still provides the current user lookup:
+
+```{example-snippet} basic/props_priority.py#users-service
+```
+
 ## Verbose but clear component
 
 What does `Greeting` *really* need from the outside world in order to render? Let's change the component dataclass to be
 a *lot* more specific:
 
-```{literalinclude} ../../../examples/basic/props_priority.py
-:lines: 46-60
+```{example-snippet} basic/props_priority.py#greeting-component
 ```
 
 We're now saying two things:
@@ -21,19 +25,24 @@ We're now saying two things:
 - `Greeting` will need the `Users` service to find `current_user`
 - The `__post_init__` will do the calculation and store the value, *before* the method that renders
 
+## Setup
+
+As before, the registry wires the database service and the injectable `Users` service:
+
+```{example-snippet} basic/props_priority.py#registry-setup
+```
+
 ## Two usages
 
 With this change, we can now use the component in two ways. First, by passing in a prop that says, for *this* usage,
 here's the value:
 
-```{literalinclude} ../../../examples/basic/props_priority.py
-:lines: 77-80
+```{example-snippet} basic/props_priority.py#explicit-prop
 ```
 
 Otherwise, if the caller doesn't pass in a prop, the component will get it from the container:
 
-```{literalinclude} ../../../examples/basic/props_priority.py
-:lines: 82-85
+```{example-snippet} basic/props_priority.py#injected-default
 ```
 
 ## Useful...but magical
@@ -62,5 +71,5 @@ There are, of course, tradeoffs:
 
 ## Full source code
 
-```{literalinclude} ../../../examples/basic/props_priority.py
+```{example-source} basic/props_priority
 ```

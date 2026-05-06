@@ -14,6 +14,7 @@ from tdom_svcs import hookable
 
 
 # ImageWithAlt component with per-target middleware
+# docs: start image-with-alt
 @hookable(middleware={"rendering": [AriaVerifierMiddleware]})
 @dataclass
 class ImageWithAlt:
@@ -23,6 +24,10 @@ class ImageWithAlt:
         return t'<div><img src="photo.jpg" alt="A photo"></div>'
 
 
+# docs: end image-with-alt
+
+
+# docs: start image-without-alt
 @hookable(middleware={"rendering": [AriaVerifierMiddleware]})
 @dataclass
 class ImageWithoutAlt:
@@ -30,3 +35,6 @@ class ImageWithoutAlt:
 
     def __call__(self) -> Template:
         return t'<div><img src="photo.jpg"></div>'
+
+
+# docs: end image-without-alt

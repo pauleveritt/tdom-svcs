@@ -8,25 +8,19 @@
 
 When creating a `HopscotchContainer`, you can pass a `location` parameter with a `PurePath`:
 
-```{literalinclude} ../../../examples/hopscotch/location/app.py
-:start-at: First request
-:end-at: results.append
+```{example-snippet} hopscotch-location:app.py#default-request
 ```
 
 For French URLs, we pass a different location:
 
-```{literalinclude} ../../../examples/hopscotch/location/app.py
-:start-at: Second request
-:end-at: results.append
+```{example-snippet} hopscotch-location:app.py#french-request
 ```
 
 ## Registering location-based overrides
 
 The site registers `FrenchGreeting` to override `Greeting` when the location starts with `/fr`:
 
-```{literalinclude} ../../../examples/hopscotch/location/site/components.py
-:start-at: @injectable
-:end-at: Bonjour
+```{example-snippet} hopscotch-location:site/components.py#french-greeting
 ```
 
 The `location=PurePath("/fr")` parameter tells the registry that this implementation should be used when the container's location starts with `/fr`.
@@ -35,24 +29,11 @@ The `location=PurePath("/fr")` parameter tells the registry that this implementa
 
 The base `Greeting` component injects the `Users` service:
 
-```{literalinclude} ../../../examples/hopscotch/location/components.py
-:start-at: @dataclass
-:end-at: Hello
+```{example-snippet} hopscotch-location:components.py#base-greeting
 ```
 
 ## Full source code
 
-### app.py
-
-```{literalinclude} ../../../examples/hopscotch/location/app.py
-```
-
-### components.py
-
-```{literalinclude} ../../../examples/hopscotch/location/components.py
-```
-
-### site/components.py
-
-```{literalinclude} ../../../examples/hopscotch/location/site/components.py
+```{example-source} hopscotch-location
+:files: app.py, components.py, request.py, services.py, site/__init__.py, site/components.py
 ```

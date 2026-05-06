@@ -1,0 +1,1 @@
+"""Injection subject domain stories."""

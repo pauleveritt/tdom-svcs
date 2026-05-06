@@ -1,0 +1,1 @@
+"""Component domain stories."""

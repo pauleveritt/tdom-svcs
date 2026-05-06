@@ -28,6 +28,7 @@ dev = [
     "pyrefly>=0.46.1",
     "pyright>=1.1.407",
     "pytest-cov>=4.1.0",
+    "storyville",
     "sybil[pytest]>=8.4.2",
     "tainie-tools",
 ]
@@ -61,6 +62,7 @@ python = "../.venv"
 aria-testing = { workspace = true }
 svcs-di = { workspace = true }
 svcs-hopscotch = { workspace = true }
+storyville = { workspace = true }
 tdom = { workspace = true }
 
 [build-system]

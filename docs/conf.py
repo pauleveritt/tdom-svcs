@@ -21,6 +21,7 @@ extensions = [
     "sphinx.ext.todo",  # Support for to do items
     "sphinx.ext.napoleon",  # Support for NumPy and Google style docstrings
     "tainie_tools.sphinx",  # DomainPack authoring directives
+    "tainie_tools.examples.sphinx",  # Example bundle authoring directives
     # "sphinxcontrib.mermaid",  # Mermaid diagram support - commented out, not in dependencies
 ]
 
@@ -83,6 +84,8 @@ suppress_warnings = ["myst.domains"]
 # Emit the package-local domain inventory as part of the docs build. The
 # tainie_tools extension validates the records before writing this file.
 tainie_domain_inventory_path = "domain-inventory.json"
+tainie_examples_dir = "../examples"
+tainie_examples_inventory_path = "example-inventory.json"
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

@@ -1,0 +1,6 @@
+id = "hopscotch-resource"
+title = "Resource-Based Variation"
+summary = "Shows resource-specific component selection with base and site implementations."
+entrypoint = "app.py"
+concepts = ["resource-resolution"]
+proves = ["resource-specific-override"]

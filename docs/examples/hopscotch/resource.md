@@ -12,6 +12,25 @@ conditional overrides.
 - Components use `Resource[T]` to inject the current resource
 - Overrides can be registered for specific resource types using `@injectable(for_=..., resource=...)`
 
+:::{domain:concept} Resource resolution
+:id: resource-resolution
+:status: verified
+:kind: selection
+:ref: svcs_hopscotch:Resource
+
+Component fields can request the active Hopscotch resource with `Resource[T]`,
+and component registrations can use the active resource type during selection.
+:::
+
+:::{domain:rule} Resource-specific override
+:id: resource-specific-override
+:status: verified
+:applies-to: resource-resolution
+
+When a site registers an implementation for a specific resource type, that
+implementation is selected only for containers carrying a matching resource.
+:::
+
 ## Defining resources
 
 The base app defines a `Customer` protocol and a `DefaultCustomer`:
@@ -28,9 +47,7 @@ The site adds a `FrenchCustomer`:
 
 The `Greeting` component uses `Resource[DefaultCustomer]` to inject the current resource:
 
-```{literalinclude} ../../../examples/hopscotch/resource/components.py
-:start-at: @dataclass
-:end-at: Hello
+```{example-snippet} hopscotch-resource:components.py#resource-greeting
 ```
 
 The `Resource[T]` annotation tells the injector to grab the resource from the container
@@ -40,9 +57,7 @@ and provide it with type `T`.
 
 The site defines `FrenchGreeting` with `@injectable(for_=Greeting, resource=FrenchCustomer)`:
 
-```{literalinclude} ../../../examples/hopscotch/resource/site/components.py
-:start-at: @injectable
-:end-at: Bonjour
+```{example-snippet} hopscotch-resource:site/components.py#french-greeting
 ```
 
 This override only applies when the container's resource is a `FrenchCustomer`.
@@ -51,16 +66,12 @@ This override only applies when the container's resource is a `FrenchCustomer`.
 
 The app creates containers with different resources:
 
-```{literalinclude} ../../../examples/hopscotch/resource/app.py
-:start-at: First request
-:end-at: results.append
+```{example-snippet} hopscotch-resource:app.py#default-request
 ```
 
 For the French customer:
 
-```{literalinclude} ../../../examples/hopscotch/resource/app.py
-:start-at: Second request
-:end-at: results.append
+```{example-snippet} hopscotch-resource:app.py#french-request
 ```
 
 When the resource is `DefaultCustomer`, the base `Greeting` is used.
@@ -68,27 +79,6 @@ When the resource is `FrenchCustomer`, the `FrenchGreeting` override is selected
 
 ## Full source code
 
-### app.py
-
-```{literalinclude} ../../../examples/hopscotch/resource/app.py
-```
-
-### components.py
-
-```{literalinclude} ../../../examples/hopscotch/resource/components.py
-```
-
-### resources.py
-
-```{literalinclude} ../../../examples/hopscotch/resource/resources.py
-```
-
-### site/components.py
-
-```{literalinclude} ../../../examples/hopscotch/resource/site/components.py
-```
-
-### site/resources.py
-
-```{literalinclude} ../../../examples/hopscotch/resource/site/resources.py
+```{example-source} hopscotch-resource
+:files: app.py, components.py, resources.py, site/components.py, site/resources.py
 ```

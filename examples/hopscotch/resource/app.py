@@ -24,6 +24,7 @@ def main() -> list[str]:
 
     results: list[str] = []
 
+    # docs: start default-request
     # First request: a regular customer
     default_customer = DefaultCustomer(name="Alice")
     with HopscotchContainer(registry, resource=default_customer) as container:
@@ -34,7 +35,9 @@ def main() -> list[str]:
         # DefaultGreeting uses Hello
         assert "Hello Alice" in result
         results.append(result)
+    # docs: end default-request
 
+    # docs: start french-request
     # Second request: a French customer
     french_customer = FrenchCustomer(name="Marie")
     with HopscotchContainer(registry, resource=french_customer) as container:
@@ -45,6 +48,7 @@ def main() -> list[str]:
         # FrenchGreeting uses Bonjour
         assert "Bonjour Marie" in result
         results.append(result)
+    # docs: end french-request
     return results
 
 

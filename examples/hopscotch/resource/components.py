@@ -9,6 +9,7 @@ from examples.hopscotch.resource.resources import DefaultCustomer
 
 
 # A component that injects registered Customer resource
+# docs: start resource-greeting
 @dataclass
 class Greeting:
     """Greeting component that displays welcome message for current resource."""
@@ -21,3 +22,4 @@ class Greeting:
 
     def __call__(self) -> Template:
         return t"<h1>Hello {self.customer_name}!</h1>"
+# docs: end resource-greeting

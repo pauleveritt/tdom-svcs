@@ -184,7 +184,7 @@ the rest of Hopscotch's resolution pipeline via regression tests.
     `docs/research/port-tstring-html-integrations-revisited.md` ("Why this revision"
     and "Upstream changes — confirmed: none required" sections). `S`
 
-28. [x] Rewrite tdom-svcs Processor per Option C — Replace the
+27. [x] Rewrite tdom-svcs Processor per Option C — Replace the
     `_invoke_component`-based `DIComponentProcessor` with the four-phase Option C
     architecture in `src/tdom_svcs/processor.py`:
 
@@ -220,7 +220,7 @@ the rest of Hopscotch's resolution pipeline via regression tests.
     `docs/research/port-tstring-html-integrations-revisited.md` ("Revised
     architecture for tdom-svcs" and Q2 Option C sections). `M`
 
-29. [x] Regression Tests for Full Hopscotch Resolution Surface — Add tests in
+28. [x] Regression Tests for Full Hopscotch Resolution Surface — Add tests in
     `tdom-svcs/tests/` covering each Hopscotch feature now routed through Option
     C, with each test corresponding to a trace-through in the research doc:
     - `Inject[T]` basic resolution, with and without template override.
@@ -247,7 +247,7 @@ the rest of Hopscotch's resolution pipeline via regression tests.
     See `docs/research/port-tstring-html-integrations-revisited.md` (Stage 3
     "Add regression tests" subsection). `M`
 
-30. [x] Type-Checking Improvements for the Rewrite — Parametrize
+29. [x] Type-Checking Improvements for the Rewrite — Parametrize
     `_get_implementation[T](container, cls: type[T]) -> type[T]` to carry the type
     through the Protocol → impl swap. Wrap `HopscotchInjector._resolve_field_value_sync`
     access in a single typed seam (one `# ty: ignore[private]` in a helper named
@@ -258,7 +258,7 @@ the rest of Hopscotch's resolution pipeline via regression tests.
     `docs/research/port-tstring-html-integrations-revisited.md` ("Type checking
     opportunities" section). `S`
 
-27. [x] Cache Field-Info Helpers in svcs-hopscotch and svcs-di — Add
+30. [x] Cache Field-Info Helpers in svcs-hopscotch and svcs-di — Add
     `@functools.cache` to `hopscotch_get_field_infos` (`svcs-hopscotch/auto.py`) and
     `get_field_infos` (`svcs-di/auto.py`). Annotations are static per callable; the
     result is process-stable, identical across containers, and read-dominated. Apply
@@ -638,7 +638,7 @@ existing strong guide, examples, services, and domain material.
     `docs/superpowers/policies/readme.md`, install uses `uv` first, Quick Start
     is compact and current, and GitHub/PyPI metadata is consistent. `M`
 
-48. [x] P1 Complete Example Bundle Migration — `docs/examples/hopscotch/resource.md`
+49. [x] P1 Complete Example Bundle Migration — `docs/examples/hopscotch/resource.md`
     is the multi-file pilot, and `tainie-tools` Example Bundle Authoring is now
     done. Migrate the remaining `docs/examples/**` pages from brittle
     `literalinclude` anchors to named `example-snippet`/`example-source`
@@ -656,7 +656,7 @@ existing strong guide, examples, services, and domain material.
     `example-inventory.json`, and the migration is guarded by
     `tests/test_example_docs_migration.py`.
 
-49. [ ] P2 Apply Shared Docs Outline — Restructure the published docs navigation
+50. [ ] P2 Apply Shared Docs Outline — Restructure the published docs navigation
     after the example migration, so examples and inventories remain stable while
     pages move. Acceptance: docs expose a concise "Why tdom-svcs?" entry point,
     Concepts/Guides/Reference/Domain/Development sections match the shared
@@ -671,7 +671,7 @@ producer fixture with validated package-local domain, example, Storyville, and
 component-evidence artifacts that Tainie can consume through public provider or
 inventory contracts.
 
-50. [ ] P1 DomainSpec Inventory Pilot For Tainie — Once Tainie schedules the
+51. [ ] P1 DomainSpec Inventory Pilot For Tainie — Once Tainie schedules the
     DomainSpec/DomainPack inventory consumer, use tdom-svcs as the first
     package with both `domain-inventory.json` and `example-inventory.json`.
     Acceptance: Tainie can read tdom-svcs inventories as trusted passive
@@ -705,7 +705,7 @@ inventory contracts.
   support DI subclasses calling `_prep_component_kwargs` directly, the function is
   now part of the intentional public surface. The `_` prefix is misleading. Same
   reasoning for `_resolve_t_attrs`. Mechanical rename only. tdom-svcs would update
-  the corresponding imports in Phase 8 item 28. See
+  the corresponding imports in Phase 8 item 27. See
   `docs/research/port-tstring-html-integrations-revisited.md` ("Imports of
   underscore-prefixed helpers" subsection). `S`
 

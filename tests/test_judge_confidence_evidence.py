@@ -130,6 +130,19 @@ def test_component_evidence_packet_records_no_container_plain_component() -> Non
     assert packet.blocker is None
 
 
+def test_component_evidence_packet_no_container_maps_to_no_container_status() -> None:
+    def Greeting(name: str = "World") -> Template:
+        return t"<p>Hello {name}</p>"
+
+    packet = inspect_component_evidence_packet(None, Greeting, {"name": "Alice"})
+
+    mapping = component_evidence_packet_to_mapping(packet)
+
+    assert mapping["schema_version"] == "component-evidence.v1"
+    assert mapping["status"] == "no_container"
+    assert mapping["component"] == f"{__name__}.{Greeting.__qualname__}"
+
+
 def test_component_evidence_packet_records_required_di_without_container() -> None:
     packet = inspect_component_evidence_packet(None, _Card, {})
 

@@ -276,7 +276,15 @@ def component_evidence_packet_to_mapping(
     packet: ComponentEvidencePacket,
 ) -> dict[str, object]:
     """Project a detailed tdom-svcs packet into a trusted component report shape."""
-    status = "blocked" if packet.status == "requires-di-container" else "observed"
+    if packet.status == "requires-di-container":
+        status = "blocked"
+    elif packet.status == "no-container":
+        status = "no_container"
+    elif packet.status == "selected":
+        status = "observed"
+    else:
+        msg = f"unknown ComponentEvidencePacket.status: {packet.status!r}"
+        raise ValueError(msg)
     selected = (
         packet.selected_component if packet.selected_component is not None else "None"
     )

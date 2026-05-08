@@ -69,7 +69,6 @@ When `container` is an `svcs.Container`, component fields using
 
 ```python
 from dataclasses import dataclass
-from string.templatelib import Template
 
 from svcs_di import Inject
 
@@ -77,7 +76,7 @@ from svcs_di import Inject
 class Dashboard:
     db: Inject[DatabaseService]  # Automatically injected from the container
 
-    def __call__(self) -> Template:
+    def __call__(self):
         user = self.db.get_current_user()
         return t"<div>Hello, {user}!</div>"
 ```
@@ -103,7 +102,7 @@ Beyond basic DI, svcs-di enables:
 # Site overrides app's Greeting with a French version
 @injectable(for_=Greeting)
 class FrenchGreeting(Greeting):
-    def __call__(self) -> Template:
+    def __call__(self):
         return t"<h1>Bonjour!</h1>"
 ```
 
@@ -164,7 +163,6 @@ See the [aria](examples/middleware/aria/) example.
 
 ```python
 from dataclasses import dataclass
-from string.templatelib import Template
 
 from svcs_di import Inject
 from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
@@ -183,7 +181,7 @@ class Button:
     db: Inject[DatabaseService]  # Automatically injected
     label: str = "Click"  # Regular parameter
 
-    def __call__(self) -> Template:
+    def __call__(self):
         config = self.db.get_button_config()
         return t'<button class="{config}">{self.label}</button>'
 

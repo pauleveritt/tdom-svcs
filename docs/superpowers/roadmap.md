@@ -663,6 +663,17 @@ existing strong guide, examples, services, and domain material.
     workspace outline, redirects or links preserve existing high-value pages,
     and Sphinx `-W` plus domain/example inventory tests pass. `M`
 
+51. [ ] P2 Shared Example Policy Alignment Audit — After Themester finishes the
+    example prep-inventory policy, audit the completed tdom-svcs example bundle
+    migration against the shared workspace conventions. Confirm whether
+    tdom-svcs has a suitable getting-started example set, whether canonical
+    bundles use stable concept-oriented IDs, and whether multi-file examples use
+    `app.py` with `main()` plus `example.toml` where practical. Do not churn
+    already-migrated examples unless the policy reveals a user-facing mismatch.
+    Acceptance: audit records either no-op rationale or a focused follow-up list;
+    existing `example-inventory.json`, Sphinx `-W`, and example tests remain
+    green. `S`
+
 ## Phase 13: Tainie DomainSpec Producer Pilot
 
 Tainie owns the canonical DomainSpec/DomainPack compiler and consumer model.

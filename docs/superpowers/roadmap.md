@@ -693,6 +693,24 @@ inventory contracts.
 
 ## Backlog
 
+- [ ] Hygiene fixes from 2026-05-08 deep-dive audit — Three small unrelated
+  items flagged by the cross-workspace audit (subagent surveyed tdom-svcs
+  boundary): (a) `tests/test_html_wrapper.py:9` does `import tdom` directly,
+  violating the workspace `from tdom_svcs import html` rule (the file also
+  imports `tdom_svcs.html` separately at `:13`; the bare `tdom` import is for
+  Node comparison in test internals — fix or document why the rule does not
+  apply here). (b) Public introspection/scanning/middleware surfaces use
+  `registry: Any` extensively (`introspection.py:60,111`,
+  `scanning.py:20,23`, `middleware.py:46,57,82,103,117,134`); not a bug, but
+  a typing-debt review candidate. (c) No Tainie test exercises
+  `inspect_component_evidence_packet()` against a live svcs container — the
+  Tainie round-trip tests construct packets manually
+  (`tainie/tests/test_evidence_providers.py:626-680`); add one that drives
+  the full producer path so the contract is end-to-end pinned. Acceptance:
+  test-html-wrapper-rule fix or documented exception; typing-debt note
+  filed; one Tainie test runs `inspect_component_evidence_packet()`
+  end-to-end. `S`
+
 - [x] Fix stale `register_component` docs — several docs pages still use the old name
   (`register_component`) that was renamed to `register_hookable` in a prior refactor. Files
   affected: `docs/api_reference.md` (function signature and examples), `docs/examples/categories/

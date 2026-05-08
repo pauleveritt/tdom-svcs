@@ -6,6 +6,8 @@ delegates correctly when container=None, and manages TemplateProcessor
 lifecycle via the container.
 """
 
+# White-box test import: compares html() output against tdom.html() directly.
+# Not a user-facing example — public code uses `from tdom_svcs import html`.
 import tdom
 from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
 from tdom.processor import TemplateProcessor

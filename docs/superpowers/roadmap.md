@@ -682,7 +682,7 @@ producer fixture with validated package-local domain, example, Storyville, and
 component-evidence artifacts that Tainie can consume through public provider or
 inventory contracts.
 
-51. [ ] P1 DomainSpec Inventory Pilot For Tainie — Tainie A-18 is the immediate
+52. [x] P1 DomainSpec Inventory Pilot For Tainie — Tainie A-18 is the immediate
     DomainPack compiler scoping pass; this producer-side inventory pilot is not
     a blocker for that design doc, but is the natural prerequisite for the first
     compiler implementation because tdom-svcs has both `domain-inventory.json`
@@ -695,7 +695,12 @@ inventory contracts.
     evidence, and model-authored claims; tdom-svcs keeps docs/domain as the
     authored source of truth; the producer inventory contains enough source and
     witness metadata for Tainie's compiler scoping to detect stale pack fields or
-    missing witnesses before generating a pack. `M`
+    missing witnesses before generating a pack. Completed 2026-05-09: Tainie now
+    reads `tdom-svcs` domain inventory, example inventory, Storyville domain
+    story records, and the three existing tdom-svcs DomainPack JSON files as
+    distinct passive trusted evidence lanes. Metrics distinguish producer
+    inventory evidence from component provider evidence, and `tdom-svcs` remains
+    the authored source of truth for package domain facts. `M`
 
 ## Backlog
 
@@ -708,11 +713,10 @@ inventory contracts.
   apply here). (b) Public introspection/scanning/middleware surfaces use
   `registry: Any` extensively (`introspection.py:60,111`,
   `scanning.py:20,23`, `middleware.py:46,57,82,103,117,134`); not a bug, but
-  a typing-debt review candidate. (c) No Tainie test exercises
-  `inspect_component_evidence_packet()` against a live svcs container — the
-  Tainie round-trip tests construct packets manually
-  (`tainie/tests/test_evidence_providers.py:626-680`); add one that drives
-  the full producer path so the contract is end-to-end pinned. Acceptance:
+  a typing-debt review candidate. (c) Completed 2026-05-09: Tainie now
+  exercises `inspect_component_evidence_packet()` against a live
+  `HopscotchContainer` through the registered `component_provider` path, so the
+  component evidence contract is pinned end-to-end. Acceptance:
   test-html-wrapper-rule fix or documented exception; typing-debt note
   filed; one Tainie test runs `inspect_component_evidence_packet()`
   end-to-end. `S`

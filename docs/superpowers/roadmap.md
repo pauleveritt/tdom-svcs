@@ -682,14 +682,20 @@ producer fixture with validated package-local domain, example, Storyville, and
 component-evidence artifacts that Tainie can consume through public provider or
 inventory contracts.
 
-51. [ ] P1 DomainSpec Inventory Pilot For Tainie — Once Tainie schedules the
-    DomainSpec/DomainPack inventory consumer, use tdom-svcs as the first
-    package with both `domain-inventory.json` and `example-inventory.json`.
-    Acceptance: Tainie can read tdom-svcs inventories as trusted passive
-    evidence without importing Sphinx or producer docs; metrics distinguish
-    domain inventory evidence, example inventory evidence, Storyville witness
-    evidence, component provider evidence, and model-authored claims; tdom-svcs
-    keeps docs/domain as the authored source of truth. `M`
+51. [ ] P1 DomainSpec Inventory Pilot For Tainie — Tainie A-18 is the immediate
+    DomainPack compiler scoping pass; this producer-side inventory pilot is not
+    a blocker for that design doc, but is the natural prerequisite for the first
+    compiler implementation because tdom-svcs has both `domain-inventory.json`
+    and `example-inventory.json` plus the three hand-written pack families that
+    proved lift (`props-priority`, `canonical-component-shape`, and
+    `service-injection-shape`). Acceptance: Tainie can read tdom-svcs inventories
+    as trusted passive evidence without importing Sphinx or producer docs;
+    metrics distinguish domain inventory evidence, example inventory evidence,
+    Storyville witness evidence, component provider evidence, compiled pack
+    evidence, and model-authored claims; tdom-svcs keeps docs/domain as the
+    authored source of truth; the producer inventory contains enough source and
+    witness metadata for Tainie's compiler scoping to detect stale pack fields or
+    missing witnesses before generating a pack. `M`
 
 ## Backlog
 

@@ -702,7 +702,7 @@ inventory contracts.
     inventory evidence from component provider evidence, and `tdom-svcs` remains
     the authored source of truth for package domain facts. `M`
 
-53. [ ] P1 Split Basic tdom Component Facts From tdom-svcs Service Facts —
+53. [x] P1 Split Basic tdom Component Facts From tdom-svcs Service Facts —
     Tainie A-36 repaired the active
     `tdom-svcs.canonical-component-shape` pack by making it tdom-only while
     preserving the old pack id for consumer compatibility. This package should
@@ -718,6 +718,17 @@ inventory contracts.
     examples that can witness the basic component concept separately from DI
     examples. The roadmap or research note points back to Tainie A-36 and
     forward to Tainie A-39 generated-candidate reconfirmation. `M`
+
+    Completed 2026-05-10: `docs/domain/index.md` now separates basic tdom
+    component facts from service-aware tdom-svcs facts. Basic facts cover
+    `Template` returns, callable component shapes, component-tag props, default
+    arguments, type hints, and body `children`; service-aware facts remain
+    scoped to container-aware rendering, Hopscotch resolution, injected props,
+    field operators, resource context, implementation overrides, and component
+    evidence packets. The handoff note
+    `docs/research/2026-05-10-basic-tdom-vs-tdom-svcs-domain-split.md` records
+    the A-36 producer boundary repair and leaves generated-candidate rebuild and
+    repeatability confirmation to Tainie A-39.
 
 ## Backlog
 

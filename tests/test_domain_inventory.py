@@ -48,6 +48,18 @@ def test_docs_build_validates_and_exports_domain_inventory(tmp_path: Path) -> No
         "resource-field-witness",
         "component-evidence-packet",
         "component-evidence-packet-witness",
+        "template-returning-component",
+        "callable-component-shape",
+        "component-tag-props",
+        "component-default-argument",
+        "component-type-hint",
+        "component-children-template",
+        "basic-components-return-template",
+        "component-tags-pass-props",
+        "component-body-content-flows-through-children",
+        "pure-tdom-component-shape-witness",
+        "component-flavors-witness",
+        "component-children-witness",
     } <= records.keys()
 
     resource_marker = records["resource-marker"]
@@ -60,6 +72,27 @@ def test_docs_build_validates_and_exports_domain_inventory(tmp_path: Path) -> No
     assert resource_witness["fact_kind"] == "witness"
     assert resource_witness["target_reference"]["resolved"] is True
     assert "resource-shape-is-downstream-owned" in resource_witness["proves"]
+
+    template_component = records["template-returning-component"]
+    assert template_component["fact_kind"] == "concept"
+    assert template_component["status"] == "verified"
+    assert template_component["target"]["kind"] == "symbol"
+    assert template_component["target"]["resolved"] is True
+
+    pure_tdom_witness = records["pure-tdom-component-shape-witness"]
+    assert pure_tdom_witness["fact_kind"] == "witness"
+    assert pure_tdom_witness["target_reference"]["resolved"] is True
+    assert "basic-components-return-template" in pure_tdom_witness["proves"]
+    assert "component-tags-pass-props" in pure_tdom_witness["proves"]
+
+    children_witness = records["component-children-witness"]
+    assert children_witness["fact_kind"] == "witness"
+    assert children_witness["target_reference"]["resolved"] is True
+    assert "component-body-content-flows-through-children" in children_witness[
+        "proves"
+    ]
+    assert "no-container-rendering-stays-plain" in children_witness["proves"]
+    assert "component-di-flows-through-hopscotch" not in children_witness["proves"]
 
 
 def _records_by_id(payload: dict[str, Any]) -> dict[str, dict[str, Any]]:

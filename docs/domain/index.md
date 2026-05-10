@@ -23,9 +23,31 @@ obvious first move. Containers, resource-aware selection, field operators, and
 component implementation overrides are additive affordances for larger
 component trees.
 
+For the DomainPack producer pipeline, this package also carries verified
+evidence for a small set of basic tdom component facts. That does not transfer
+ownership of core tdom semantics to tdom-svcs. It means tdom-svcs currently has
+the tested examples and inventories that Tainie can use to check the boundary
+between ordinary component rendering and service-aware rendering.
+
 ## Vocabulary
 
-The initial vocabulary is intentionally small:
+The vocabulary is intentionally small and split into two groups. Basic tdom
+component facts describe the component shapes that exist before dependency
+injection. Service-aware tdom-svcs facts describe the optional container,
+Hopscotch, and evidence affordances layered on top.
+
+### Basic tdom Component Facts
+
+| Concept | Meaning | Native Symbols |
+| --- | --- | --- |
+| Template-returning component | A component returns a `Template` produced by a t-string literal. | `string.templatelib.Template` |
+| Callable component shape | Components may be functions, dataclasses with `__call__`, or plain callable classes. | Python callables |
+| Component-tag props | T-string component attributes become component kwargs. | t-string component attributes |
+| Component default argument | Ordinary Python defaults provide component values when props do not. | Python callable defaults |
+| Component type hint | Type hints document component props and let the processor prepare kwargs. | Python annotations |
+| Component children template | Body content is passed as `children: Template` when accepted by the component. | `string.templatelib.Template` |
+
+### Service-Aware tdom-svcs Facts
 
 | Concept | Meaning | Native Symbols |
 | --- | --- | --- |
@@ -65,6 +87,67 @@ implementation selection.
 These directives are a small first inventory, not an exhaustive ontology. They
 prefer importable symbol references where the fact has a stable symbol and use
 existing regression tests as witnesses for behavior.
+
+:::{domain:concept} Template-returning component
+:id: template-returning-component
+:status: verified
+:kind: component
+:ref: string.templatelib:Template
+
+A component returns a `Template` produced by a t-string literal, such as
+`t"<h1>Hello {name}</h1>"`, so the renderer can continue processing nested
+template content.
+:::
+
+:::{domain:concept} Callable component shape
+:id: callable-component-shape
+:status: verified
+:kind: component
+:ref: tdom.processor:ComponentProcessor
+
+The basic component model accepts ordinary Python callable shapes: functions,
+dataclasses with `__call__`, and plain callable classes.
+:::
+
+:::{domain:concept} Component-tag props
+:id: component-tag-props
+:status: verified
+:kind: props
+:ref: tdom.processor:ComponentProcessor
+
+T-string component attributes, such as `name='Alice'`, are prepared as keyword
+arguments for the component callable.
+:::
+
+:::{domain:concept} Component default argument
+:id: component-default-argument
+:status: verified
+:kind: props
+:ref: tdom.processor:get_callable_info
+
+Ordinary Python default arguments remain part of the component contract when a
+template does not provide a prop.
+:::
+
+:::{domain:concept} Component type hint
+:id: component-type-hint
+:status: verified
+:kind: props
+:ref: tdom.processor:get_callable_info
+
+Component type hints document the expected prop shape and are part of the
+callable metadata used while preparing component kwargs.
+:::
+
+:::{domain:concept} Component children template
+:id: component-children-template
+:status: verified
+:kind: props
+:ref: string.templatelib:Template
+
+When a component accepts `children`, tdom passes body content as a `Template`
+that the component can interpolate into its returned template.
+:::
 
 :::{domain:concept} Render entry point
 :id: render-entry-point
@@ -171,6 +254,35 @@ HTML-aware testing that queries rendered output by structure, role, accessible
 name, or tag rather than matching a large string.
 :::
 
+:::{domain:rule} Basic components return Template
+:id: basic-components-return-template
+:status: verified
+:applies-to: template-returning-component, callable-component-shape
+
+The canonical component shape returns `string.templatelib.Template` from a
+t-string literal rather than manually constructing rendered HTML strings inside
+the component.
+:::
+
+:::{domain:rule} Component tags pass props
+:id: component-tags-pass-props
+:status: verified
+:applies-to: component-tag-props, component-default-argument, component-type-hint
+
+Component-tag attributes are caller-provided props. They override callable
+defaults, while omitted props can still fall back to ordinary Python default
+arguments.
+:::
+
+:::{domain:rule} Component body content flows through children
+:id: component-body-content-flows-through-children
+:status: verified
+:applies-to: component-children-template
+
+Body content written between opening and closing component tags is passed to a
+component as `children` when the callable accepts that parameter.
+:::
+
 :::{domain:rule} No-container rendering stays plain
 :id: no-container-rendering-stays-plain
 :status: verified
@@ -218,6 +330,38 @@ Simple rendering behavior may be tested with direct strings. Structural,
 semantic, and accessibility behavior should use HTML-aware queries such as
 `aria-testing`, with fakes or real containers added when dependency injection
 is part of the behavior.
+:::
+
+:::{domain:witness} ../../examples/basic/pure_tdom.py
+:id: pure-tdom-component-shape-witness
+:status: verified
+:kind: example
+:proves: basic-components-return-template, component-tags-pass-props, no-container-rendering-stays-plain
+
+The pure tdom example defines a function component with a typed prop, a default
+argument, a `Template` return value, and a component-tag render call through the
+plain `html()` entry point.
+:::
+
+:::{domain:witness} ../../examples/basic/function_dataclass_poco.py
+:id: component-flavors-witness
+:status: verified
+:kind: example
+:proves: basic-components-return-template, callable-component-shape, component-tags-pass-props
+
+The component flavors example shows the same component-tag props pattern across
+a function component, a dataclass component with `__call__`, and a plain
+callable class.
+:::
+
+:::{domain:witness} ../../tests/test_html_wrapper.py
+:id: component-children-witness
+:status: verified
+:kind: test
+:proves: component-body-content-flows-through-children, no-container-rendering-stays-plain
+
+This regression test covers a component that accepts `children: Template` and
+receives body content through the plain no-container `html()` path.
 :::
 
 :::{domain:witness} ../../tests/test_html_wrapper.py

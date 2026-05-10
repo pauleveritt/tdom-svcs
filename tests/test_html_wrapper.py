@@ -8,6 +8,8 @@ lifecycle via the container.
 
 # White-box test import: compares html() output against tdom.html() directly.
 # Not a user-facing example — public code uses `from tdom_svcs import html`.
+from string.templatelib import Template
+
 import tdom
 from svcs_hopscotch.injectors import HopscotchContainer, HopscotchRegistry
 from tdom.processor import TemplateProcessor
@@ -44,6 +46,17 @@ def test_html_no_container_void_elements():
     """html() without container uses slash_void=True (same as tdom default)."""
     result = html(t"<br />")
     assert result == "<br />"
+
+
+def test_html_no_container_component_children():
+    """Component body content is passed as children without a container."""
+
+    def Card(children: Template | None = None) -> Template:
+        return t"<section>{children}</section>"
+
+    result = html(t"<{Card}><p>Child content</p></{Card}>")
+
+    assert result == "<section><p>Child content</p></section>"
 
 
 def test_html_container_lazy_registers_template_processor():

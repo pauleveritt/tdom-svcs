@@ -60,7 +60,7 @@ quality-fix: lint-fix format
 
 # Build documentation
 docs-build:
-    uv run sphinx-build -W -b html docs docs/_build/html
+    uv run sphinx-build -W -j auto -b html docs docs/_build/html
 
 # Serve documentation with auto-reload
 docs-serve:

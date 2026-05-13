@@ -805,3 +805,56 @@ inventory contracts.
 > - Phase 11: Package-local DomainPack source, using tdom-svcs as the second `tainie-tools` domain authoring consumer after svcs-hopscotch
 > - Phase 12: Public docs and example inventory cleanup, sequenced before Tainie consumes package example inventories
 > - Phase 13: tdom-svcs as a DomainSpec/DomainPack producer pilot; Tainie owns the canonical consumer/compiler contract
+
+## Phase 14: Post-Router-Lands Coordination (Tainie 2026-05-13)
+
+**Status:** Scheduled — can start when Tainie D-3 (schema slimming) is
+decided. All items run in parallel with Themester Phase 16.
+
+Tainie's 2026-05-13 work landed the domain-router architecture and confirmed
+that the three `tdom-svcs.*` packs (`props-priority`,
+`canonical-component-shape`, `service-injection-shape`) drive a measurable
+end-to-end win: DR-03 v2 showed `themester_pure_tdom_001` flipping
+REJECT→ACCEPT when `tdom-svcs.canonical-component-shape` content reaches the
+model. Routing accuracy across the three tdom-svcs packs is part of the
+DR-01b 84.6% combined. Full context in
+`/Users/pauleveritt/projects/t-strings/tainie/docs/research/2026-05-13-domain-router-investigation.md`.
+
+These follow-ups keep tdom-svcs aligned with the router consumer side.
+
+- [ ] 14.1 Confirm tdom-svcs pack source-of-truth ownership — The three
+  `tdom-svcs.*` pack files under `tainie/docs/domain/packs/` do not declare
+  a `probe_result.source_of_truth` or `compatibility_copy` field (only
+  Themester's `themester.layout-layering` does). Decide explicitly: do the
+  tdom-svcs packs live in tdom-svcs and copy into Tainie (mirroring the
+  Themester pattern), or do they remain Tainie-owned? The current ambiguity
+  hides the migration cost. Effort: ~0.5d for the decision + provenance
+  field updates. Unblocks: 14.2 + Tainie D-3 schema slimming. Parallelism:
+  independent.
+
+- [ ] 14.2 Preserve `applies_when` mechanizability for tdom-svcs packs —
+  Tainie's DR-01 (rule-layer baseline) confirmed that
+  `tdom-svcs.props-priority`'s `applies_when` ("component has a
+  `current_name` prop / `InitVar[Inject[Users]]` service fallback /
+  `current_name` is not None") is directly mechanizable as AST predicates,
+  and the rule layer hits 81% strict accuracy partly because of that. Add
+  an authoring note (in `docs/domain/` or alongside the packs) telling
+  future pack authors: `applies_when` entries should remain mechanizable
+  (concrete AST features, field names, import names, method names), not
+  high-level prose. Effort: ~0.5d. Unblocks: continued router accuracy as
+  new tdom-svcs packs land. Parallelism: independent.
+
+- [ ] 14.3 Schema slimming coordination (conditional on Tainie D-3 + 14.1) —
+  Tainie's investigation identified six DomainPack JSON fields that no
+  consumer reads: `principles`, `facts`, `probe_result`, `source_decisions`,
+  `compiled_by`, `version`. Tainie D-3 will decide whether to slim. If the
+  tdom-svcs packs are tdom-svcs-owned (per 14.1), this is a tdom-svcs
+  migration; if they're Tainie-owned, this is a Tainie internal change.
+  Either way, the consumer side (Tainie's `pack_router_for_file` and
+  `domain_pack_hints_for_path`) does not care about these fields. Effort:
+  ~0.5d once the ownership question is resolved.
+
+**Sequencing within Phase 14:** 14.1 first (clarifies ownership). 14.2
+can run in parallel with 14.1. 14.3 runs after both 14.1 and the Tainie
+D-3 decision. None of these block tdom-svcs's own roadmap; they are
+producer/consumer alignment items only.

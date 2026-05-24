@@ -56,6 +56,10 @@ categories
 examples/index
 domain/index
 api_reference
+superpowers/roadmap
+superpowers/roadmap-backlog
+superpowers/roadmap-archive
+superpowers/policies/roadmap-partitioning
 ```
 
 ## Installation
